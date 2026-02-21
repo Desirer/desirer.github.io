@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>cmu15-445笔记十二 并发控制：乐观控制 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="这节课主要介绍了乐观并发控制：时间戳顺序并发控制、OCC协议。最后还介绍了幻相，幻相引起的原因、解决方式。"><meta property="og:type" content="blog"><meta property="og:title" content="cmu15-445笔记十二 并发控制：乐观控制"><meta property="og:url" content="https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec12/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="这节课主要介绍了乐观并发控制：时间戳顺序并发控制、OCC协议。最后还介绍了幻相，幻相引起的原因、解决方式。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151955749.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151958568.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405152017629.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405152017666.png"><meta property="og:image" content="https://xyz.desirer233.fun/Users/mac/Library/Application%20Support/typora-user-images/image-20240515202718631.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405152120690.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405152127103.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405152136175.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405152136516.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405152137457.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405152201661.png"><meta property="article:published_time" content="2024-05-14T07:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.450Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="数据库"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202405151955749.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec12/"},"headline":"cmu15-445笔记十二 并发控制：乐观控制","image":["https://gitee.com/desirer/backup/raw/master/images/202405151955749.png","https://gitee.com/desirer/backup/raw/master/images/202405151958568.png","https://gitee.com/desirer/backup/raw/master/images/202405152017629.png","https://gitee.com/desirer/backup/raw/master/images/202405152017666.png","https://xyz.desirer233.fun/Users/mac/Library/Application%20Support/typora-user-images/image-20240515202718631.png","https://gitee.com/desirer/backup/raw/master/images/202405152120690.png","https://gitee.com/desirer/backup/raw/master/images/202405152127103.png","https://gitee.com/desirer/backup/raw/master/images/202405152136175.png","https://gitee.com/desirer/backup/raw/master/images/202405152136516.png","https://gitee.com/desirer/backup/raw/master/images/202405152137457.png","https://gitee.com/desirer/backup/raw/master/images/202405152201661.png"],"datePublished":"2024-05-14T07:00:00.000Z","dateModified":"2026-02-21T07:11:50.450Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"这节课主要介绍了乐观并发控制：时间戳顺序并发控制、OCC协议。最后还介绍了幻相，幻相引起的原因、解决方式。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec12/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-05-14T07:00:00.000Z" title="2024/5/14 15:00:00">2024-05-14</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.450Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/cmu15445/">cmu15445</a></span><span class="level-item">17 分钟读完 (大约2583个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">cmu15-445笔记十二 并发控制：乐观控制</h1><div class="content"><p>这节课主要介绍了乐观并发控制：时间戳顺序并发控制、OCC协议。最后还介绍了幻相，幻相引起的原因、解决方式。</p>
+<span id="more"></span>
+
+<p>二阶段锁协议属于一种悲观的并发控制方法：总是假设未来可能出现数据竞争，因此总是给共享的对象上锁。</p>
+<p>也存在一些乐观的并发控制方法，比如说基于时间戳顺序的并发控制（Timestamp Ordering），它的基本原理是，给每个事务一个时间戳，根据事务的时间戳来决定它们的顺序以及出现冲突操作时该如何处理。</p>
+<h1 id="时间戳赋予"><a href="#时间戳赋予" class="headerlink" title="时间戳赋予"></a>时间戳赋予</h1><ul>
+<li>可以通过系统时钟，但有些时候这会出问题，因为系统时钟不是完全精确的，它会每隔一段时间和服务器通信，进行同步，因此在同步的时候就会出现“时间突然被调慢了一分钟”这种情况，这就可能导致系统时间校准之前到达的事务和系统时间校准的之后到达的事务的时间戳顺序发生了混乱</li>
+<li>由于系统时钟并不完全可靠，因此在很多单节点的数据库中使用Logical Counter（逻辑计数器），第一个到达的事务标记为1号，第二个到达的标记为2号…，通过简单的计数完成时间戳的排列，从而避免系统时钟的跳变</li>
+<li>对于分布式系统来说，Logical Counter很难校准（因为在各个节点之后依赖于网络的通讯比较慢，如果A节点和B节点相距很远的话，有可能某一时刻到达A节点的事务和到达B节点的事务对应同一个counter，因为它们之间不会立即获取到对方的counter更新）。因此就有了系统时钟和逻辑计数器混合使用的时间戳确定办法，具体的实现方法在本课程中并未提及</li>
+</ul>
+<h1 id="Basic-Timestamp-Ordering-T-O-Protocol"><a href="#Basic-Timestamp-Ordering-T-O-Protocol" class="headerlink" title="Basic Timestamp Ordering(T&#x2F;O) Protocol"></a><strong>Basic Timestamp Ordering(T&#x2F;O) Protocol</strong></h1><p>基础的T&#x2F;O协议中，事务在读&#x2F;写对象的时候是不加锁的</p>
+<p>数据库中的所有对象（一般就是指tuple这种对象）上面要附带两个时间戳，一个读时间戳（上一次读这个对象的事务的时间戳&#x2F;事务号），一个写时间戳（上一次写这个对象的事务的时间戳&#x2F;事务号）。</p>
+<p>每次读&#x2F;写数据的时候都要检查时间戳（比较当前事务的时间戳和操作过当前正在进行读&#x2F;写的对象的事务的时间戳），要求是“不能操作未来的数据”。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405151955749.png"></p>
+<p>基于时间戳协议的读流程：比较事务的时间戳和对象写时间戳，如果当前时间戳小于上次写的时间戳，则放弃事务进行。否则读对象，然后更新读时间戳，最后拷贝一份（可重复读）。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405151958568.png"></p>
+<p>基于时间戳协议的写流程：比较事务的时间戳与对象的读时间戳和写时间戳，需要当前时间戳均大于二者。然后更新写时间戳，最后拷贝一份。</p>
+<h2 id="托马斯写规则"><a href="#托马斯写规则" class="headerlink" title="托马斯写规则"></a>托马斯写规则</h2><img src="https://gitee.com/desirer/backup/raw/master/images/202405152017629.png" style="zoom:67%;" />
+
+<p>在基于时间戳的写流程中，如果事务的时间戳小于对象写时间戳，事务被迫abort。但是，这个过程表明，有未来的事务正在写这个共享对象。当前事务的写会被覆盖，那么其实也没事。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405152017666.png"></p>
+<h2 id="TO-缺点"><a href="#TO-缺点" class="headerlink" title="TO 缺点"></a>TO 缺点</h2><p>如果不考虑托马斯写规则带来的优化，基础T&#x2F;O协议会生成冲突可串行化的执行调度，它的优点是没有采用锁，因此不可能构成死锁。</p>
+<ul>
+<li><p>长事务饥饿问题：较长的事务（比如说有几百条SQL语句）有可能会饥饿，因为很有可能它执行了一段时间之后，想要访问的数据都是被比它更“年轻”的事物修改过的，那它只能abort，重启之后又迎来同样的结局。</p>
+</li>
+<li><p>性能问题：事务在读任何数据的时候都要往本地拷贝一份同时还可能更新时间戳</p>
+</li>
+</ul>
+<h1 id="Optimistic-Concurrency-Control"><a href="#Optimistic-Concurrency-Control" class="headerlink" title="Optimistic Concurrency Control"></a><strong>Optimistic Concurrency Control</strong></h1><p>OCC是基于事务之间发生冲突的概率低，并且事务都比较短这个假设提出的优化策略，它希望通过无锁化来对事务之间无冲突的场景做出优化。</p>
+<h2 id="基本策略"><a href="#基本策略" class="headerlink" title="基本策略"></a>基本策略</h2><p>每个事务都有一个自己的工作区，任何读对象都会拷贝到这个工作区，对对象的更改也在这个工作区。</p>
+<p>等到事务即将commit的时候，DBMS会将要提交的数据更新和其他事务要提交的更新进行比较，如果它们之间没有冲突的话，DBMS会一次性地把事务所做的所有更新都提交，如果出现了冲突，那么事务会abort。</p>
+<img src="/Users/mac/Library/Application Support/typora-user-images/image-20240515202718631.png" alt="image-20240515202718631" style="zoom:67%;" />
+
+<p>三个阶段：</p>
+<ul>
+<li><p>读阶段</p>
+<p>这个阶段之所以称为读阶段，是对于数据库来说的它是一直只被读的。在OCC策略下，即便是写语句，也是读数据库到工作区进行更改，所有写操作在事务完成时才进行。</p>
+</li>
+<li><p>验证阶段</p>
+<p>事务执行完了准备提交时，把它完成的数据更新和<strong>其他事务</strong>相比较。如果校验通过，那么就转至下一个阶段，否则abort并重启事务。</p>
+<p>Checks other txns for RW and WW conflicts and ensure that conflicts are in one direction (e.g., older→younger).</p>
+</li>
+<li><p>写阶段</p>
+</li>
+</ul>
+<p>​	 把事务本地所记录的更新提交到数据库中。</p>
+<p>实现OCC的DBMS一般会在写阶段锁全表，除了当前事务以外没有其他线程可以修改数据库，也就不能多个事务并发地写，虽然这牺牲了并发性，但由于前面已经准备好了要写的数据，所以写操作的时间并不长，因此开销可以接受。</p>
+<h2 id="验证阶段"><a href="#验证阶段" class="headerlink" title="验证阶段"></a>验证阶段</h2><p>（1）后向校验</p>
+<p>与已经发生过的事务校验</p>
+<p>（2）前向校验</p>
+<p>即向未来的事务校验，与当前正在进行的事务进行对比。</p>
+<p>每个事务的时间戳在校验开始时赋予。假设当前$TS(T_i)&lt;TS(T_j)$，那么必须满足以下条件：</p>
+<ul>
+<li><p>Ti completes all three phases before Tj begins its execution. 即本身就是可串行的，Ti在Tj开始前就结束了。</p>
+</li>
+<li><p>Ti在Tj的写阶段开始前就结束了，并且Ti的写集合与Tj的读集合交集为空（Ti修改过的对象Tj没读过）。</p>
+</li>
+<li><p>Ti先于Tj完成读阶段，Ti修改过的对象Tj没读过，Ti修改过的对象Tj没修改过。</p>
+</li>
+</ul>
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><ul>
+<li><p>性能问题，它还是会和基础T&#x2F;O一样要求事务把要读写的数据拷贝到本地</p>
+</li>
+<li><p>校验这个步骤的逻辑很复杂，容易构成性能瓶颈</p>
+</li>
+<li><p>写阶段是串行的，不能并发，也容易成为瓶颈</p>
+</li>
+<li><p>OCC中如果校验阶段失败的话，那么前面所做的全部操作就都会前功尽弃，不像二阶段锁有死锁检测，这样可以在事务进行到一半的时候abort</p>
+</li>
+</ul>
+<h1 id="幻觉现象"><a href="#幻觉现象" class="headerlink" title="幻觉现象"></a>幻觉现象</h1><p>到现在为止我们讨论的事务都是基于读写操作，如果引入删除操作，那么就会发生新的问题。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405152120690.png" style="zoom:80%;" />
+
+<p>如果一个事务开启期间，另外一个事务插入了一条数据，那么当前事务读取的count&#x2F;max&#x2F;min就会前后不一致。</p>
+<p><strong>为什么会发生？因为前面所讨论的事务并发控制（二阶段锁和OCC）只对存在的数据有用，插入时的新数据并不存在于数据库中。</strong></p>
+<h2 id="Re-Execute-Scans"><a href="#Re-Execute-Scans" class="headerlink" title="Re-Execute Scans"></a>Re-Execute Scans</h2><p>记录下来事务所有可能出现幻读的地方（像查最大值，平均值，最小值这些涉及到范围扫描的操作），为了防止察觉不到有其他事务在扫描完成后再向表里插入新数据，在事务提交之前会再执行一遍前面所记录的所有扫描。</p>
+<p>Example: Run the scan for an UPDATE query but do not modify matching tuples. 比如说重新执行一遍更新语句，但不真正执行更新，只核对扫描的数据条目。</p>
+<h2 id="Predicate-Locking"><a href="#Predicate-Locking" class="headerlink" title="Predicate Locking"></a>Predicate Locking</h2><p> 谓词锁。</p>
+<p>对于含有where clause的SQL语句：给select语句对应的谓词加共享锁，给update&#x2F;insert&#x2F;delete语句对应的谓词加独占锁。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405152127103.png" style="zoom:80%;" />
+
+<p>Never implemented in any system except for HyPer (precision locking).</p>
+<h2 id="Index-Locking"><a href="#Index-Locking" class="headerlink" title="Index Locking"></a>Index Locking</h2><p><strong>基于索引的锁。</strong></p>
+<p>如果对谓词里的attribute已经构建了索引的话，那么DBMS可以给相关的索引页上锁。如果没有构建相关的索引，就使用表锁这种宽范围的锁。</p>
+<p>基于索引的锁有多种模式：</p>
+<p>（1）Key-Value Lock</p>
+<p>锁住索引中的单一键值，如果键不存在则需要虚拟键。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405152136175.png" style="zoom:50%;" />
+
+<p>（2）Gap Locks</p>
+<p>间隙锁，锁住当前key到下一个key的间隙。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405152136516.png" style="zoom:50%;" />
+
+<p>（3）Key-Range locks</p>
+<p>范围锁，锁住一个范围内的键值。对于无穷大等键需要虚拟键。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405152137457.png" style="zoom:50%;" />
+
+<h2 id="没有索引时"><a href="#没有索引时" class="headerlink" title="没有索引时"></a>没有索引时</h2><p>If there is no suitable index, then the txn must obtain:</p>
+<p>→ A lock on every page in the table to prevent a record’s status&#x3D;’lit’ from being changed to lit.</p>
+<p>→ The lock for the table itself to prevent records with status&#x3D;’lit’ from being added or deleted.</p>
+<p>锁住条件出现的每一个页面，避免插入或删除。</p>
+<h1 id="弱隔离级别"><a href="#弱隔离级别" class="headerlink" title="弱隔离级别"></a>弱隔离级别</h1><p>前面从2PL到T&#x2F;O这些策略都是为了实现串行化这样一个最高的事务隔离级别，实际的业务场景里有些业务可以忍受非串行化的执行调度，而且非串行化时性能会更好，因此也存在一些比串行化更弱的隔离级别。</p>
+<p>更低的隔离级别下事务之间会互相暴露，这也会引发一些问题：</p>
+<ul>
+<li>脏读（当前事务读的数据是其他事务修改过的但这个修改还没被提交）</li>
+<li>不可重复读（前后两次读同一个对象得到的数据不同，因为被其他事务修改过了）</li>
+<li>幻读（前后两次读同一个谓词下的数据集合，读到的数据规模不一样）</li>
+</ul>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405152201661.png"></p>
+<p>各个隔离级别的实现方法：</p>
+<ul>
+<li><p>SERIALIZABLE: Obtain all locks first; plus index locks, plus strict 2PL.</p>
+</li>
+<li><p>REPEATABLE READS: Same as above, but no index locks.</p>
+</li>
+<li><p>READ COMMITTED: Same as above, but S locks are released immediately.</p>
+</li>
+<li><p>READ UNCOMMITTED: Same as above but allows dirty reads (no S locks).</p>
+</li>
+</ul>
+</div><div class="article-licensing box"><div class="licensing-title"><p>cmu15-445笔记十二 并发控制：乐观控制</p><p><a href="https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec12/">https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec12/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-05-14</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/05/16/cmu15445/Lec14/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">cmu15-445笔记十三 日志</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/05/14/cmu15445/Lec10/"><span class="level-item">cmu15-445笔记十 并发控制基础-事务</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#时间戳赋予"><span class="level-left"><span class="level-item">1</span><span class="level-item">时间戳赋予</span></span></a></li><li><a class="level is-mobile" href="#Basic-Timestamp-Ordering-T-O-Protocol"><span class="level-left"><span class="level-item">2</span><span class="level-item">Basic Timestamp Ordering(T/O) Protocol</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#托马斯写规则"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">托马斯写规则</span></span></a></li><li><a class="level is-mobile" href="#TO-缺点"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">TO 缺点</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Optimistic-Concurrency-Control"><span class="level-left"><span class="level-item">3</span><span class="level-item">Optimistic Concurrency Control</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#基本策略"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">基本策略</span></span></a></li><li><a class="level is-mobile" href="#验证阶段"><span class="level-left"><span class="level-item">3.2</span><span class="level-item">验证阶段</span></span></a></li><li><a class="level is-mobile" href="#缺点"><span class="level-left"><span class="level-item">3.3</span><span class="level-item">缺点</span></span></a></li></ul></li><li><a class="level is-mobile" href="#幻觉现象"><span class="level-left"><span class="level-item">4</span><span class="level-item">幻觉现象</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#Re-Execute-Scans"><span class="level-left"><span class="level-item">4.1</span><span class="level-item">Re-Execute Scans</span></span></a></li><li><a class="level is-mobile" href="#Predicate-Locking"><span class="level-left"><span class="level-item">4.2</span><span class="level-item">Predicate Locking</span></span></a></li><li><a class="level is-mobile" href="#Index-Locking"><span class="level-left"><span class="level-item">4.3</span><span class="level-item">Index Locking</span></span></a></li><li><a class="level is-mobile" href="#没有索引时"><span class="level-left"><span class="level-item">4.4</span><span class="level-item">没有索引时</span></span></a></li></ul></li><li><a class="level is-mobile" href="#弱隔离级别"><span class="level-left"><span class="level-item">5</span><span class="level-item">弱隔离级别</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

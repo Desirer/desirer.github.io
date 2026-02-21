@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>Git快速入门 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="Git是一个版本控制工具，通常配合远程代码仓库多人协作开发。上手Git并不难，用过之后就会觉得真香。我入门的方式就是给一个项目提Pull Request。 git学习思路：单链 -&amp;gt; 树 -&amp;gt; 多棵树  本地版本控制（利用状态机的思想学习Git）  分支版本控制（利用树的思想）  远程仓库控制（两颗树之间的对应！）   最后学习学习git相关的配置文件，git就算简单入门了。 推荐阅读"><meta property="og:type" content="blog"><meta property="og:title" content="Git快速入门"><meta property="og:url" content="https://xyz.desirer233.fun/2023/12/01/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/Git-fast-learning/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="Git是一个版本控制工具，通常配合远程代码仓库多人协作开发。上手Git并不难，用过之后就会觉得真香。我入门的方式就是给一个项目提Pull Request。 git学习思路：单链 -&amp;gt; 树 -&amp;gt; 多棵树  本地版本控制（利用状态机的思想学习Git）  分支版本控制（利用树的思想）  远程仓库控制（两颗树之间的对应！）   最后学习学习git相关的配置文件，git就算简单入门了。 推荐阅读"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://www.progit.cn/images/areas.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405301503658.png"><meta property="og:image" content="https://www.progit.cn/images/lifecycle.png"><meta property="og:image" content="https://www.progit.cn/images/advance-testing.png"><meta property="og:image" content="https://www.progit.cn/images/checkout-master.png"><meta property="og:image" content="https://www.progit.cn/images/basic-merging-1.png"><meta property="og:image" content="https://www.progit.cn/images/basic-merging-2.png"><meta property="article:published_time" content="2023-12-01T11:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.430Z"><meta property="article:author" content="Desirer"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://www.progit.cn/images/areas.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2023/12/01/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/Git-fast-learning/"},"headline":"Git快速入门","image":["https://www.progit.cn/images/areas.png","https://gitee.com/desirer/backup/raw/master/images/202405301503658.png","https://www.progit.cn/images/lifecycle.png","https://www.progit.cn/images/advance-testing.png","https://www.progit.cn/images/checkout-master.png","https://www.progit.cn/images/basic-merging-1.png","https://www.progit.cn/images/basic-merging-2.png"],"datePublished":"2023-12-01T11:00:00.000Z","dateModified":"2026-02-21T07:11:50.430Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"Git是一个版本控制工具，通常配合远程代码仓库多人协作开发。上手Git并不难，用过之后就会觉得真香。我入门的方式就是给一个项目提Pull Request。 git学习思路：单链 -&gt; 树 -&gt; 多棵树  本地版本控制（利用状态机的思想学习Git）  分支版本控制（利用树的思想）  远程仓库控制（两颗树之间的对应！）   最后学习学习git相关的配置文件，git就算简单入门了。 推荐阅读"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2023/12/01/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/Git-fast-learning/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2023-12-01T11:00:00.000Z" title="2023/12/1 19:00:00">2023-12-01</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.430Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/">工具学习</a><span> / </span><a class="link-muted" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/">Git</a></span><span class="level-item">29 分钟读完 (大约4355个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">Git快速入门</h1><div class="content"><p>Git是一个版本控制工具，通常配合远程代码仓库多人协作开发。上手Git并不难，用过之后就会觉得真香。我入门的方式就是给一个项目提Pull Request。</p>
+<p>git学习思路：单链 -&gt; 树 -&gt; 多棵树</p>
+<ol>
+<li><p>本地版本控制（利用状态机的思想学习Git）</p>
+</li>
+<li><p>分支版本控制（利用树的思想）</p>
+</li>
+<li><p>远程仓库控制（两颗树之间的对应！）</p>
+</li>
+</ol>
+<p>最后学习学习git相关的配置文件，git就算简单入门了。</p>
+<p>推荐阅读：<a target="_blank" rel="noopener" href="https://www.progit.cn/#_pro_git">https://www.progit.cn/#_pro_git</a></p>
+<p>在线Git闯关-图形化学GIt：<a target="_blank" rel="noopener" href="https://learngitbranching.js.org/?locale=zh_CN">https://learngitbranching.js.org/?locale=zh_CN</a></p>
+<span id="more"></span>
+
+<h1 id="一、git基础"><a href="#一、git基础" class="headerlink" title="一、git基础"></a>一、git基础</h1><p>工作目录下的每一个文件都不外乎这两种状态：已跟踪或未跟踪</p>
+<ul>
+<li><p>已跟踪的文件是指那些被纳入了版本控制的文件，在上一次快照中有它们的记录。</p>
+</li>
+<li><p>未跟踪文件是工作目录中除已跟踪文件以外的所有其它文件，它们既不存在于上次快照的记录中，也没有放入暂存区。</p>
+</li>
+</ul>
+<p>经过Git追踪的文件，在工作一段时间后，它们可能处于其中之一的状态：</p>
+<ul>
+<li>committed 已经提交，数据在本地仓库中</li>
+<li>modified 已经修改，没有保存在数据库中</li>
+<li>staged 已经暂存，包含在下次提交的快照中</li>
+</ul>
+<p><strong>引入Git项目三个工作区域的概念：Git仓库、工作目录、暂存区域</strong></p>
+<img src="https://www.progit.cn/images/areas.png" style="zoom:80%;" />
+
+<p>基本的 Git 工作流程如下：</p>
+<ol>
+<li>在工作目录中修改文件。</li>
+<li>暂存文件，将文件的快照放入暂存区域。</li>
+<li>提交更新，找到暂存区域的文件，将快照永久性存储到 Git 仓库目录。</li>
+</ol>
+<p>如果 Git 目录中保存着的特定版本文件，就属于已提交状态。 如果作了修改并已放入暂存区域，就属于已暂存状态。 如果自上次取出后，作了修改但还没有放到暂存区域，就是已修改状态。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405301503658.png"></p>
+<h1 id="二、本地版本控制"><a href="#二、本地版本控制" class="headerlink" title="二、本地版本控制"></a>二、本地版本控制</h1><h2 id="2-1-获取仓库"><a href="#2-1-获取仓库" class="headerlink" title="2.1 获取仓库"></a>2.1 获取仓库</h2><p>获取仓库的方法：</p>
+<ul>
+<li>现有目录初始化仓库</li>
+<li>克隆仓库</li>
+</ul>
+<p>（1）现有目录初始化仓库</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">git init </span><br><span class="line">git add your_file</span><br><span class="line">git add LISCENSE</span><br><span class="line">git commit -m &#x27;initial project version&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>（2）克隆仓库</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone [url]</span><br></pre></td></tr></table></figure>
+
+<p>比如</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/libgit2/libgit2</span><br></pre></td></tr></table></figure>
+
+<p>这会在当前目录下创建一个名为 “libgit2” 的目录，并在这个目录下初始化一个 <code>.git</code> 文件夹。</p>
+<p>如果你想在克隆远程仓库的时候自定义本地仓库的名字， 在上条命令后面跟着你自定义的名字：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/libgit2/libgit2 your_local_name</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-2-git状态"><a href="#2-2-git状态" class="headerlink" title="2.2 git状态"></a>2.2 git状态</h2><p>工作目录下的每一个文件都不外乎这两种状态：已跟踪或未跟踪</p>
+<ul>
+<li><p>已跟踪的文件是指那些被纳入了版本控制的文件，在上一次快照中有它们的记录，在工作一段时间后，它们的状态可能处于未修改，已修改或已放入暂存区。 </p>
+</li>
+<li><p>未跟踪文件是工作目录中除已跟踪文件以外的所有其它文件，它们既不存在于上次快照的记录中，也没有放入暂存区。</p>
+</li>
+</ul>
+<p><strong>初次克隆某个仓库的时候，工作目录中的所有文件都属于已跟踪文件，并处于未修改状态。</strong></p>
+<img src="https://www.progit.cn/images/lifecycle.png" style="zoom:80%;" />
+
+<p>编辑过某些文件之后，由于自上次提交后你对它们做了修改，Git 将它们标记为已修改文件。 </p>
+<p>我们逐步将这些修改过的文件放入暂存区，然后提交所有暂存了的修改，如此反复。这就是Git本地工作的思想。</p>
+<h2 id="2-3-git操作"><a href="#2-3-git操作" class="headerlink" title="2.3 git操作"></a>2.3 git操作</h2><h3 id="（1）查看文件状态"><a href="#（1）查看文件状态" class="headerlink" title="（1）查看文件状态"></a>（1）查看文件状态</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git status</span><br></pre></td></tr></table></figure>
+
+<h3 id="（2）跟踪新文件（untracked-staged"><a href="#（2）跟踪新文件（untracked-staged" class="headerlink" title="（2）跟踪新文件（untracked -&gt; staged)"></a>（2）跟踪新文件（untracked -&gt; staged)</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git add yourfile</span><br></pre></td></tr></table></figure>
+
+<p>这是个多功能命令：可以用它开始跟踪新文件，或者把已跟踪的文件放到暂存区，还能用于合并时把有冲突的文件标记为已解决状态等。</p>
+<h3 id="（3）暂存已修改文件-modified-staged"><a href="#（3）暂存已修改文件-modified-staged" class="headerlink" title="（3）暂存已修改文件 (modified -&gt; staged)"></a>（3）暂存已修改文件 (modified -&gt; staged)</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git add yourfile </span><br></pre></td></tr></table></figure>
+
+<h3 id="（4）忽略文件"><a href="#（4）忽略文件" class="headerlink" title="（4）忽略文件"></a>（4）忽略文件</h3><p>在这种情况下，我们可以创建一个名为 <code>.gitignore</code> 的文件，列出要忽略的文件模式。这些文件不会被提交。</p>
+<h3 id="（5）提交更新"><a href="#（5）提交更新" class="headerlink" title="（5）提交更新"></a>（5）提交更新</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git commit</span><br><span class="line">//另外，你也可以在 commit 命令后添加 -m 选项，将提交信息与命令放在同一行</span><br></pre></td></tr></table></figure>
+
+<p> 可以看到，提交后它会告诉你，当前是在哪个分支（<code>master</code>）提交的，本次提交的完整 SHA-1 校验和是什么（<code>463dc4f</code>），以及在本次提交中，有多少文件修订过，多少行添加和删改过。</p>
+<blockquote>
+<p>在提交前，请一定要确认还有什么修改过的或新建的文件还没有 <code>git add</code> 过，否则提交的时候不会记录这些还没暂存起来的变化。 这些修改过的文件只保留在本地磁盘。</p>
+<p> 每次准备提交前用 <code>git status</code> 看下，是不是都已暂存起来了。</p>
+</blockquote>
+<h3 id="（6）跳过暂存"><a href="#（6）跳过暂存" class="headerlink" title="（6）跳过暂存"></a>（6）跳过暂存</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git commit -a </span><br></pre></td></tr></table></figure>
+
+<p>跳过暂存步骤，将已跟踪的文件（若已经修改）提交。</p>
+<h3 id="（7）移除文件"><a href="#（7）移除文件" class="headerlink" title="（7）移除文件"></a>（7）移除文件</h3><p>xx</p>
+<h3 id="（8）版本回滚"><a href="#（8）版本回滚" class="headerlink" title="（8）版本回滚"></a>（8）版本回滚</h3><p>首先查看提交的各个版本提交的 SHA-1 标识符。两个命令都行，不过第二个显示的信息更加简洁。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git log --pretty=oneline</span><br><span class="line">$ git log --oneline</span><br></pre></td></tr></table></figure>
+
+<p>使用 <code>git revert</code> 命令可以创建一个新的提交，它撤销了指定的提交内容，但是保留了原来的提交记录。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git revert SHA-1</span><br></pre></td></tr></table></figure>
+
+<p>使用 <code>git reset</code> 命令可以回滚提交，但这种方式是破坏性的，因为它会更改 Git 历史记录，从而删除要回滚的提交以及回滚之后的提交。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git reset --hard SHA-1</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>使用reset后就不能恢复了！</p>
+</blockquote>
+<h3 id="（9）放弃暂存区的修改，回到上次提交"><a href="#（9）放弃暂存区的修改，回到上次提交" class="headerlink" title="（9）放弃暂存区的修改，回到上次提交"></a>（9）放弃暂存区的修改，回到上次提交</h3><p>要放弃本次代码修改并将工作区回到上次提交的状态，可以使用命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -- .</span><br></pre></td></tr></table></figure>
+
+<p>该命令会将工作区中所有文件的修改全部还原到上次提交的状态，注意命令中的点号”.”表示当前目录，也可以替换成具体的文件或目录名。</p>
+<p>此外，如果你只是想还原某个特定文件的修改，可以使用：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -- 文件名</span><br></pre></td></tr></table></figure>
+
+<p>注意，这个命令并不会从版本库中删除已经提交的修改记录，只是还原到上次提交。</p>
+<p>如果需要完全撤销某个提交，使用 git reset 命令。</p>
+<h1 id="三、分支版本控制"><a href="#三、分支版本控制" class="headerlink" title="三、分支版本控制"></a>三、分支版本控制</h1><h2 id="3-0-查看分支"><a href="#3-0-查看分支" class="headerlink" title="3.0 查看分支"></a>3.0 查看分支</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch</span><br></pre></td></tr></table></figure>
+
+<p>这个命令可以查看当前的所有分支。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ git branch</span><br><span class="line">  iss53</span><br><span class="line">* master</span><br><span class="line">  testing</span><br></pre></td></tr></table></figure>
+
+<p>注意 <code>master</code> 分支前的 <code>*</code> 字符：它代表现在位于的分支（当前 <code>HEAD</code> 指针所指向的分支）。</p>
+<h2 id="3-1-查看分支指向的对象"><a href="#3-1-查看分支指向的对象" class="headerlink" title="3.1 查看分支指向的对象"></a>3.1 查看分支指向的对象</h2><p>分支指向的对象指commit的文件对象。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git log --oneline --decorate</span><br><span class="line"></span><br><span class="line">git log --decorate</span><br></pre></td></tr></table></figure>
+
+<p><code>git log --oneline --decorate</code> 输出效果：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">位于分支 master</span><br><span class="line">2348425 (HEAD -&gt; master, testing) v2</span><br><span class="line">65cd212 initial commit!#</span><br></pre></td></tr></table></figure>
+
+<p>当前 <code>HEAD</code> 指针所指向的分支是<code>master</code>，代表当前所在分支。</p>
+<h2 id="3-2-创建分支"><a href="#3-2-创建分支" class="headerlink" title="3.2 创建分支"></a>3.2 创建分支</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch your_name</span><br></pre></td></tr></table></figure>
+
+<p>这会在当前提交对象上创建your_name的一个指针，代表创建了一个分支。</p>
+<h2 id="3-3-切换分支"><a href="#3-3-切换分支" class="headerlink" title="3.3 切换分支"></a>3.3 切换分支</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout branch_name</span><br></pre></td></tr></table></figure>
+
+<p>切换到branch_name这条分支。实际上会将head指针指向branch_name上。输出效果：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">2348425 (HEAD -&gt; testing, master) v2</span><br><span class="line">65cd212 initial commit!#</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>（1）当你在testing分支提交时，会像现在这样：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dcd85fe (HEAD -&gt; testing) add file a.c</span><br><span class="line">2348425 (master) v2</span><br><span class="line">65cd212 initial commit!#</span><br></pre></td></tr></table></figure>
+
+<p><img src="https://www.progit.cn/images/advance-testing.png"></p>
+<p>（2）当你切换回mater分支时,head指针会指向master。</p>
+<p><img src="https://www.progit.cn/images/checkout-master.png"></p>
+<p><strong>注意：</strong>你的工作目录恢复成 <code>master</code> 分支所指向的快照内容。 也就是说，你现在做修改的话，项目将始于一个较旧的版本。 本质上来讲，这就是忽略 <code>testing</code> 分支所做的修改，以便于向另一个方向进行开发。</p>
+<p>（3）当你在master分支上再次提交修改时，你的项目就会产生分叉！</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git log --oneline --decorate --graph --all</span><br></pre></td></tr></table></figure>
+
+<p>它会输出你的提交历史、各个分支的指向以及项目的分支分叉情况。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">* c8f77ad (HEAD -&gt; master) somethign fixed</span><br><span class="line">| * dcd85fe (testing) add file a.c</span><br><span class="line">|/</span><br><span class="line">* 2348425 v2</span><br><span class="line">* 65cd212 initial commit!#</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p> Git 的分支实质上仅是包含所指对象校验和（长度为 40 的 SHA-1 值字符串）的文件，所以它的创建和销毁都异常高效。	</p>
+</blockquote>
+<h2 id="3-3-分支工作流"><a href="#3-3-分支工作流" class="headerlink" title="3.3 分支工作流"></a>3.3 分支工作流</h2><p>（1）创建并切换到新分支</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b issue54</span><br></pre></td></tr></table></figure>
+
+<p>（2）删除分支</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch -d hostfix</span><br></pre></td></tr></table></figure>
+
+<p>（3）合并分支</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">//先切换到master分支</span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git checkout master</span></span><br><span class="line">Switched to branch &#x27;master&#x27;</span><br><span class="line">//然后将iss53分支合并到master分支</span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git merge iss53</span></span><br><span class="line">Merge made by the &#x27;recursive&#x27; strategy.</span><br><span class="line">index.html |    1 +</span><br><span class="line">1 file changed, 1 insertion(+)</span><br></pre></td></tr></table></figure>
+
+<img src="https://www.progit.cn/images/basic-merging-1.png" style="zoom:50%;" />
+
+<img src="https://www.progit.cn/images/basic-merging-2.png" style="zoom:50%;" />
+
+<blockquote>
+<p>和之前将分支指针向前推进所不同的是，Git 将此次三方合并的结果做了一个新的快照并且自动创建一个新的提交指向它。 这个被称作一次合并提交，它的特别之处在于他有不止一个父提交。</p>
+</blockquote>
+<h2 id="3-4-遇到冲突时的合并"><a href="#3-4-遇到冲突时的合并" class="headerlink" title="3.4 遇到冲突时的合并"></a>3.4 遇到冲突时的合并</h2><p>如果两次合并都涉及同一个文件的同一处修改，在合并它们的时候就会产生冲突。</p>
+<p>此时需要手动排除冲突。步骤：</p>
+<ol>
+<li>git status 查看冲突的文件</li>
+<li>逐一打开冲突文件修改</li>
+<li>git add将修改完的文件放入暂存区</li>
+<li>git commit提交修改</li>
+</ol>
+<h2 id="3-5-放弃合并"><a href="#3-5-放弃合并" class="headerlink" title="3.5 放弃合并"></a>3.5 放弃合并</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git merge --abort</span><br></pre></td></tr></table></figure>
+
+<p>有时候冲突太多了，直接放弃合并吧。</p>
+<h2 id="3-6-分支开发工作流"><a href="#3-6-分支开发工作流" class="headerlink" title="3.6 分支开发工作流"></a>3.6 分支开发工作流</h2><p>比如只在 <code>master</code> 分支上保留完全稳定的代码——有可能仅仅是已经发布或即将发布的代码。 他们还有一些名为 <code>develop</code> 或者 <code>next</code> 的平行分支，被用来做后续开发或者测试稳定性——这些分支不必保持绝对稳定，但是一旦达到稳定状态，它们就可以被合并入 <code>master</code> 分支。</p>
+<p> 稳定分支的指针总是在提交历史中落后一大截，而前沿分支的指针往往比较靠前。</p>
+<h1 id="四、远程仓库控制"><a href="#四、远程仓库控制" class="headerlink" title="四、远程仓库控制"></a>四、远程仓库控制</h1><h2 id="4-1-查看远程仓库"><a href="#4-1-查看远程仓库" class="headerlink" title="4.1 查看远程仓库"></a>4.1 查看远程仓库</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ git remote</span><br><span class="line">origin</span><br></pre></td></tr></table></figure>
+
+<p>它会列出你指定的每一个远程服务器的简写。默认情况下就只有一个origin。</p>
+<p>使用选项 <code>-v</code>，会显示远程仓库使用的 Git 保存的简写与其对应的 URL。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git remote -v</span><br><span class="line">origin	https://github.com/schacon/ticgit (fetch)</span><br><span class="line">origin	https://github.com/schacon/ticgit (push)</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-2-添加远程仓库"><a href="#4-2-添加远程仓库" class="headerlink" title="4.2 添加远程仓库"></a>4.2 添加远程仓库</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote add &lt;shortname&gt; &lt;url&gt;</span><br></pre></td></tr></table></figure>
+
+<p>添加一个新的远程 Git 仓库，同时指定一个你可以引用的简写。</p>
+<p>比如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ git remote</span><br><span class="line">origin</span><br><span class="line">$ git remote add pb https://github.com/paulboone/ticgit</span><br><span class="line">$ git remote -v</span><br><span class="line">origin	https://github.com/schacon/ticgit (fetch)</span><br><span class="line">origin	https://github.com/schacon/ticgit (push)</span><br><span class="line">pb	https://github.com/paulboone/ticgit (fetch)</span><br><span class="line">pb	https://github.com/paulboone/ticgit (push)</span><br></pre></td></tr></table></figure>
+
+<p>先查看现在有远程仓库，只有一个origin。然后添加一个简写为pb的远程仓库。再此查看对应的远程仓库，发现pb已经添加上了。</p>
+<h2 id="4-3-从远程仓库抓取fetch"><a href="#4-3-从远程仓库抓取fetch" class="headerlink" title="4.3 从远程仓库抓取fetch"></a>4.3 从远程仓库抓取fetch</h2><figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git fetch [remote-name]</span></span><br></pre></td></tr></table></figure>
+
+<p>这个命令会访问远程仓库，拉取所有你还没有的数据（包括新的分支）。 </p>
+<p><code>git fetch</code> 命令会将数据拉取到你的本地仓库 - 它并不会自动合并或修改你当前的工作。</p>
+<blockquote>
+<p>如果你使用 <code>clone</code> 命令克隆了一个仓库，命令会自动将其添加为远程仓库并默认以 “origin” 为简写。 所以，<code>git fetch origin</code> 会抓取克隆（或上一次抓取）后新推送的所有工作。</p>
+</blockquote>
+<h2 id="4-4-推送到远程仓库push"><a href="#4-4-推送到远程仓库push" class="headerlink" title="4.4 推送到远程仓库push"></a>4.4 推送到远程仓库push</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push &lt;远程仓库名&gt; &lt;本地分支名&gt;:&lt;远程分支名&gt;</span><br></pre></td></tr></table></figure>
+
+<p>将你本地的某个分支推送到远程的某个分支。两个分支名可以不相同。</p>
+<blockquote>
+<p>如果一个本地分支和远程分支建立了联系（下节会讲，所谓联系就是一一对应），直接<code> git push</code>就能推送到对应的远程分支。</p>
+</blockquote>
+<h2 id="4-5-跟踪分支track"><a href="#4-5-跟踪分支track" class="headerlink" title="4.5 跟踪分支track"></a>4.5 跟踪分支track</h2><p>跟踪实际上意味着将本地分支与远程分支建立联系。</p>
+<h3 id="查看本地分支与远程分支之间的关系"><a href="#查看本地分支与远程分支之间的关系" class="headerlink" title="查看本地分支与远程分支之间的关系"></a><strong>查看本地分支与远程分支之间的关系</strong></h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git branch -vv</span><br></pre></td></tr></table></figure>
+
+<p>样例输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">  develop        3e7f1c3 [origin/develop: ahead 2] Fix bug #123</span><br><span class="line">  feature-abc   12a8ee2 [origin/feature-abc] New feature implementation</span><br><span class="line">* main           4d59b46 [origin/main: ahead 1, behind 2] Merge pull request #456</span><br></pre></td></tr></table></figure>
+
+<p>这个输出列出了本地仓库中的三个分支：develop、feature-abc和main。其中，星号(*)表示当前所在的分支是main。</p>
+<p>对于每个分支，输出显示了以下信息：</p>
+<ul>
+<li>分支名称</li>
+<li>分支所依据的提交哈希值</li>
+<li>与之对应的远程分支名称及其状态信息</li>
+</ul>
+<p>在这个示例中，develop分支有两个本地提交尚未推送到远程，而feature-abc分支只有与远程分支同步的提交。同时，main分支有一个本地提交，需要将其推送给远程，并且还需要从远程拉取两个提交。</p>
+<blockquote>
+<p>1、当克隆一个仓库时，git通常会自动地创建一个跟踪 <code>origin/master</code> 的 <code>master</code> 分支。</p>
+<p>2、需要重点注意的是这个命令并没有连接服务器，它只会告诉你关于本地缓存的服务器数据。</p>
+<p>如果想要统计最新的领先与落后数字，需要在运行此命令前抓取所有的远程仓库。 </p>
+<p><code>git fetch --all </code></p>
+</blockquote>
+<h3 id="跟踪一个远程分支（重要）"><a href="#跟踪一个远程分支（重要）" class="headerlink" title="跟踪一个远程分支（重要）"></a><strong>跟踪一个远程分支（重要）</strong></h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b [local_branch] [remote_name]/[remote_branch]</span><br></pre></td></tr></table></figure>
+
+<p><strong>这个命令会自动创建一个本地分支并跟踪远程分支。</strong></p>
+<p><strong>这是一个十分常用的操作，所以 Git 提供了 <code>--track</code> 快捷方式：</strong></p>
+<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git checkout --track origin/[remote_branch]</span></span><br></pre></td></tr></table></figure>
+
+<p>直接创建本地的同名分支，跟踪远程分支。比如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout --track origin/bugfix-update-v1.1</span><br></pre></td></tr></table></figure>
+
+<p>这会建立一个本地分支<code>origin/bugfix-update-v1.1</code>，它会自动与远程同名分支建立联系。</p>
+<h3 id="修改本地分支跟踪的远程分支"><a href="#修改本地分支跟踪的远程分支" class="headerlink" title="修改本地分支跟踪的远程分支"></a><strong>修改本地分支跟踪的远程分支</strong></h3><figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git branch -u [remotename]/[remote_branch]</span></span><br></pre></td></tr></table></figure>
+
+<p>这条命令将设置当前分支跟踪的远程分支。</p>
+<p>或者这条命令也有同样效果。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ git branch --set-upstream-to=[remotename]/[branch]</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-6-拉取分支pull"><a href="#4-6-拉取分支pull" class="headerlink" title="4.6 拉取分支pull"></a>4.6 拉取分支pull</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git pull</span><br></pre></td></tr></table></figure>
+
+<p>git pull是指将远程仓库的代码更新到本地仓库，<strong>并合并到本地分支上</strong>。</p>
+<p>具体来说，git pull命令相当于执行了两个命令：</p>
+<ol>
+<li>git fetch：从远程仓库拉取最新的代码，并将其存放在本地的“FETCH_HEAD”引用中，但不会修改本地分支。</li>
+<li>git merge：将“FETCH_HEAD”引用合并到当前分支上，从而将最新的代码更新到本地仓库。</li>
+</ol>
+<p>当执行git pull命令时，会自动执行以上两个步骤，从远程仓库拉取最新的代码，并合并到本地分支上，以使本地代码与远程仓库保持同步。</p>
+<h2 id="4-6-查看远程仓库"><a href="#4-6-查看远程仓库" class="headerlink" title="4.6  查看远程仓库"></a>4.6  查看远程仓库</h2><p>查看某一个远程仓库的更多信息</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote show [remote-name]</span><br></pre></td></tr></table></figure>
+
+<p>重命名引用的名字</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git remote rename [old_name] [new_name]</span><br></pre></td></tr></table></figure>
+
+<p>比如将pb远程引用的仓库名称改为paul</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ git remote rename pb paul</span><br><span class="line">$ git remote</span><br><span class="line">origin</span><br><span class="line">paul</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="五、标签"><a href="#五、标签" class="headerlink" title="五、标签"></a>五、标签</h1><p>Git 可以给历史中的某一个提交打上标签，标签可以看作是提交的一个快照，但它通常用于标记重要的里程碑，如发布新版本。与分支（branch）不同，标签是静态的，指向特定提交，不会随着新的提交而移动。</p>
+<p>（1）A tag is immutable！</p>
+<p>Tag是不可变的，在合入主分支与发布的期间，不必担心任何非预期的改变。</p>
+<p>（2）便于管理</p>
+<p>标签可比提交带有更多的信息。</p>
+<h2 id="5-1-标签使用"><a href="#5-1-标签使用" class="headerlink" title="5.1 标签使用"></a>5.1 标签使用</h2><p>（1）创建标签</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git tag v1.0</span><br></pre></td></tr></table></figure>
+
+<p>这会为当前HEAD指向的提交打上<code>v1.0</code>的标签。</p>
+<p>（2）查看标签</p>
+<figure class="highlight console"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">git tag -l</span></span><br></pre></td></tr></table></figure>
+
+<p>如果你没有查看到想要的标签信息，不妨</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git fetch --tags</span><br></pre></td></tr></table></figure>
+
+<p>这个命令会从远程仓库获取所有最新的tags。</p>
+<p>（3）检出特定标签</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout -b &lt;new_branch_name&gt; tags/&lt;tag_name&gt;</span><br></pre></td></tr></table></figure>
+
+<p>基于标签名称，创建新分支。</p>
+<p>你不能直接“拉取”一个tag，但你可以通过检出tag或基于tag创建一个新分支来查看和使用特定版本的代码。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>Git快速入门</p><p><a href="https://xyz.desirer233.fun/2023/12/01/工具学习/Git/Git-fast-learning/">https://xyz.desirer233.fun/2023/12/01/工具学习/Git/Git-fast-learning/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2023-12-01</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2023/12/01/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">设计模式学习</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2023/12/01/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/LINUX:MAC%E6%89%93%E9%80%A0%E6%AC%A1%E4%B8%96%E4%BB%A3%E7%BB%88%E7%AB%AF/"><span class="level-item">LINUX/MAC打造次世代终端</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#一、git基础"><span class="level-left"><span class="level-item">1</span><span class="level-item">一、git基础</span></span></a></li><li><a class="level is-mobile" href="#二、本地版本控制"><span class="level-left"><span class="level-item">2</span><span class="level-item">二、本地版本控制</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#2-1-获取仓库"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">2.1 获取仓库</span></span></a></li><li><a class="level is-mobile" href="#2-2-git状态"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">2.2 git状态</span></span></a></li><li><a class="level is-mobile" href="#2-3-git操作"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">2.3 git操作</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#（1）查看文件状态"><span class="level-left"><span class="level-item">2.3.1</span><span class="level-item">（1）查看文件状态</span></span></a></li><li><a class="level is-mobile" href="#（2）跟踪新文件（untracked-staged"><span class="level-left"><span class="level-item">2.3.2</span><span class="level-item">（2）跟踪新文件（untracked -&gt; staged)</span></span></a></li><li><a class="level is-mobile" href="#（3）暂存已修改文件-modified-staged"><span class="level-left"><span class="level-item">2.3.3</span><span class="level-item">（3）暂存已修改文件 (modified -&gt; staged)</span></span></a></li><li><a class="level is-mobile" href="#（4）忽略文件"><span class="level-left"><span class="level-item">2.3.4</span><span class="level-item">（4）忽略文件</span></span></a></li><li><a class="level is-mobile" href="#（5）提交更新"><span class="level-left"><span class="level-item">2.3.5</span><span class="level-item">（5）提交更新</span></span></a></li><li><a class="level is-mobile" href="#（6）跳过暂存"><span class="level-left"><span class="level-item">2.3.6</span><span class="level-item">（6）跳过暂存</span></span></a></li><li><a class="level is-mobile" href="#（7）移除文件"><span class="level-left"><span class="level-item">2.3.7</span><span class="level-item">（7）移除文件</span></span></a></li><li><a class="level is-mobile" href="#（8）版本回滚"><span class="level-left"><span class="level-item">2.3.8</span><span class="level-item">（8）版本回滚</span></span></a></li><li><a class="level is-mobile" href="#（9）放弃暂存区的修改，回到上次提交"><span class="level-left"><span class="level-item">2.3.9</span><span class="level-item">（9）放弃暂存区的修改，回到上次提交</span></span></a></li></ul></li></ul></li><li><a class="level is-mobile" href="#三、分支版本控制"><span class="level-left"><span class="level-item">3</span><span class="level-item">三、分支版本控制</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#3-0-查看分支"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">3.0 查看分支</span></span></a></li><li><a class="level is-mobile" href="#3-1-查看分支指向的对象"><span class="level-left"><span class="level-item">3.2</span><span class="level-item">3.1 查看分支指向的对象</span></span></a></li><li><a class="level is-mobile" href="#3-2-创建分支"><span class="level-left"><span class="level-item">3.3</span><span class="level-item">3.2 创建分支</span></span></a></li><li><a class="level is-mobile" href="#3-3-切换分支"><span class="level-left"><span class="level-item">3.4</span><span class="level-item">3.3 切换分支</span></span></a></li><li><a class="level is-mobile" href="#3-3-分支工作流"><span class="level-left"><span class="level-item">3.5</span><span class="level-item">3.3 分支工作流</span></span></a></li><li><a class="level is-mobile" href="#3-4-遇到冲突时的合并"><span class="level-left"><span class="level-item">3.6</span><span class="level-item">3.4 遇到冲突时的合并</span></span></a></li><li><a class="level is-mobile" href="#3-5-放弃合并"><span class="level-left"><span class="level-item">3.7</span><span class="level-item">3.5 放弃合并</span></span></a></li><li><a class="level is-mobile" href="#3-6-分支开发工作流"><span class="level-left"><span class="level-item">3.8</span><span class="level-item">3.6 分支开发工作流</span></span></a></li></ul></li><li><a class="level is-mobile" href="#四、远程仓库控制"><span class="level-left"><span class="level-item">4</span><span class="level-item">四、远程仓库控制</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#4-1-查看远程仓库"><span class="level-left"><span class="level-item">4.1</span><span class="level-item">4.1 查看远程仓库</span></span></a></li><li><a class="level is-mobile" href="#4-2-添加远程仓库"><span class="level-left"><span class="level-item">4.2</span><span class="level-item">4.2 添加远程仓库</span></span></a></li><li><a class="level is-mobile" href="#4-3-从远程仓库抓取fetch"><span class="level-left"><span class="level-item">4.3</span><span class="level-item">4.3 从远程仓库抓取fetch</span></span></a></li><li><a class="level is-mobile" href="#4-4-推送到远程仓库push"><span class="level-left"><span class="level-item">4.4</span><span class="level-item">4.4 推送到远程仓库push</span></span></a></li><li><a class="level is-mobile" href="#4-5-跟踪分支track"><span class="level-left"><span class="level-item">4.5</span><span class="level-item">4.5 跟踪分支track</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#查看本地分支与远程分支之间的关系"><span class="level-left"><span class="level-item">4.5.1</span><span class="level-item">查看本地分支与远程分支之间的关系</span></span></a></li><li><a class="level is-mobile" href="#跟踪一个远程分支（重要）"><span class="level-left"><span class="level-item">4.5.2</span><span class="level-item">跟踪一个远程分支（重要）</span></span></a></li><li><a class="level is-mobile" href="#修改本地分支跟踪的远程分支"><span class="level-left"><span class="level-item">4.5.3</span><span class="level-item">修改本地分支跟踪的远程分支</span></span></a></li></ul></li><li><a class="level is-mobile" href="#4-6-拉取分支pull"><span class="level-left"><span class="level-item">4.6</span><span class="level-item">4.6 拉取分支pull</span></span></a></li><li><a class="level is-mobile" href="#4-6-查看远程仓库"><span class="level-left"><span class="level-item">4.7</span><span class="level-item">4.6  查看远程仓库</span></span></a></li></ul></li><li><a class="level is-mobile" href="#五、标签"><span class="level-left"><span class="level-item">5</span><span class="level-item">五、标签</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#5-1-标签使用"><span class="level-left"><span class="level-item">5.1</span><span class="level-item">5.1 标签使用</span></span></a></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

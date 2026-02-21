@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>Git实践 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="Git在开发过程中的实用场景操作。"><meta property="og:type" content="blog"><meta property="og:title" content="Git实践"><meta property="og:url" content="https://xyz.desirer233.fun/2024/08/06/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/Git%E5%AE%9E%E8%B7%B5/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="Git在开发过程中的实用场景操作。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://xyz.desirer233.fun/img/og_image.png"><meta property="article:published_time" content="2024-08-06T11:50:00.000Z"><meta property="article:modified_time" content="2024-08-06T11:53:05.000Z"><meta property="article:author" content="Desirer"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://xyz.desirer233.fun/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/08/06/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/Git%E5%AE%9E%E8%B7%B5/"},"headline":"Git实践","image":["https://xyz.desirer233.fun/img/og_image.png"],"datePublished":"2024-08-06T11:50:00.000Z","dateModified":"2024-08-06T11:53:05.000Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"Git在开发过程中的实用场景操作。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/08/06/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/Git%E5%AE%9E%E8%B7%B5/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-08-06T11:50:00.000Z" title="2024/8/6 19:50:00">2024-08-06</time>发表</span><span class="level-item"><time dateTime="2024-08-06T11:53:05.000Z" title="2024/8/6 19:53:05">2024-08-06</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/">工具学习</a><span> / </span><a class="link-muted" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/">Git</a></span><span class="level-item">14 分钟读完 (大约2109个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">Git实践</h1><div class="content"><p>Git在开发过程中的实用场景操作。</p>
+<span id="more"></span>
+
+
+
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/lxzcaicai/article/details/104712128">使用git怎么撤销本地(工作区)修改，暂存区修改，版本区(本地仓库)</a></p>
+<h1 id="一、手动合并冲突"><a href="#一、手动合并冲突" class="headerlink" title="一、手动合并冲突"></a>一、手动合并冲突</h1><p>手动合并 Git 冲突的步骤如下：</p>
+<ol>
+<li><p>首先，使用 <code>git status</code> 命令查看哪些文件存在冲突。</p>
+</li>
+<li><p>然后，使用 <code>git diff</code> 命令查看冲突的具体内容，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git diff &lt;branch1&gt; &lt;branch2&gt; -- &lt;file&gt;</span><br></pre></td></tr></table></figure>
+
+<p>其中，<code>&lt;branch1&gt;</code> 和 <code>&lt;branch2&gt;</code> 分别表示要合并的两个分支，<code>&lt;file&gt;</code> 表示存在冲突的文件名。</p>
+</li>
+<li><p>打开冲突的文件，查看冲突的内容。Git 会在冲突的地方添加特殊的标记，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</span><br><span class="line">// 本地修改</span><br><span class="line">=======</span><br><span class="line">// 远程修改</span><br><span class="line">&gt;&gt;&gt;&gt;&gt;&gt;&gt; branch2</span><br></pre></td></tr></table></figure>
+
+<p>其中，<code>HEAD</code> 表示当前分支的修改，<code>branch2</code> 表示要合并的分支的修改。在这个例子中，<code>=======</code> 以上的部分是当前分支的修改，<code>=======</code> 以下的部分是要合并的分支的修改。</p>
+</li>
+<li><p>根据需要，选择保留哪些修改，删除哪些修改，或者进行修改。在解决冲突后，将文件保存并关闭。</p>
+</li>
+<li><p>使用 <code>git add</code> 命令将解决冲突后的文件添加到暂存区，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git add &lt;file&gt;</span><br></pre></td></tr></table></figure>
+
+<p>其中，<code>&lt;file&gt;</code> 表示解决冲突后的文件名。</p>
+</li>
+<li><p>最后，使用 <code>git commit</code> 命令提交合并后的代码，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git commit -m &quot;Merge branch1 and branch2&quot;</span><br></pre></td></tr></table></figure>
+
+<p>其中，<code>-m</code> 参数表示提交信息，用于描述本次提交的内容。</p>
+</li>
+</ol>
+<p>需要注意的是，解决冲突时需要仔细查看冲突的内容，并进行适当的修改。同时，解决冲突后需要将修改提交到 Git 仓库中，以便其他人能够获取到最新的代码。</p>
+<h1 id="二、修改代码前忘切换分支"><a href="#二、修改代码前忘切换分支" class="headerlink" title="二、修改代码前忘切换分支"></a>二、修改代码前忘切换分支</h1><p>在 Git 中，如果你在进行分支切换前有未提交的修改，可以使用以下命令将修改暂存起来：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git stash</span><br></pre></td></tr></table></figure>
+
+<p>这个命令会将当前工作目录中的所有修改暂存起来，并清空工作目录，使其回到干净的状态。暂存的修改会被保存在 Git 的一个栈中，可以使用以下命令查看：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git stash list</span><br></pre></td></tr></table></figure>
+
+<p>这个命令会列出所有暂存的修改，每个修改都有一个唯一的标识符。</p>
+<p>如果你需要切换分支，可以使用以下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout &lt;branch&gt;</span><br></pre></td></tr></table></figure>
+
+<p>其中，<branch> 是要切换到的分支名称。</p>
+<p>如果你需要恢复之前暂存的修改，可以使用以下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git stash apply &lt;stash&gt;</span><br></pre></td></tr></table></figure>
+
+<p>其中，<stash> 是要恢复的修改的标识符。如果不指定标识符，则会恢复最近的一个修改。</p>
+<p>需要注意的是，如果在恢复修改后发现有冲突，需要手动解决冲突后再提交修改。</p>
+<h1 id="四、合并提交——git变基"><a href="#四、合并提交——git变基" class="headerlink" title="四、合并提交——git变基"></a>四、合并提交——git变基</h1><p>变基其实就是合并提交的过程，可以理解为将树的多个节点合并为一个节点。</p>
+<p>在 Git 中，使用 <code>git rebase</code> 命令可以将当前分支的修改放到要变基的分支之后，形成一个新的提交。具体步骤如下：</p>
+<ol>
+<li><p>首先，使用 <code>git checkout</code> 命令切换到要变基的分支，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git checkout branch2</span><br></pre></td></tr></table></figure>
+
+<p>其中，<code>branch2</code> 表示要变基的分支的名称。</p>
+</li>
+<li><p>然后，使用 <code>git pull</code> 命令从远程仓库拉取最新的代码，以便在变基之前使用最新的代码。</p>
+</li>
+<li><p>接着，使用 <code>git rebase</code> 命令将当前分支的修改放到要变基的分支之后，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git rebase branch1</span><br></pre></td></tr></table></figure>
+
+<p>其中，<code>branch1</code> 表示要变基的分支的名称。</p>
+</li>
+<li><p>如果在变基的过程中出现冲突，需要手动解决冲突并使用 <code>git add</code> 命令将修改添加到暂存区，然后使用 <code>git rebase --continue</code> 命令继续变基操作。</p>
+</li>
+<li><p>最后，使用 <code>git push --force</code> 命令将变基后的代码推送到远程仓库，例如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git push --force origin branch2</span><br></pre></td></tr></table></figure>
+
+<p>其中，<code>--force</code> 参数表示强制推送，用于覆盖远程仓库中的代码。需要注意的是，强制推送可能会覆盖其他人的修改，因此需要谨慎使用。</p>
+</li>
+</ol>
+<p>需要注意的是，变基操作会改变 Git 历史记录，因此需要谨慎使用。如果其他人已经基于当前分支进行了开发，那么变基操作可能会破坏他们的工作。因此，建议在进行变基操作之前与其他人进行沟通，并在变基之前备份代码。</p>
+<h1 id="七、实践"><a href="#七、实践" class="headerlink" title="七、实践"></a>七、实践</h1><p>修改代码前，看一眼分支，pull一下</p>
+<p>修改代码后，合并到st并push后马上切换回开发分支。</p>
+<h1 id="六、git的配置"><a href="#六、git的配置" class="headerlink" title="六、git的配置"></a>六、git的配置</h1><h2 id="6-1-gitconfig文件"><a href="#6-1-gitconfig文件" class="headerlink" title="6.1 gitconfig文件"></a>6.1 gitconfig文件</h2><p><strong>（1）是什么？</strong></p>
+<p><code>.gitconfig</code> 文件是 Git 的配置文件，在系统上一般位于用户主目录下。这个文件包含了 Git 的一些全局配置，例如 Git 用户名、邮箱地址、文本编辑器等。</p>
+<p><strong>（2）怎么用？</strong></p>
+<p>通过修改 <code>.gitconfig</code> 文件，可以定制 Git 的行为。下面是一些可以在 <code>.gitconfig</code> 文件中设置的常用配置：</p>
+<ul>
+<li><code>user.name</code>：设置 Git 的用户名，例如<code>git config --global user.name &quot;Your Name&quot;</code>。</li>
+<li><code>user.email</code>： 设置 Git 的邮箱地址，例如 <code>git config --global user.email &quot;youremail@example.com&quot;</code>。</li>
+<li><code>core.editor</code>：设置 Git 使用的文本编辑器，例如 <code>git config --global core.editor &quot;vim&quot;</code>。</li>
+<li><code>core.autocrlf</code>：将文本文件在 Windows 和 Unix 之间自动进行换行符转换，以便在不同平台之间协作，例如<code>git config --global core.autocrlf true</code>。</li>
+<li><code>alias</code>：自定义 Git 命令别名，例如 <code>git config --global alias.st status</code> 将 <code>git status</code> 命令设置为 <code>git st</code> 命令的别名。</li>
+</ul>
+<p>可以通过运行以下命令打开 <code>.gitconfig</code> 文件：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global --edit</span><br></pre></td></tr></table></figure>
+
+<p>这将在系统中打开 Git 配置文件，可以进行编辑。在 <code>.gitconfig</code> 文件中进行修改后，新的设置会对所有 Git 仓库生效。</p>
+<h2 id="6-2-gitignore-global文件"><a href="#6-2-gitignore-global文件" class="headerlink" title="6.2 gitignore_global文件"></a>6.2 gitignore_global文件</h2><p><strong>（1）是什么？</strong></p>
+<p><code>.gitignore_global</code> 文件是 Git 的全局忽略文件。在这个文件中写入的文件或文件夹将不会被 Git 追踪或提交到远程仓库中。这个文件不同于普通的 <code>.gitignore</code> 文件，它适用于所有的 Git 仓库，而不仅仅是单个项目。</p>
+<p><code>.gitignore_global</code> 文件的作用是防止 Git 追踪某些类型的文件或目录。例如，Windows 系统自动生成的 <code>Thumbs.db</code> 文件、macOS 下的 <code>.DS_Store</code> 文件以及 Python 等语言生成的 <code>.pyc</code>、<code>.pyo</code> 文件等都可以在这个文件中被忽略。当对多个 Git 仓库工作时，这是非常有用的，可以避免在未意识到的情况下提交不必要的文件，从而节省仓库的空间和管理工作。</p>
+<p><strong>（2）怎么用？</strong></p>
+<p>要在 Git 中启用全局忽略文件，请在命令行中运行以下命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global core.excludesfile ~/.gitignore_global</span><br></pre></td></tr></table></figure>
+
+<p>其中 <code>~/.gitignore_global</code> 是 <code>.gitignore_global</code> 文件的路径，可以根据实际情况修改路径。运行此命令后，Git 将不再追踪或提交 <code>.gitignore_global</code> 文件中列出的任何文件或目录。</p>
+<p><strong>（3）文件怎么配置？</strong></p>
+<p>在 <code>~/.gitignore_global</code> 文件中，您可以放置您希望在所有 Git 仓库中忽略的文件或文件夹的模式（通配符格式）。这将使 Git 忽略这些文件或文件夹，即使它们没有被放入 <code>.gitignore</code> 文件中。</p>
+<p>例如，如果您希望 Git 在所有仓库中忽略 <code>.DS_Store</code> 文件和 <code>__pycache__</code> 文件夹，可以创建一个 <code>~/.gitignore_global</code> 文件，并在其中添加以下内容：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># Ignore all .DS_Store files</span><br><span class="line">.DS_Store</span><br><span class="line"># Ignore pycache directory</span><br><span class="line">__pycache__/</span><br></pre></td></tr></table></figure>
+
+<p>然后，使用 <code>git config</code> 命令将路径添加到 Git 全局配置中，使其生效：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git config --global core.excludesfile ~/.gitignore_global</span><br></pre></td></tr></table></figure>
+
+<p>这样，在任何 Git 仓库中，都将忽略 <code>.DS_Store</code> 文件和 <code>__pycache__</code> 文件夹。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>Git实践</p><p><a href="https://xyz.desirer233.fun/2024/08/06/工具学习/Git/Git实践/">https://xyz.desirer233.fun/2024/08/06/工具学习/Git/Git实践/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-08-06</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2024-08-06</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/08/08/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/GDB%E8%B0%83%E8%AF%95%E5%AD%A6%E4%B9%A0/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">GDB调试学习</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/08/04/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/PG%E4%B9%8BLatch/"><span class="level-item">PG中的Latch分析</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#一、手动合并冲突"><span class="level-left"><span class="level-item">1</span><span class="level-item">一、手动合并冲突</span></span></a></li><li><a class="level is-mobile" href="#二、修改代码前忘切换分支"><span class="level-left"><span class="level-item">2</span><span class="level-item">二、修改代码前忘切换分支</span></span></a></li><li><a class="level is-mobile" href="#四、合并提交——git变基"><span class="level-left"><span class="level-item">3</span><span class="level-item">四、合并提交——git变基</span></span></a></li><li><a class="level is-mobile" href="#七、实践"><span class="level-left"><span class="level-item">4</span><span class="level-item">七、实践</span></span></a></li><li><a class="level is-mobile" href="#六、git的配置"><span class="level-left"><span class="level-item">5</span><span class="level-item">六、git的配置</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#6-1-gitconfig文件"><span class="level-left"><span class="level-item">5.1</span><span class="level-item">6.1 gitconfig文件</span></span></a></li><li><a class="level is-mobile" href="#6-2-gitignore-global文件"><span class="level-left"><span class="level-item">5.2</span><span class="level-item">6.2 gitignore_global文件</span></span></a></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

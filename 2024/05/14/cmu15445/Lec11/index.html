@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>cmu15-445笔记十一 并发控制：二阶段锁 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="这节课主要介绍了悲观并发控制的手段，两阶段锁。还从锁层次上介绍了意向锁，最后是锁实践。"><meta property="og:type" content="blog"><meta property="og:title" content="cmu15-445笔记十一 并发控制：二阶段锁"><meta property="og:url" content="https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec11/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="这节课主要介绍了悲观并发控制的手段，两阶段锁。还从锁层次上介绍了意向锁，最后是锁实践。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151611896.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151614998.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151627736.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151625123.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151628984.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151629611.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151637811.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151658577.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405151700355.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202407272031887.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405211039241.png"><meta property="article:published_time" content="2024-05-14T06:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.450Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="数据库"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202405151611896.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec11/"},"headline":"cmu15-445笔记十一 并发控制：二阶段锁","image":["https://gitee.com/desirer/backup/raw/master/images/202405151611896.png","https://gitee.com/desirer/backup/raw/master/images/202405151614998.png","https://gitee.com/desirer/backup/raw/master/images/202405151627736.png","https://gitee.com/desirer/backup/raw/master/images/202405151625123.png","https://gitee.com/desirer/backup/raw/master/images/202405151628984.png","https://gitee.com/desirer/backup/raw/master/images/202405151629611.png","https://gitee.com/desirer/backup/raw/master/images/202405151637811.png","https://gitee.com/desirer/backup/raw/master/images/202405151658577.png","https://gitee.com/desirer/backup/raw/master/images/202405151700355.png","https://gitee.com/desirer/backup/raw/master/images/202407272031887.png","https://gitee.com/desirer/backup/raw/master/images/202405211039241.png"],"datePublished":"2024-05-14T06:00:00.000Z","dateModified":"2026-02-21T07:11:50.450Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"这节课主要介绍了悲观并发控制的手段，两阶段锁。还从锁层次上介绍了意向锁，最后是锁实践。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec11/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-05-14T06:00:00.000Z" title="2024/5/14 14:00:00">2024-05-14</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.450Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/cmu15445/">cmu15445</a></span><span class="level-item">24 分钟读完 (大约3585个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">cmu15-445笔记十一 并发控制：二阶段锁</h1><div class="content"><p>这节课主要介绍了悲观并发控制的手段，两阶段锁。还从锁层次上介绍了意向锁，最后是锁实践。</p>
+<span id="more"></span>
+
+<h1 id="朴素加锁事务执行"><a href="#朴素加锁事务执行" class="headerlink" title="朴素加锁事务执行"></a>朴素加锁事务执行</h1><p>在事务T1访问A之前，先通过DBMS的锁管理器（Lock Manager）获取A的锁并且注册（记录下来“A的锁当前归T1所有”），之后事务T2想访问A，于是也要获得A的锁，锁管理器便会拒绝它的请求，T2之后便阻塞在这里，直到T1完成了对A的全部操作后通过锁管理器释放A的锁，T2才可以通过锁管理器获取A的锁，并且完成对A的全部操作后释放A的锁。</p>
+<p>在带有Lock的情况下，事务执行的过程如下：</p>
+<ul>
+<li>事务获取对应的锁</li>
+<li>锁管理器授权或阻塞事务</li>
+<li>访问某个数据完毕，事务释放锁</li>
+</ul>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405151611896.png" style="zoom:67%;" />
+
+<p>虽然有锁了，但事务还是不一致。上图所示。</p>
+<h1 id="两阶段锁"><a href="#两阶段锁" class="headerlink" title="两阶段锁"></a>两阶段锁</h1><p>二阶段锁是一个并发控制协议，它规定了一个事务在运行的过程中如何跟其他事务之间协调锁，<strong>从而实现可串行化。</strong></p>
+<ul>
+<li><p>增长阶段（Growing）<br>在这个阶段事务只能不断地获得锁，不能释放锁</p>
+</li>
+<li><p>缩小阶段（Shrinking）<br>在这个阶段只能释放释放锁，不能再获取新的锁</p>
+</li>
+</ul>
+<p>最终锁释放完毕，事务提交。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405151614998.png" style="zoom:67%;" />
+
+<p>使用二阶段锁便可以使得不可串行化的执行调度的最终执行结果具有一致性。如下所示，在两阶段锁协议下，事务T1执行完<code>W(A)</code>后并不会立即释放A的锁，因为二阶段锁协议的规定就是“先一直获取各个锁，然后把所有获取的锁逐个释放”，直到<code>R(A)</code>执行完了之后T1才会释放锁（如果按照之前的策略，先获取X-Lock，再释放X-Lock，然后再获取S-Lock，之后再释放S-Lock，这就违反了两阶段锁的协议）</p>
+<p><strong>在使用了二阶段锁协议后，相应的执行调度对应的依赖图（Dependency Graph）一定没有环，二阶段锁可以严格地保证冲突可串行化。</strong></p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405151627736.png" style="zoom:67%;" />
+
+<h2 id="级联回滚问题（脏读问题）"><a href="#级联回滚问题（脏读问题）" class="headerlink" title="级联回滚问题（脏读问题）"></a>级联回滚问题（脏读问题）</h2><img src="https://gitee.com/desirer/backup/raw/master/images/202405151625123.png" style="zoom:67%;" />
+
+<p>如图所示，事务1进行回滚，但事务2读到了事务1的数据（脏读），此时事务2也不得不跟着回滚。</p>
+<p>级联回滚本质上的原因是T2事务在T1事务更新得到的临时版本的数据上进行了操作。事务T1释放锁后处于shrink阶段，虽然shrink阶段不能获得锁，但仍然对未释放锁的对象进行读取，事务本身正在进行。这就造成了读未提交事务的情况。</p>
+<h2 id="SS2PL"><a href="#SS2PL" class="headerlink" title="SS2PL"></a>SS2PL</h2><p>严格二阶段锁（Strong Strict 2PL，简称SS2PL）。在严格二阶段锁协议下，事务只有在提交时<strong>才允许释放排他锁</strong>（只有事务完成所有操作后，锁才能释放）。</p>
+<p>This requirement ensures that any data written by an uncommitted transaction are locked in exclusive mode until the transaction commits, preventing any other transaction from reading the data.</p>
+<p>在ss2pl下，任何未提交事务所做的改变只有在提交的时候才能被看到（这就阻止了脏读的出现）。</p>
+<p>严格二阶段锁协议的特点是事务所修改的数据在事务结束之前，其他事务都不能读写。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405151628984.png" style="zoom:67%;" />
+
+<p>还有一个变种，rigorous two-phase locking protocol，<strong>所有锁（共享锁和排它锁）都能只能在最后提交时释放。</strong></p>
+<h2 id="死锁问题"><a href="#死锁问题" class="headerlink" title="死锁问题"></a>死锁问题</h2><img src="https://gitee.com/desirer/backup/raw/master/images/202405151629611.png" style="zoom:67%;" />
+
+<p>严格二阶段锁协议可能会导致死锁。上图所示BA和AB的加锁顺序。</p>
+<h2 id="解决死锁问题"><a href="#解决死锁问题" class="headerlink" title="解决死锁问题"></a>解决死锁问题</h2><h3 id="Deadlock-Detection，死锁检测"><a href="#Deadlock-Detection，死锁检测" class="headerlink" title="Deadlock Detection，死锁检测"></a>Deadlock Detection，死锁检测</h3><p>DBMS内部会维护一个锁等待图（waits-for graph），它记录了当前所有并发的事务里谁在等谁的锁，图中每个节点对应一个事务，每条有向边对应一个锁的等待关系（从Ti指向Tj的有向边代表着事务Ti等待Tj释放一个锁），DBMS会周期性地检查这个图，看看图里有没有成环，如果有的话就会想办法把环给解开</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405151637811.png"></p>
+<p>如果DBMS检测到锁等待图里出现了环，那就会选择一个victim事务，让它回滚，这样环就会解开，死锁被拆除（这和哲学家吃饭问题很像）。</p>
+<p>被选择的victim事务要么会重启要么会中止，这和它是怎么被调用的有关：如果这个事务是DBMS用户的业务的一部分，就可以把它abort，因为用户的业务代码里会有一些应对abort情况的逻辑（比如说转账的事务进行到一半然后被abort，那么就会在前端告诉用户“转账失败，请稍后再试”）；如果用户要求DBMS定时地触发一些SQL语句，到了定好的时间，用户的业务代码可能不在执行，因此如果abort了的话用户可能就不知道，这种情况下就需要DBMS去重启事务。并且这个策略里有一些trade-off，因为DBMS是周期性地检查锁等待图，如果周期的频率很高的话，处理死锁的开销就比较大，因此不易检查地太频繁；但频率太低也不好，这有可能导致一些陷入死锁的事务被卡了好久</p>
+<p>不光是死锁检测的频率要做trade-off，选哪个事务当victim也要权衡，我们可以综合考虑“这个事务已经执行了多长时间”（让一个已经执行了很长时间的事务回滚，这不太合理），“事务执行了多少”（可以以每个事务都执行了多少条SQL语句这样的指标来衡量），“这个事务已经得到了多少个锁”（DBMS倾向于让得到的锁多的事务回滚，因为得到的锁越多，就有可能让更多的其他事务陷入阻塞，这样的事务回滚了之后其他事务就都能继续往下执行了)，以及如下所示的其他因素</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">→ By age (lowest timestamp)</span><br><span class="line">→ By progress (least/most queries executed)</span><br><span class="line">→ By the # of items already locked</span><br><span class="line">→ By the # of txns that we have to rollback with it</span><br></pre></td></tr></table></figure>
+
+<p>回滚事务时也有两个方案：</p>
+<p><strong>Approach 1</strong> 完全回滚，让victim事务回滚到它开始执行时的状态，就好像它没发生过<br><strong>Approach 2</strong> 最小化地去回滚，去判断到底是哪几个SQL语句造成的死锁，回滚到这些语句还没开始执行的状态即可，没必要完全回滚，并且与此同时让其他事务继续执行</p>
+<h3 id="Deadlock-Prevention，死锁预防"><a href="#Deadlock-Prevention，死锁预防" class="headerlink" title="Deadlock Prevention，死锁预防"></a>Deadlock Prevention，死锁预防</h3><p>前面介绍的处理死锁的策略是通过建图来检测是否已经发生了死锁，并且在已经构成死锁后去解开死锁。</p>
+<p>Deadlock Prevention这个策略是去预防死锁，不让死锁发生。<strong>When a txn tries to acquire a lock that is held by another txn, the DBMS kills one of them to prevent a deadlock.当一个事务想要获取其他事务的锁时，DBMS就会杀死其中一个事务。</strong></p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405151658577.png" style="zoom:67%;" />
+
+<p>比如，根据时间戳给各个事务优先级，规定越先开始的事务它的优先级越高。</p>
+<ul>
+<li><p>Wait-Die，高优先级的事务想获取低优先级事务已经拥有了的锁时，那么它将等待低优先级的事务去释放锁；如果低优先级的事务想获取高优先级的事务已经拥有了的锁，那么这个事务直接abort回滚</p>
+</li>
+<li><p>Wound-Wait，高优先级的事务想获取低优先级的事务已经持有的锁时，持有锁的低优先级事务会abort并且释放锁；低优先级的事务想获取高优先级事务已经持有的锁时，它会等待高优先级事务释放这个锁</p>
+</li>
+</ul>
+<blockquote>
+<p>Wait-die 事务是个绅士，高级事务想要锁时，主动等待低级事务释放锁。低级事务想要锁时，主动谦让自己的锁。</p>
+<p>Wound-wait 事务是暴力分子。高级事务想要锁时，主动强迫低级事务释放锁。低级事务想要锁时，也不放弃自己的锁，等待高级事务执行完毕。</p>
+</blockquote>
+<p>这两个方案本质上是不让事务之间互相等待，因为事务之间互相等待就有可能死锁。</p>
+<p><strong>此外还要注意，因为预防死锁被abort了的事务重新开始执行时，它的时间戳（即优先级）不会发生变化，不然就有可能一直因为优先级太低被abort，造成饥饿。</strong></p>
+<h1 id="锁粒度"><a href="#锁粒度" class="headerlink" title="锁粒度"></a>锁粒度</h1><p>到目前为止锁探讨的锁的粒度一般都是DBMS中如tuple这种的对象的锁，如果一个事务想修改很多很多个tuple，那么它就要不停地获取&#x2F;释放tuple的锁，这会带来很大的开销，导致性能变差。</p>
+<p>因此我们不妨加大锁的粒度，当事务想获取锁时，DBMS可以根据实际情况对锁的粒度进行调整（锁的是attribute还是tuple还是数据库文件里的一个页，还是整个表），从而减少事务需要获取的锁的数量。</p>
+<p>DBMS中锁的粒度层级如下所示：</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405151700355.png" style="zoom:80%;" />
+
+<h2 id="意向锁"><a href="#意向锁" class="headerlink" title="意向锁"></a>意向锁</h2><p>在众多锁粒度分层的情况下，如果想获取table的锁，需要检查它的全部tuple的锁的情况，只要其中有一个tuple的锁被其他事务持有，那当前事务就暂时不能获取这个table的锁。如果检查到了最后一个tuple才发现有tuple被其他事务锁住，这便十分低效，尤其是表很大tuple、很多的情况下。</p>
+<p><strong>Intention locks allow a higher level node to be locked in shared mode or exclusive mode without having to check all descendant nodes.</strong></p>
+<p>意向锁（Intention Locks）的存在可以解决上面的问题：通过对table这种更高层级的对象加一些标记来表明它是否含有被锁住的tuple，有了这样的意向标记（它并没有真的锁住table），想获取table的锁的事务就不必逐个检查这个table里的tuple。</p>
+<ul>
+<li>IS e.g. table含有的tuple中有被上共享锁的</li>
+<li>IX e.g. table含有的tuple中有被上排他锁的</li>
+<li>SIX e.g. table含有的tuple中有被上排他锁的，并且整个table也被上了共享锁</li>
+</ul>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202407272031887.png" style="zoom:60%;" />
+
+<p><strong>意向锁存在情况下加锁原则</strong>：Each txn obtains appropriate lock at highest level of the database hierarchy. 每个 txn 在数据库层次结构的最高级别获得适当的锁。</p>
+<ul>
+<li><p>To get S or IS lock on a node, the txn must hold at least IS on parent node.</p>
+<p>如果想对tuple加S&#x2F;IS锁，那必须先对tuple所在的table加IS锁			</p>
+</li>
+<li><p>To get X, IX, or SIX on a node, must hold at least IX on parent node.</p>
+<p> 如果想对tuple加X&#x2F;IX&#x2F;SIX锁，那必须先对其所在的table加IX锁</p>
+</li>
+</ul>
+<p><strong>意向锁存在情况下解锁原则：</strong>Transaction Ti can unlock a node Q only if Ti currently has none of the children of Q locked. 事务能够对某个节点进行解锁，前提是那个节点的任何子节点都已经解锁。</p>
+<p><strong>Observe that the multiple-granularity protocol requires that locks be acquired in top- down (root-to-leaf) order, whereas locks must be released in bottom-up (leaf-to-root) order.可以观察到，多层次锁存在下，加锁原则是从上到下的，解锁则是从下到上。</strong></p>
+<p>The DBMS can automatically switch to coarser- grained locks when a txn acquires too many low- level locks. 当一个事务想要太多低层次的锁时，DBMS可以将之转化为粗粒度的锁。</p>
+<h2 id="锁升级"><a href="#锁升级" class="headerlink" title="锁升级"></a>锁升级</h2><p><img src="https://gitee.com/desirer/backup/raw/master/images/202405211039241.png"></p>
+<p>考虑这样一个例子，事务T8需要对a1进行读写，事务T9同样对a1进行读。然而，在二阶段锁协议下，T8一开始需要获得a1的排他锁，这将使得两个事务串行进行。</p>
+<p>注意到，如果事务T8能够在一开始获得a1的共享锁，最后执行a1的写操作时，将共享锁转化为排它锁，这样两个事务就能并排进行。</p>
+<p>有锁升级upgrade，同样有锁降级downgrade。</p>
+<p>Rather, upgrading can take place in only the growing phase, whereas downgrading can take place in only the shrinking phase. 升级只能在扩张阶段进行，降级只能在缩小阶段进行。</p>
+<h1 id="锁实践"><a href="#锁实践" class="headerlink" title="锁实践"></a>锁实践</h1><ul>
+<li>应用程序通常不会手动获取事务的锁（即显式 SQL 命令）。</li>
+<li>有时可以主动加锁以提高并发性（给予DBMS提示）</li>
+</ul>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>2PL是数据库常用的加锁方式。</p>
+<p>2PL会出现级联回滚问题，因此出现SS2PL，将释放锁的时机推迟到事务提交。</p>
+<p>2PL还会有死锁问题，死锁检测在死锁出现之后，构造锁等待图，并选择事务牺牲以接触死锁。死锁预防在出现事务锁争抢时及时杀死事务，有wait-die和wound-wait两种方式。</p>
+<p>不同粒度的锁能提高并发。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>cmu15-445笔记十一 并发控制：二阶段锁</p><p><a href="https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec11/">https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec11/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-05-14</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/05/14/cmu15445/Lec10/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">cmu15-445笔记十 并发控制基础-事务</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/05/14/cmu15445/Lec13/"><span class="level-item">cmu15-445笔记十三 MVCC</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#朴素加锁事务执行"><span class="level-left"><span class="level-item">1</span><span class="level-item">朴素加锁事务执行</span></span></a></li><li><a class="level is-mobile" href="#两阶段锁"><span class="level-left"><span class="level-item">2</span><span class="level-item">两阶段锁</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#级联回滚问题（脏读问题）"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">级联回滚问题（脏读问题）</span></span></a></li><li><a class="level is-mobile" href="#SS2PL"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">SS2PL</span></span></a></li><li><a class="level is-mobile" href="#死锁问题"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">死锁问题</span></span></a></li><li><a class="level is-mobile" href="#解决死锁问题"><span class="level-left"><span class="level-item">2.4</span><span class="level-item">解决死锁问题</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#Deadlock-Detection，死锁检测"><span class="level-left"><span class="level-item">2.4.1</span><span class="level-item">Deadlock Detection，死锁检测</span></span></a></li><li><a class="level is-mobile" href="#Deadlock-Prevention，死锁预防"><span class="level-left"><span class="level-item">2.4.2</span><span class="level-item">Deadlock Prevention，死锁预防</span></span></a></li></ul></li></ul></li><li><a class="level is-mobile" href="#锁粒度"><span class="level-left"><span class="level-item">3</span><span class="level-item">锁粒度</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#意向锁"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">意向锁</span></span></a></li><li><a class="level is-mobile" href="#锁升级"><span class="level-left"><span class="level-item">3.2</span><span class="level-item">锁升级</span></span></a></li></ul></li><li><a class="level is-mobile" href="#锁实践"><span class="level-left"><span class="level-item">4</span><span class="level-item">锁实践</span></span></a></li><li><a class="level is-mobile" href="#总结"><span class="level-left"><span class="level-item">5</span><span class="level-item">总结</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

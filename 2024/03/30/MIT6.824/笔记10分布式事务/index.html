@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>MIT6824笔记十 分布式事务 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="本节介绍了分布式事务，如何进行并发控制和原子提交，主要是2PL和2PC。 2PL区别于简单锁，事务锁数量是动态增长的，并在事务commit或abort之后才能释放锁。2PC其实有3阶段，包括inform、prepare、commit阶段。每一阶段为了防止数据丢失都要进行Write Ahead Log操作。每个服务器也要维护各自的锁表单，用来记录当前锁被哪个事务持有。"><meta property="og:type" content="blog"><meta property="og:title" content="MIT6824笔记十 分布式事务"><meta property="og:url" content="https://xyz.desirer233.fun/2024/03/30/MIT6.824/%E7%AC%94%E8%AE%B010%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="本节介绍了分布式事务，如何进行并发控制和原子提交，主要是2PL和2PC。 2PL区别于简单锁，事务锁数量是动态增长的，并在事务commit或abort之后才能释放锁。2PC其实有3阶段，包括inform、prepare、commit阶段。每一阶段为了防止数据丢失都要进行Write Ahead Log操作。每个服务器也要维护各自的锁表单，用来记录当前锁被哪个事务持有。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202312141115397.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202312141426796.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202403311705760.png"><meta property="article:published_time" content="2024-03-30T11:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.497Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="分布式系统"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202312141115397.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/03/30/MIT6.824/%E7%AC%94%E8%AE%B010%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"},"headline":"MIT6824笔记十 分布式事务","image":["https://gitee.com/desirer/backup/raw/master/images/202312141115397.png","https://gitee.com/desirer/backup/raw/master/images/202312141426796.png","https://gitee.com/desirer/backup/raw/master/images/202403311705760.png"],"datePublished":"2024-03-30T11:00:00.000Z","dateModified":"2026-02-21T07:11:50.497Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"本节介绍了分布式事务，如何进行并发控制和原子提交，主要是2PL和2PC。 2PL区别于简单锁，事务锁数量是动态增长的，并在事务commit或abort之后才能释放锁。2PC其实有3阶段，包括inform、prepare、commit阶段。每一阶段为了防止数据丢失都要进行Write Ahead Log操作。每个服务器也要维护各自的锁表单，用来记录当前锁被哪个事务持有。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/03/30/MIT6.824/%E7%AC%94%E8%AE%B010%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-03-30T11:00:00.000Z" title="2024/3/30 19:00:00">2024-03-30</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.497Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/MIT6-824/">MIT6.824</a></span><span class="level-item">32 分钟读完 (大约4758个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">MIT6824笔记十 分布式事务</h1><div class="content"><p>本节介绍了分布式事务，如何进行并发控制和原子提交，主要是2PL和2PC。</p>
+<p>2PL区别于简单锁，事务锁数量是动态增长的，并在事务commit或abort之后才能释放锁。2PC其实有3阶段，包括inform、prepare、commit阶段。每一阶段为了防止数据丢失都要进行Write Ahead Log操作。每个服务器也要维护各自的锁表单，用来记录当前锁被哪个事务持有。</p>
+<span id="more"></span>
+
+<h1 id="分布式事务背景"><a href="#分布式事务背景" class="headerlink" title="分布式事务背景"></a>分布式事务背景</h1><p>对于拥有大量数据的人来说，他们通常会将数据进行分割或者分片到许多不同的服务器上，人们需要跨机器的原子操作(cross-machine atomic ops)。</p>
+<p>分布式事务主要有两部分组成。</p>
+<ul>
+<li>第一个是并发控制（Concurrency Control）</li>
+<li>第二个是原子提交（Atomic Commit）</li>
+</ul>
+<p>可以这么理解事务：<strong>程序员有一些不同的操作，或许针对数据库不同的记录，他们希望所有这些操作作为一个整体，不会因为失败而被分割，也不会被其他活动看到中间状态。</strong></p>
+<h2 id="事务原语"><a href="#事务原语" class="headerlink" title="事务原语"></a>事务原语</h2><p>这里举例应用事务时的程序编写，假设有T1和T2两个正在进行的事务，我们只需要通过指定的事务原语编程程序，就能保证逻辑被原子地执行，而无需感知事务内部实现使用什么锁等机制。</p>
+<ul>
+<li>begin：声明一个事务的开始</li>
+<li>commit：提交事务，commit成功被执行后，begin～commit之间的逻辑被原子地执行</li>
+<li>abort：取消事务，begin～abort之间的逻辑将被撤销，即产生的影响会消除(比如put修改的值被改回去之类的)。<strong>除了人为在逻辑里使用abort，事务本身遇到死锁等情况时也会自动调用abort</strong>。</li>
+</ul>
+<h1 id="并发下的正确性——可序列化"><a href="#并发下的正确性——可序列化" class="headerlink" title="并发下的正确性——可序列化"></a>并发下的正确性——可序列化</h1><p><strong>在多个并发事务的存在下，我们需要一个概念来定义什么是正确的结果。</strong>一旦我们知道了这个概念，我们需要构建能执行这些事务的机制，在可能存在并发和失败的前提下，仍然得到正确的结果。</p>
+<p>首先，什么是正确性？</p>
+<p>数据库通常对于正确性有一个概念称为ACID。分别代表：</p>
+<ul>
+<li><p>Atomic，原子性。它意味着，事务可能有多个步骤，比如说写多个数据记录，尽管可能存在故障，但是要么所有的写数据都完成了，要么没有写数据能完成。不应该发生类似这种情况：在一个特定的时间发生了故障，导致事务中一半的写数据完成并可见，另一半的写数据没有完成，这里要么全有，要么全没有（All or Nothing）。</p>
+</li>
+<li><p>Consistent，一致性。我们实际上不会担心这一条，它通常是指数据库会强制某些应用程序定义的数据不变，这不是我们今天要考虑的点。</p>
+</li>
+<li><p>Isolated，隔离性。这一点还比较重要。这是一个属性，它表明两个同时运行的事务，在事务结束前，能不能看到彼此的更新，能不能看到另一个事务中间的临时的更新。目标是不能。隔离在技术上的具体体现是，事务需要串行执行，我之后会再解释这一条。但是总结起来，事务不能看到彼此之间的中间状态，只能看到完成的事务结果。</p>
+</li>
+<li><p>Durable，持久化的。这意味着，在事务提交之后，在客户端或者程序提交事务之后，并从数据库得到了回复说，yes，我们执行了你的事务，那么这时，在数据库中的修改是持久化的，它们不会因为一些错误而被擦除。在实际中，这意味着数据需要被写入到一些非易失的存储（Non-Volatile Storage），持久化的存储，例如磁盘。</p>
+</li>
+</ul>
+<p><strong>我们说可序列化是指，并行的执行一些事物得到的结果，与按照某种串行的顺序来执行这些事务，可以得到相同的结果。</strong>实际的执行过程或许会有大量的并行处理，但是这里要求得到的结果与按照某种顺序一次一个事务的串行执行结果是一样的。这里的结果包括两个方面：由任何事务中的修改行为产生的数据库记录的修改和任何事务生成的输出。</p>
+<p><strong>可序列化是一个应用广泛且实用的定义，背后的原因是，它定义了事务执行过程的正确性。</strong>可序列化特性确保你可以安全的写你的事务，就像没有其他事情发生一样。因为系统最终的结果必须表现的就像，你的事务在这种一次一个的顺序中是独占运行的。这是一个非常简单，非常好的编程模型。</p>
+<p><strong>可序列化的另一方面优势是，只要事务不使用相同的数据，它可以允许真正的并行执行事务。</strong></p>
+<h1 id="并发控制"><a href="#并发控制" class="headerlink" title="并发控制"></a>并发控制</h1><p>第一种主要策略是<strong>悲观并发控制（Pessimistic Concurrency Control）</strong>。那就是在事务使用任何数据之前，它需要获得数据的锁。如果一些其他的事务已经在使用这里的数据，锁会被它们持有，当前事务必须等待这些事务结束，之后当前事务才能获取到锁。在悲观系统中，如果有锁冲突，比如其他事务持有了锁，就会造成延时等待。所以这里需要为正确性而牺牲性能。</p>
+<p>第二种主要策略是<strong>乐观并发控制（Optimistic Concurrency Control）</strong>。这里的基本思想是，你不用担心其他的事务是否正在读写你要使用的数据，你直接继续执行你的读写操作，通常来说这些执行会在一些临时区域，只有在事务最后的时候，你再检查是不是有一些其他的事务干扰了你。如果没有这样的其他事务，那么你的事务就完成了，并且你也不需要承受锁带来的性能损耗，因为操作锁的代价一般都比较高；但是如果有一些其他的事务在同一时间修改了你关心的数据，并造成了冲突，那么你必须要Abort当前事务，并重试。</p>
+<p><strong>如果冲突非常频繁，你或许会想要使用悲观并发控制，因为如果冲突非常频繁的话，在乐观并发控制中你会有大量的Abort操作。如果冲突非常少，那么乐观并发控制可以更快，因为它完全避免了锁带来的性能损耗。</strong></p>
+<h2 id="两阶段锁2PL"><a href="#两阶段锁2PL" class="headerlink" title="两阶段锁2PL"></a>两阶段锁2PL</h2><p>所谓两阶段，第一个阶段是扩张，获得锁的数量不断增加，期间不能释放锁；第二阶段是收缩，锁的数量单调下降，不能获得锁。</p>
+<p>第一个规则：acquing lock before using record</p>
+<p>第二个规则：hold lock until done（commit） or abort</p>
+<p>对于两阶段锁来说，第一个规则是在执行任何数据的读写之前，先获取锁。第二个规则是，事务必须持有任何已经获得的锁，直到事务提交或者Abort。换言之，持有锁直到事务结束。</p>
+<p><strong>为什么需要在事务结束前一直持有锁？</strong>假设事务在读写完记录后就释放了锁，另一个事务有机会运行，可能会得到非法的结果。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202312141115397.png"></p>
+<p>如图所示，T1，T2两个事务。只有两种一次一个的串行顺序，要么是T1，T2，要么是T2，T1。同样对应两种结果11，9和10，10。</p>
+<p>假设T2读取了X，然后立刻释放了锁，那么在这个位置，T2不持有任何锁，因为它刚刚释放了对于X的锁。因为T2不持有任何锁，这意味着T1可以完全在这个位置执行。从前面的反例我们已经知道，这样的执行是错误的（因为T2会打印“10，9”），因为它没能生成正确结果。</p>
+<h2 id="对比"><a href="#对比" class="headerlink" title="对比"></a>对比</h2><p> <strong>2PL是对简单锁(严格锁)的改进</strong>。</p>
+<ul>
+<li><strong>简单锁(simple locking)或严格锁(strict locking)，在事务开始前，你获取整个事务所需的所有锁，持有这些锁直到提交点进行commit或者abort，然后释放所有锁。</strong></li>
+<li><strong>2PL的锁更细粒度一点，不需要在事务开始前直接获取所有锁，相反的，在事务运行时动态增量的获取锁，支持某些严格锁(简单锁)不允许的并发模式</strong>。</li>
+</ul>
+<p> <strong>一般而言，使用2PL要比使用简单锁(严格锁)有更高的并发度</strong>。比如事务中读取的某个变量极小概率会是true，而变量为true时，才会执行后序事务逻辑，那么这里不需要在事务开始前就加锁，可以等读到变量时再加锁。</p>
+<h2 id="2PL死锁场景"><a href="#2PL死锁场景" class="headerlink" title="2PL死锁场景"></a>2PL死锁场景</h2><p>两阶段锁非常容易造成死锁，比如以下这种情况：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">T1:					T2:</span><br><span class="line">get(x)			get(y)</span><br><span class="line">get(y)			get(x)</span><br></pre></td></tr></table></figure>
+
+<p>每个事务都获取了第一个读取数据的锁，直到事务结束了，它们都不会释放这个锁。接下来，它们都会等待另一个事务持有的锁。</p>
+<p>不过好在事务系统<strong>提供了abort操作</strong>。如果事务系统可以检测到死锁(deadlock)，那么可以对T1或T2事务任意一个执行abort操作，使其中一个事务能正常获取lock完成事务，并中止另一个事务。而客户端client或应用程序可以自己决定如何处理事务被abort的情况，比如事务重试或放弃执行等等，但至少避免了死锁。</p>
+<p> <strong>可以看出来2PL也会进入死锁的场景，但至少提供了abort操作，能够解决死锁问题，而不是永远停在死锁场景中</strong>。</p>
+<blockquote>
+<p><strong>问题：事务系统如何检测到死锁？</strong></p>
+<p>回答：人们用两种方法来检测，尽管不够可靠。一种是基于超时(timeout)的，比如几个事务执行了许久看似没有新进展，则中止其中一个。另一种更系统的方法是构造一个**等待图(wait-for graph)**，如果发现等待图中出现环，则说明有死锁（比如上面T1等待T2的Lock Y，T2等待T1的Lock X，T1和T2成环）。</p>
+<p>问题：检测到死锁后，中止其中一个事务会发生什么？</p>
+<p>回答：假设中止了T2，事务系统会安排T2没有result或者其result是可见的，此时abort强制释放T2占有的Lock Y，T1之后可获得Lock Y完成事务，而发起T2的客户端会知道T2被系统中止，一般情况下你可以选择重新发起T2。</p>
+</blockquote>
+<h1 id="原子性提交"><a href="#原子性提交" class="headerlink" title="原子性提交"></a>原子性提交</h1><p>在分布式场景下，我们希望涉及事务的所有机器要么全都完成提交，要么全都表现得事务没有发生一样。</p>
+<h2 id="两阶段提交2PC"><a href="#两阶段提交2PC" class="headerlink" title="两阶段提交2PC"></a>两阶段提交2PC</h2><p>通常情况下，我们需要执行的任务会以某种方式分包在多个服务器上，每个服务器需要完成任务的不同部分。我们需要一个计算机用来管理事务，它被称为<strong>事务协调者</strong>（Transaction Coordinator）。</p>
+<p>通常协调者以试探的方式协调分布式事务。</p>
+<hr>
+<p>以下为简单的示例，以及对应的崩溃处理：</p>
+<p><strong>下面所有的操作，都需要预写日志，即(WAL, write-ahead log)，先写日志，在做实际操作，确保崩溃恢复时能重现log完成已commit的操作，以及舍弃或恢复未commit的操作。</strong></p>
+<table>
+<thead>
+<tr>
+<th>时序</th>
+<th>coordinator(协调器)</th>
+<th>A服务器拥有X记录</th>
+<th>B服务器拥有Y记录</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>新建事务(tid)，告知A执行put(X), 告知B执行put(Y)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td></td>
+<td>Lock X, put(X), log X(日志记录)。这里暂时没有实际操作数据库，只是log记录</td>
+<td>log Y(日志记录), Lock Y, log Y(日志记录)，这里暂时没有实际操作数据库，只是log记录</td>
+</tr>
+<tr>
+<td>3</td>
+<td>对A、B发起prepare询问请求，询问A和B是否正常log了事物需要的操作</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td>A查看自己的状态，发现持有X的锁，并且log了需要执行的put操作，回应prepare请求YES</td>
+<td>B查看自己的状态，发现持有Y的锁，并且log了需要执行的put操作，回应prepare请求YES</td>
+</tr>
+<tr>
+<td>5</td>
+<td>收到A和B的prepare响应YES后，得知A和B可以准备提交事务了，向A和B发起commit(tid)请求</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td></td>
+<td>A看本地log，发现tid对应的事务可以提交了，于是install日志，即执行日志中记录的put(X)操作，然后释放X的锁，对commit请求响应OK</td>
+<td>B看本地log，发现tid对应的事务可以提交了，于是install日志，即执行日志中记录的put(Y)操作，然后释放Y的锁，对commit请求响应OK</td>
+</tr>
+<tr>
+<td>7</td>
+<td>收到A和B的OK，知道A和B都成功执行完事务了</td>
+<td></td>
+<td></td>
+</tr>
+</tbody></table>
+<ol start="4">
+<li>假设时序4准备执行事务时，A或者B由于死锁或者log空间不足等原因无法执行事务操作，那么A或者B会对prepare请求回应NO，拒绝执行事务。</li>
+<li>此时协调者在时序5的位置发现有人不同意执行事务，于是改成向A和B发送abort请求，要求停止执行事务。</li>
+<li>在时序6的位置，A和B接收到abort请求后，会根据log里的记录，对tid事务操作进行回滚。回滚完毕后，A和B回应OK</li>
+<li>在时序7的位置，协调者收到A和B的OK后，得知A和B都回滚tid事务成功了。</li>
+</ol>
+<hr>
+<p>下图展示了2PC的过程（忽略了最初的RPC）。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202312141426796.png" style="zoom:50%;" />
+
+<p>在一个完整的系统中，或许会有很多不同的并发运行事务。<strong>每个持有数据的服务器会维护一个锁的表单，用来记录锁被哪个事务所持有。</strong></p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202403311705760.png"></p>
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><p><strong>1.性能问题</strong></p>
+<p>无论是在第一阶段的过程中,还是在第二阶段,<strong>所有的参与者资源和协调者资源都是被锁住的</strong>,只有当所有节点准备完毕，事务 <strong>协调者</strong> 才会通知进行全局提交，<strong>参与者</strong> 进行本地事务提交后才会释放资源。这样的<strong>过程会比较漫长，对性能影响比较大</strong>。</p>
+<p><strong>2.单节点故障</strong></p>
+<p>由于<strong>协调者</strong>的重要性，一旦 <strong>协调者</strong> 发生故障。<strong>参与者</strong> 会一直阻塞下去。尤其在第二阶段，<strong>协调者</strong> 发生故障，那么所有的 <strong>参与者</strong> 还都处于锁定事务资源的状态中，而无法继续完成事务操作。（虽然协调者挂掉，可以重新选举一个协调者，但是无法解决因为协调者宕机导致的参与者处于阻塞状态的问题）</p>
+<h2 id="崩溃恢复分析"><a href="#崩溃恢复分析" class="headerlink" title="崩溃恢复分析"></a>崩溃恢复分析</h2><p>两阶段提交会发送3N条消息，故障可能出现在这3次交互中的任意一次。</p>
+<ol>
+<li>场景1:事务参与者在回应prepare后崩溃</li>
+</ol>
+<p> <strong>首先，B已经对prepare回应OK了，所以这里B恢复后不能反悔，必须继续执行事务</strong>。这里B恢复后，仍持有数据Y的锁，并且检查log中记录的状态（比如需要把一些状态值加载到内存之类的），然后后续就和没发生崩溃一样走原本的流程了。</p>
+<ol start="2">
+<li>场景2：协调者在发送commit(tid)请求后崩溃</li>
+</ol>
+<p> 假设协调者在时序5的位置，向A和B发送commit请求后崩溃，需要怎么确保整个流程顺利执行？</p>
+<p> 类似事务参与者，协调者在发送commit(pid)请求之前，需要记录log，崩溃后根据log继续执行事务流程。这里假设协调者崩溃前，A回应了OK，但是B回应协调者之前，协调者崩溃了。那么B必须等待协调者恢复后，再回应协调者OK，而不能私自中止事务。</p>
+<p> 这种情况下，B很不幸必须一直等待，这里其他事务如果要占用Y数据的锁就会失败，因为B需要等待协调者恢复后，能响应协调者时再释放锁。</p>
+<ol start="3">
+<li>场景3：A一直没有回应协调者prepare请求</li>
+</ol>
+<p> 假设A因为某些原因，在时序4的位置一直没有回应prepare，那么协调者会以超时等机制，在时序5的位置告知B执行abort来中止事务。后序A又和协调者联系上时，协调者会告诉A，tid这个事务已经中止了。这意味着B收到abort后可以释放Y数据的锁，然后后续尝试其他涉及Y数据的事务之类的。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>MIT6824笔记十 分布式事务</p><p><a href="https://xyz.desirer233.fun/2024/03/30/MIT6.824/笔记10分布式事务/">https://xyz.desirer233.fun/2024/03/30/MIT6.824/笔记10分布式事务/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-03-30</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/">分布式系统</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/04/03/MIT6.824/%E7%AC%94%E8%AE%B011Spanner/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">MIT6824笔记十 Spanner</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/"><span class="level-item">MIT6824笔记八 Aurora</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#分布式事务背景"><span class="level-left"><span class="level-item">1</span><span class="level-item">分布式事务背景</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#事务原语"><span class="level-left"><span class="level-item">1.1</span><span class="level-item">事务原语</span></span></a></li></ul></li><li><a class="level is-mobile" href="#并发下的正确性——可序列化"><span class="level-left"><span class="level-item">2</span><span class="level-item">并发下的正确性——可序列化</span></span></a></li><li><a class="level is-mobile" href="#并发控制"><span class="level-left"><span class="level-item">3</span><span class="level-item">并发控制</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#两阶段锁2PL"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">两阶段锁2PL</span></span></a></li><li><a class="level is-mobile" href="#对比"><span class="level-left"><span class="level-item">3.2</span><span class="level-item">对比</span></span></a></li><li><a class="level is-mobile" href="#2PL死锁场景"><span class="level-left"><span class="level-item">3.3</span><span class="level-item">2PL死锁场景</span></span></a></li></ul></li><li><a class="level is-mobile" href="#原子性提交"><span class="level-left"><span class="level-item">4</span><span class="level-item">原子性提交</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#两阶段提交2PC"><span class="level-left"><span class="level-item">4.1</span><span class="level-item">两阶段提交2PC</span></span></a></li><li><a class="level is-mobile" href="#缺点"><span class="level-left"><span class="level-item">4.2</span><span class="level-item">缺点</span></span></a></li><li><a class="level is-mobile" href="#崩溃恢复分析"><span class="level-left"><span class="level-item">4.3</span><span class="level-item">崩溃恢复分析</span></span></a></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

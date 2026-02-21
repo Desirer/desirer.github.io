@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>cmu15-445笔记五 索引与B+树 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="本节课首先介绍B+树索引，然后介绍B+树的设计，最后介绍B+树的优化措施。"><meta property="og:type" content="blog"><meta property="og:title" content="cmu15-445笔记五 索引与B+树"><meta property="og:url" content="https://xyz.desirer233.fun/2024/04/19/cmu15445/Lec05/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="本节课首先介绍B+树索引，然后介绍B+树的设计，最后介绍B+树的优化措施。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404191903467.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404191903652.png"><meta property="article:published_time" content="2024-04-19T08:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.450Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="数据库"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202404191903467.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/04/19/cmu15445/Lec05/"},"headline":"cmu15-445笔记五 索引与B+树","image":["https://gitee.com/desirer/backup/raw/master/images/202404191903467.png","https://gitee.com/desirer/backup/raw/master/images/202404191903652.png"],"datePublished":"2024-04-19T08:00:00.000Z","dateModified":"2026-02-21T07:11:50.450Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"本节课首先介绍B+树索引，然后介绍B+树的设计，最后介绍B+树的优化措施。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/04/19/cmu15445/Lec05/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-04-19T08:00:00.000Z" title="2024/4/19 16:00:00">2024-04-19</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.450Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/cmu15445/">cmu15445</a></span><span class="level-item">16 分钟读完 (大约2474个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">cmu15-445笔记五 索引与B+树</h1><div class="content"><p>本节课首先介绍B+树索引，然后介绍B+树的设计，最后介绍B+树的优化措施。</p>
+<span id="more"></span>
+
+<h1 id="表索引"><a href="#表索引" class="headerlink" title="表索引"></a>表索引</h1><p>A table index is a replica of a subset of a table’s columns that is organized and&#x2F;or sorted for efficient access using a subset of those attributes.</p>
+<p>DBMS 可以查找表索引的辅助数据结构，以更快地查找元组，而不是执行顺序扫描。  </p>
+<p>DBMS 确保表和索引的内容在逻辑上始终同步。</p>
+<h1 id="B-树"><a href="#B-树" class="headerlink" title="B+树"></a>B+树</h1><p>B+树是一种保持数据排序并且自平衡的数据结构，允许搜索、顺序访问、插入和删除。B+树对于磁盘上读写多个页的文件具有特殊的优势。B+树从二叉搜索树演变而来，实际上是M-way的，一个内部结点可以有最多M个孩子结点。</p>
+<p>Formally, a B+Tree is an M -way search tree (where M represents the maximum number of children a node can have) with the following properties:</p>
+<ul>
+<li><p>It is perfectly balanced (i.e., every leaf node is at the same depth).</p>
+</li>
+<li><p><strong>Every inner node other than the root is at least half full</strong> (M&#x2F;2 -1 &lt;&#x3D; num of keys &lt;&#x3D; M-1)</p>
+</li>
+<li><p>Every inner node with k keys has k+1 non-null children.</p>
+</li>
+</ul>
+<p>B+树的每个节点都是一个KV数组，这个数组内部是严格按照K的大小顺序组织的，内部节点的V存储的是指向子节点的指针，叶子节点的V是存储的数据。</p>
+<p>更具体地，叶子结点的V有两种方式存储数据：</p>
+<ul>
+<li>Record IDs：Record IDs refer to a pointer to the location of the tuple.</li>
+<li>Tuple Data：leaf node store the the actual contents of the tuple.</li>
+</ul>
+<h2 id="B-树的插入"><a href="#B-树的插入" class="headerlink" title="B+树的插入"></a>B+树的插入</h2><p>首先找到需要插入到的叶子节点，然后在叶子节点里依照之前维护好的顺序将新的数据插入到正确的位置，如果这个叶子节点已经满了的话，就把它分裂成两个叶子节点。</p>
+<p>叶子结点分裂过程：均匀地重新分配条目并复制中间键，将指向 L2 的索引条目插入到 L 的父项中（如果父结点也满了，同样进行分裂操作）</p>
+<p>内部结点分裂过程：均匀地重新分配条目，但向上推中间键。</p>
+<h2 id="B-树的删除"><a href="#B-树的删除" class="headerlink" title="B+树的删除"></a>B+树的删除</h2><p>首先找到要删除结点的叶子结点L。</p>
+<ul>
+<li>如果L有半数以上，那么直接删除key。</li>
+<li>否则从邻居中借一个数据</li>
+<li>如果邻居数据不够，合并两个叶子，并删除父结点中指向L的指针。</li>
+</ul>
+<p>很多的DBMS会推迟这个合并的操作，因为在很多情况下，从B+树中删掉某个数据之后还会再插入新的数据，这样刚刚合并好的节点就有可能要再进行分裂，造成很大的开销。</p>
+<h2 id="重复键的处理"><a href="#重复键的处理" class="headerlink" title="重复键的处理"></a>重复键的处理</h2><p>对于重复的键，该怎么处理？有两种方法：</p>
+<ul>
+<li>Append Record ID：在原先的Key上再添加一个unique Record ID，将 &lt;key, recordId&gt;作为一个大键，保证大键唯一性。</li>
+<li>Overflow Leaf Node：在原有的叶子节点上外接一个溢出节点。</li>
+</ul>
+<h1 id="B-树设计考量"><a href="#B-树设计考量" class="headerlink" title="B+树设计考量"></a>B+树设计考量</h1><h2 id="节点大小"><a href="#节点大小" class="headerlink" title="节点大小"></a>节点大小</h2><p>B+树节点的大小最好和文件页的大小一致或者是其倍数，以便于管理。</p>
+<p>（1）磁盘设备类型</p>
+<p>磁盘越低速，B+树节点占用的存储空间应该越大，这样的话一次对单个节点的磁盘I&#x2F;O就可以读取更多的数据，索引更容易命中；</p>
+<p>越快速的设备，B+树节点占用更小的存储空间。因为B+树节点占用的空间越大，所存储的数据越多，冗余数据也越多。</p>
+<p>换句话说，就是IO次数与索引命中之间的平衡。越快速的设备IO代价越低，那么可以减小节点大小，降低索引命中率。</p>
+<p>（2）DBMS负载类型</p>
+<p>B+树的节点大小的选择也和DBMS所应对的负载类型有关，如果是应对OLAP类型的负载，常常会全表扫描，会遍历B+树的叶子节点，因此不妨让每个节点大一点，这样单次I&#x2F;O就能扫描更多数据。</p>
+<p>对于OLTP这种事务型的经常进行点查询的工作负载，会经常从B+树的根节点遍历到叶子节点，我们不妨就让B+树的节点小一点，这样的话在查询过程中，在节点之间跳跃的开销就会变小</p>
+<h2 id="节点合并的阈值"><a href="#节点合并的阈值" class="headerlink" title="节点合并的阈值"></a>节点合并的阈值</h2><p>DBMS会延迟B+树删除操作后的节点合并，从而减少重新组织B+树带来的开销</p>
+<h2 id="可变长度的Key的处理"><a href="#可变长度的Key的处理" class="headerlink" title="可变长度的Key的处理"></a>可变长度的Key的处理</h2><p>如果拿字符串当作索引的Key，那么很有可能它是变长的，对于变长的Key，DBMS有如下的处理方式：</p>
+<ul>
+<li>改为存储Key的指针：由于必须为每个键维护指针的效率低下，因此在生产中使用这种方法的唯一地方是嵌入式设备，其中的微型寄存器和缓存可能会受益于这种空间节省。</li>
+<li>Padding策略：固定长度策略，将不足长度的key补空字节，达到设计的固定长度。</li>
+<li>键重定向（Key Map&#x2F;Indirection）：键替换为单独字典中键值对的索引。（这与tuple在Page里通过slot来组织的方式相似，节点里面有数组形式排布的slot，slot中存储指向对应KV的指针，这使得节点中KV的存储有很大灵活性）</li>
+</ul>
+<h2 id="节点内部搜索"><a href="#节点内部搜索" class="headerlink" title="节点内部搜索"></a>节点内部搜索</h2><p>在工业界的B+树实现中，一个节点里会存储成百上千个数据，假设我们之前通过索引，已经确定好了想要获取的数据就在某个特定的叶子节点当中，但是叶子节点中仍然有成百上千条数据，如何更快地从中把我们想要的那一条数据找出来仍然是不小的挑战，因此有如下的策略：</p>
+<ul>
+<li>线性扫描，可以理解为暴力地去遍历，虽然看起来低效，但很多数据库都是这么实现的，因为相比于把叶子节点从磁盘读入缓存池用的时间，暴力扫描用的时间微不足道</li>
+<li>二分查找，就是使用简单的二分查找算法，因为叶子节点中的KV都是按照K的大小有序排列的</li>
+<li>插值估计：此方法利用存储在节点上的任何元数据（例如 max 元素、min 元素、平均值等），并使用它来生成键的大致位置。例如，如果我们在一个节点中查找 8，并且我们知道 10 是最大键，$10 -(n + 1)$ 是最小键（其中 n 是每个节点中的键数），那么我们知道从最大键开始搜索 2 个插槽，因为在这种情况下，距离最大键一个插槽的键必须是 9。</li>
+</ul>
+<h1 id="B-树优化"><a href="#B-树优化" class="headerlink" title="B+树优化"></a>B+树优化</h1><p>性能优化、存储空间优化</p>
+<h2 id="Pointer-Swizzling"><a href="#Pointer-Swizzling" class="headerlink" title="Pointer Swizzling"></a>Pointer Swizzling</h2><p>因为 B+Tree 的每个节点都存储在缓冲池的页面中，所以每次加载新页面时都需要从缓冲池中获取它，这需要锁存和查找。为了完全跳过这一步，我们可以存储实际的原始指针来代替页面 ID（称为“swizzling”），从而完全防止缓冲池提取。</p>
+<p>Rather than manually fetching the entire tree and placing the pointers manually, we can simply store the resulting pointer from a page lookup when traversing the index normally. Note that we must track which pointers are swizzled and deswizzle them back to page ids when the page they point to is unpinned and victimized.</p>
+<blockquote>
+<p>就是说缓存池已经加载了我们想要的页面，之后的访问相同页避免再次访问缓冲池（其中有锁和查找）。相比之下，我们自己建立哈希表，避免并发。</p>
+</blockquote>
+<h2 id="Bulk-Insert-批量插入"><a href="#Bulk-Insert-批量插入" class="headerlink" title="Bulk Insert 批量插入"></a>Bulk Insert 批量插入</h2><p>当最初构建 B+Tree 时，必须以通常的方式插入每个键会导致持续的拆分操作。由于我们已经为叶子提供了同级指针，因此，如果我们构造一个排序的叶节点链表，然后使用每个叶节点的第一个键自下而上轻松地构建索引，则初始插入数据的效率要高得多。</p>
+<blockquote>
+<p>这种思想和创建堆时可以选择快速建堆策略而非一个一个地插入建堆的思想相似。</p>
+</blockquote>
+<h2 id="Prefix-Compression-前缀压缩"><a href="#Prefix-Compression-前缀压缩" class="headerlink" title="Prefix Compression 前缀压缩"></a>Prefix Compression 前缀压缩</h2><p>在同一个叶子节点里很多Key的前缀是相同的，我们可以在叶子节点的元数据里面找个地方记录一下公共的前缀，实际存储Key的时候只需存储前缀后面不一样的内容。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404191903467.png"></p>
+<h2 id="Deduplication-去重"><a href="#Deduplication-去重" class="headerlink" title="Deduplication 去重"></a>Deduplication 去重</h2><p>有些时候K会有冗余的可能，多个KV的K是一样的，我们其实可以通过去掉冗余的K来减少所占用的存储空间。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404191903652.png"></p>
+<h2 id="Suffix-Truncation-后缀截断"><a href="#Suffix-Truncation-后缀截断" class="headerlink" title="Suffix Truncation 后缀截断"></a>Suffix Truncation 后缀截断</h2><ul>
+<li>内部节点的 Key 只用于**流量导向( direct traffic )**，我们并不需要整个Key。</li>
+<li>存储将探测正确路由到索引所需的<strong>最小前缀</strong>。</li>
+</ul>
+<blockquote>
+<p>我的理解：相当于同层内 采用前缀压缩。</p>
+</blockquote>
+</div><div class="article-licensing box"><div class="licensing-title"><p>cmu15-445笔记五 索引与B+树</p><p><a href="https://xyz.desirer233.fun/2024/04/19/cmu15445/Lec05/">https://xyz.desirer233.fun/2024/04/19/cmu15445/Lec05/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-04-19</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/04/22/cmu15445/lab/%E5%AE%9E%E9%AA%8Cp2/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">实验P2</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/04/15/cmu15445/lab/%E5%AE%9E%E9%AA%8Cp1/"><span class="level-item">实验P1</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#表索引"><span class="level-left"><span class="level-item">1</span><span class="level-item">表索引</span></span></a></li><li><a class="level is-mobile" href="#B-树"><span class="level-left"><span class="level-item">2</span><span class="level-item">B+树</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#B-树的插入"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">B+树的插入</span></span></a></li><li><a class="level is-mobile" href="#B-树的删除"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">B+树的删除</span></span></a></li><li><a class="level is-mobile" href="#重复键的处理"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">重复键的处理</span></span></a></li></ul></li><li><a class="level is-mobile" href="#B-树设计考量"><span class="level-left"><span class="level-item">3</span><span class="level-item">B+树设计考量</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#节点大小"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">节点大小</span></span></a></li><li><a class="level is-mobile" href="#节点合并的阈值"><span class="level-left"><span class="level-item">3.2</span><span class="level-item">节点合并的阈值</span></span></a></li><li><a class="level is-mobile" href="#可变长度的Key的处理"><span class="level-left"><span class="level-item">3.3</span><span class="level-item">可变长度的Key的处理</span></span></a></li><li><a class="level is-mobile" href="#节点内部搜索"><span class="level-left"><span class="level-item">3.4</span><span class="level-item">节点内部搜索</span></span></a></li></ul></li><li><a class="level is-mobile" href="#B-树优化"><span class="level-left"><span class="level-item">4</span><span class="level-item">B+树优化</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#Pointer-Swizzling"><span class="level-left"><span class="level-item">4.1</span><span class="level-item">Pointer Swizzling</span></span></a></li><li><a class="level is-mobile" href="#Bulk-Insert-批量插入"><span class="level-left"><span class="level-item">4.2</span><span class="level-item">Bulk Insert 批量插入</span></span></a></li><li><a class="level is-mobile" href="#Prefix-Compression-前缀压缩"><span class="level-left"><span class="level-item">4.3</span><span class="level-item">Prefix Compression 前缀压缩</span></span></a></li><li><a class="level is-mobile" href="#Deduplication-去重"><span class="level-left"><span class="level-item">4.4</span><span class="level-item">Deduplication 去重</span></span></a></li><li><a class="level is-mobile" href="#Suffix-Truncation-后缀截断"><span class="level-left"><span class="level-item">4.5</span><span class="level-item">Suffix Truncation 后缀截断</span></span></a></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>Redis学习篇 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="Redis是一款用C编写的基于内存的非关系数据库，实际开发中，Redis用作缓存数据库，用来减轻后端数据库的压力。Redis全称为：Remote Dictionary Server（远程数据服务）。 Redis官网:：http:&amp;#x2F;&amp;#x2F;redis.io&amp;#x2F; 在线尝试：https:&amp;#x2F;&amp;#x2F;try.redis.io&amp;#x2F; 咱认为，学习Redis的最佳方式是从项目开始。先学一点数据结构Redis的终端命令，然后再接入"><meta property="og:type" content="blog"><meta property="og:title" content="Redis学习篇"><meta property="og:url" content="https://xyz.desirer233.fun/2023/12/06/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/Redis%E5%AD%A6%E4%B9%A0%E7%AF%87/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="Redis是一款用C编写的基于内存的非关系数据库，实际开发中，Redis用作缓存数据库，用来减轻后端数据库的压力。Redis全称为：Remote Dictionary Server（远程数据服务）。 Redis官网:：http:&amp;#x2F;&amp;#x2F;redis.io&amp;#x2F; 在线尝试：https:&amp;#x2F;&amp;#x2F;try.redis.io&amp;#x2F; 咱认为，学习Redis的最佳方式是从项目开始。先学一点数据结构Redis的终端命令，然后再接入"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202312061704000.jpg"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202312061700000.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202312061701000.jpg"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202312061707000.jpeg"><meta property="article:published_time" content="2023-12-06T09:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:34:15.352Z"><meta property="article:author" content="Desirer"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202312061704000.jpg"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2023/12/06/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/Redis%E5%AD%A6%E4%B9%A0%E7%AF%87/"},"headline":"Redis学习篇","image":["https://gitee.com/desirer/backup/raw/master/images/202312061704000.jpg","https://gitee.com/desirer/backup/raw/master/images/202312061700000.png","https://gitee.com/desirer/backup/raw/master/images/202312061701000.jpg"],"datePublished":"2023-12-06T09:00:00.000Z","dateModified":"2026-02-21T07:34:15.352Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"Redis是一款用C编写的基于内存的非关系数据库，实际开发中，Redis用作缓存数据库，用来减轻后端数据库的压力。Redis全称为：Remote Dictionary Server（远程数据服务）。 Redis官网:：http:&#x2F;&#x2F;redis.io&#x2F; 在线尝试：https:&#x2F;&#x2F;try.redis.io&#x2F; 咱认为，学习Redis的最佳方式是从项目开始。先学一点数据结构Redis的终端命令，然后再接入"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2023/12/06/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/Redis%E5%AD%A6%E4%B9%A0%E7%AF%87/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2023-12-06T09:00:00.000Z" title="2023/12/6 17:00:00">2023-12-06</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:34:15.352Z" title="2026/2/21 15:34:15">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/">后端开发</a><span> / </span><a class="link-muted" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/">Redis</a></span><span class="level-item">19 分钟读完 (大约2918个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">Redis学习篇</h1><div class="content"><p>Redis是一款用C编写的基于内存的非关系数据库，实际开发中，Redis用作缓存数据库，用来减轻后端数据库的压力。Redis全称为：<strong>Remote Dictionary Server</strong>（远程数据服务）。</p>
+<p>Redis官网:：<a target="_blank" rel="noopener" href="http://redis.io/">http://redis.io/</a></p>
+<p>在线尝试：<a target="_blank" rel="noopener" href="https://try.redis.io/">https://try.redis.io/</a></p>
+<p>咱认为，学习Redis的最佳方式是从项目开始。先学一点数据结构Redis的终端命令，然后再接入SpringBoot快速上手项目使用。学完基本数据使用后，再探究其原理。</p>
+<span id="more"></span>
+
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202312061704000.jpg"></p>
+<h1 id="基本数据类型"><a href="#基本数据类型" class="headerlink" title="基本数据类型"></a>基本数据类型</h1><p>Reids的基本数据类型是value的类型，而不是键的类型。</p>
+<h2 id="string类型"><a href="#string类型" class="headerlink" title="string类型"></a>string类型</h2><p>基本读写</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">set key value [EX seconds|PX milliseconds] [NX|XX] </span><br><span class="line">get key</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>EX|PX 设置过期时间，单位不同；</li>
+<li>NX （Not Exist），表示键不存在才进行操作，XX相反；</li>
+</ul>
+<p>多字符串存取</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mset key value [key2 value2 ...]</span><br><span class="line">mget key [key2 ...]</span><br></pre></td></tr></table></figure>
+
+<p>值的加减</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">incr key</span><br><span class="line">decr key</span><br><span class="line">incrby key number</span><br><span class="line">decrby key number</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p> key对应的数据不是字符串类型吗？怎么能进行加减操作？这里埋个坑。</p>
+</blockquote>
+<h2 id="hash类型"><a href="#hash类型" class="headerlink" title="hash类型"></a>hash类型</h2><p>redis hash 是 字符 filed 和 value 之间的映射表，所以非常适合用于存储对象。比如说key作为对象名，Field作为对象的属性字段，value则是属性字段的值。</p>
+<p>基本读写</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hset key field value [field value ...]</span><br><span class="line">hget key field</span><br><span class="line">hdel key field</span><br></pre></td></tr></table></figure>
+
+<p>查看哈希表的所有field： hkeys key</p>
+<p>查看哈希表的所有value：hvals key</p>
+<p>查看哈希表的所有field value对：hgetall key</p>
+<p>判断一个Key是否存在：hexists key field</p>
+<h3 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h3><p>hash类型一般适合用来存对象，能够独立存储每个字段，如果需要修改某个字段的值，可针对性修改。适合对象字段频繁改变的情况。</p>
+<p>string类型也能用来存储对象，首先将对象序列化为Json字符串，再存入Redis。这样的坏处是修改字段麻烦。适合对象字段不怎么改变的情况。</p>
+<h2 id="List类型"><a href="#List类型" class="headerlink" title="List类型"></a>List类型</h2><p>redis的list相当于Java中的LinkedList，是一个双向链表，可以在<strong>头部或者尾部添加元素</strong>，当列表弹出最后一个元素后，该结构自动删除。</p>
+<p>（1）基本读写</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">lpush key element [element2]</span><br><span class="line">lindex key index</span><br><span class="line">rpush key element [element2]</span><br><span class="line">rindex key index</span><br></pre></td></tr></table></figure>
+
+<p>lpush 可以将一个或多个值依次插入列表的<strong>头部</strong>，rpush则将一个或多个值依次插入列表的<strong>尾部</strong>。</p>
+<p>lindex获取指定index的值（注意index从0开始）</p>
+<p>（2）删除元素</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">lpop key</span><br><span class="line">rpop key</span><br></pre></td></tr></table></figure>
+
+<p>（3）获取区间元素，注意区间是左闭右闭。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lrange start stop</span><br></pre></td></tr></table></figure>
+
+<p>（4）插入元素</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">linsert list BEFORE|AFTER target_element new element</span><br></pre></td></tr></table></figure>
+
+<h2 id="Set类型"><a href="#Set类型" class="headerlink" title="Set类型"></a>Set类型</h2><p>set就是集合，集合的元素不重复无序。Redise的Set底层由哈希表实现，查询复杂度为$O(1)$。</p>
+<p>添加一个或多个元素</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SADD key element [element2 ...]</span><br></pre></td></tr></table></figure>
+
+<p>移除一个或多个元素</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SREM key element [element2 ..]</span><br></pre></td></tr></table></figure>
+
+<p>获取集合的所有元素</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SMEMBERS key</span><br></pre></td></tr></table></figure>
+
+<p>判断是否是成员</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SISMEMBER key member</span><br></pre></td></tr></table></figure>
+
+<h3 id="集合应用场景"><a href="#集合应用场景" class="headerlink" title="集合应用场景"></a>集合应用场景</h3><p>（1）用户点赞</p>
+<p>用户对某条评论点赞。偶数次点赞会取消赞。这就要求用户是否对某条评论点赞的判断。</p>
+<p>利用set的是否是成员快速判断用户是否点赞。如果点赞，就将用户id添加到评论的点赞set里。</p>
+<p>（2）共同关注</p>
+<p>利用集合取交集的命令，就能实现共同关注的功能。</p>
+<h2 id="Zset类型"><a href="#Zset类型" class="headerlink" title="Zset类型"></a>Zset类型</h2><p>Set是无序集合，ZSet则是有序集合。有序性是因为ZSet中的每个元素关联了一个Score分数，依据分数进行排序。</p>
+<p>ZSet的终端命令与Set大体相同，前缀从S换成了Z，并且额外要求一个Score参数。</p>
+<h3 id="有序集合应用场景"><a href="#有序集合应用场景" class="headerlink" title="有序集合应用场景"></a>有序集合应用场景</h3><p>（1）点赞好友显示</p>
+<p>朋友圈点赞头像显示。利用时间戳作为Zset的score，就能以时间排序。</p>
+<p>（2）朋友圈滚动分页</p>
+<p>用户查看朋友圈其实是查看它的收件箱。如果有新动态发布，那一定是在最顶上。以时间戳作为排序就能实现这种情况。</p>
+<h2 id="通用命令"><a href="#通用命令" class="headerlink" title="通用命令"></a>通用命令</h2><p>（1）exists 存在命令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exists key</span><br></pre></td></tr></table></figure>
+
+<p>判断指定的key是否存在</p>
+<p>（2）keys 查找命令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">keys pattern</span><br></pre></td></tr></table></figure>
+
+<p>查找指定模式的键，模式匹配（通配符、正则表达式）</p>
+<p>（3）rename 重命令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rename key newKeyName</span><br></pre></td></tr></table></figure>
+
+<p>（4）del 删除key</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">del key</span><br></pre></td></tr></table></figure>
+
+<p>（5）ttl 获取键的生存时间</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ttl key</span><br></pre></td></tr></table></figure>
+
+<p>值得注意：在多个键时，可以用冒号为键分隔，达到更好可视化效果</p>
+<h1 id="底层数据结构"><a href="#底层数据结构" class="headerlink" title="底层数据结构"></a>底层数据结构</h1><p><img src="https://gitee.com/desirer/backup/raw/master/images/202312061700000.png"></p>
+<h2 id="简单动态字符串"><a href="#简单动态字符串" class="headerlink" title="简单动态字符串"></a>简单动态字符串</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sdshdr</span>&#123;</span></span><br><span class="line">	<span class="type">int</span> len; <span class="comment">//当前保存字符串长度</span></span><br><span class="line">	<span class="type">int</span> <span class="built_in">free</span>; <span class="comment">//当前未使用字符数量</span></span><br><span class="line">	<span class="type">char</span> buf[]; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>SDS类似Java的ArrayList、cpp的vector，动态扩容。<strong>虽然底层使用字符数组存储字符，但配合了两个整数变量控制存储空间</strong>，这两个变量就是实际所占空间大小和剩余空间大小。</p>
+<p><strong>SDS采取预先分配冗余空间策略减少内存的频繁分配。</strong>当字符串所占空间小于1M时，成倍扩容。超过1M时，每次只扩容1MB，最多512MB。</p>
+<h2 id="压缩链表-ZipList"><a href="#压缩链表-ZipList" class="headerlink" title="压缩链表 ZipList"></a>压缩链表 ZipList</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ziplist</span>&lt;</span>T&gt; &#123;</span><br><span class="line">    int32 zlbytes; <span class="comment">// 全部占用字节数</span></span><br><span class="line">    int32 zltail_offset; <span class="comment">// 最后一个元素距离压缩列表起始位置的偏移量，用于快速定位到最后一个节点</span></span><br><span class="line">    int16 zllength; <span class="comment">// 元素个数</span></span><br><span class="line">    T[] entries; <span class="comment">// 元素内容列表</span></span><br><span class="line">    int8 zlend; <span class="comment">// 标志压缩列表的结束，值恒为 0xFF</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>ZipList与SDS结构相差无几，<strong>由连续内存块组成的顺序型数据结构，它有多个entry节点，每个entry节点可以存放整数或者字符串。</strong>另外多了几个标志符，字节数、偏移量、长度、结尾标志符。 </p>
+<p>List 使用压缩链表的情况：List中元素的数量小于或等于16个时，Redis会使用压缩链表进行存储。</p>
+<p>hash对象只有同时满足以下条件，才会采用ziplist编码：</p>
+<ul>
+<li>hash对象保存的键和值字符串长度都小于64字节</li>
+<li>hash对象保存的键值对数量小于512</li>
+</ul>
+<p>当Zset中元素的数量小于或等于256个时，Redis会使用压缩列表进行存储。</p>
+<p>当ziplist作为zset的底层存储结构时候，每个集合元素使用两个紧挨在一起的压缩列表节点来保存，第一个节点保存元素的成员，第二个元素保存元素的分值。</p>
+<h2 id="哈希表"><a href="#哈希表" class="headerlink" title="哈希表"></a>哈希表</h2><p><img src="https://gitee.com/desirer/backup/raw/master/images/202312061701000.jpg"></p>
+<p><strong>Redis的哈希表实现其实是字典，一个字典中包含了两个哈希表。</strong>一个哈希表里面可以有多个槽，而每个槽保存了一个键值对（或者多个，取决于是否有哈希冲突）。</p>
+<p>采用<strong>开链法</strong>解决哈希冲突，当不同key映射到同一个哈希槽时，Redis会采用链表的方式，将后来的节点链接到上一节点。</p>
+<p><strong>双哈希表设计：</strong>这是一种以空间换时间的技术。特别是应对ReHash过程（哈希表扩容或收缩）。</p>
+<p>当哈希表的负载因子超过一定阈值时，就会将0号哈希表上的键值对转移到1号哈希表上。具体过程为：为1号哈希表申请空间，然后重新计算哈希值和索引，并重新插入到 ht[1] 中，插入一个删除一个。当0号哈希表所有元素转移完成时，释放0的空间，然后将1号设为0号。</p>
+<p>注意这个数据转移过程可以是一次性操作、也可以是分批次操作（渐进式rehash）。<strong>另外因为有两个哈希表，查询时如果0号哈希表查不到，还需要在1号哈希表再查一次，牺牲了一点查询性能。</strong></p>
+<h2 id="整数集合"><a href="#整数集合" class="headerlink" title="整数集合"></a>整数集合</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">intset</span>&#123;</span></span><br><span class="line">     <span class="type">uint32_t</span> encoding;     <span class="comment">//编码方式</span></span><br><span class="line">     <span class="type">uint32_t</span> length;     <span class="comment">//集合包含的元素数量</span></span><br><span class="line">     <span class="type">int8_t</span> contents[];     <span class="comment">//保存元素的数组</span></span><br><span class="line">&#125;intset;</span><br></pre></td></tr></table></figure>
+
+<p>当set存的都是整数，且个数小于512个时，底层使用整数集合。</p>
+<h2 id="跳跃链表-SkipList"><a href="#跳跃链表-SkipList" class="headerlink" title="跳跃链表 SkipList"></a>跳跃链表 SkipList</h2><p>跳表 &#x3D; 单链表+随机化的多级索引。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202312061707000.jpeg"></p>
+<p><strong>它的基本思想是在链表的基础上，增加多级索引，从而提高数据的查找效率。</strong>在一般情况下，它的查找、插入、删除等操作的时间复杂度都为O(log n)。</p>
+<p>跳表的核心是索引，它通过维护多级有序链表来实现。每一级索引是原始链表的一部分节点组成，每一级索引的元素数量都比它下一级索引的元素数量少一半。最上面一级索引只有两个节点，第二级索引有四个节点，以此类推。通过这种方式，跳表在空间复杂度和时间复杂度之间做到了平衡。</p>
+<p>跳表的查找过程与二分查找类似，先在最高级的索引中查找目标节点，然后通过下降到更低一级的索引再次查找，直到在最底层的索引中找到目标节点或者查找到整个跳表中都没有这个节点。由于<strong>跳表的结构不依赖于节点的分布情况</strong>，所以它可以用来代替平衡树，实现更高效的查找操作。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">跳跃链表相比红黑树的一些主要好处：</span><br><span class="line">算法实现难度：跳跃链表的实现相对简单，而红黑树的实现则需要遵循颜色规则和其他约束条件，因此实现起来更为复杂。</span><br><span class="line">空间复杂度与内存占用：跳跃链表的空间复杂度更灵活，可以通过参数设置来调整每个节点包含的指针数量。相比之下，红黑树每个节点通常包含两个指针（指向左右子树）。在某些情况下，跳跃链表可以更节省内存。</span><br><span class="line">插入和删除的复杂情况：红黑树在插入或删除节点时，可能会引发子树的调整，且调整范围可能较大。而跳跃链表在插入或删除节点时，通常只需要修改相邻的指针，即进行局部调整，这使得操作更为简单和高效。</span><br><span class="line">范围查询：跳跃链表在进行范围查询时更为方便。由于跳跃链表中的元素是有序的，且上层的元素分布较稀疏，因此可以更快地定位到目标范围。相比之下，平衡二叉树（包括红黑树）在范围查询方面可能不如跳跃链表高效。</span><br></pre></td></tr></table></figure>
+
+
+
+</div><div class="article-licensing box"><div class="licensing-title"><p>Redis学习篇</p><p><a href="https://xyz.desirer233.fun/2023/12/06/后端开发/Redis/Redis学习篇/">https://xyz.desirer233.fun/2023/12/06/后端开发/Redis/Redis学习篇/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2023-12-06</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2023/12/12/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E9%93%BE%E8%A1%A8%E6%80%BB%E7%BB%93/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">链表总结</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2023/12/02/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/%E5%8D%8F%E7%A8%8B%E7%90%86%E8%AE%BA%E8%AE%A4%E8%AF%86/"><span class="level-item">协程理论认识</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#基本数据类型"><span class="level-left"><span class="level-item">1</span><span class="level-item">基本数据类型</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#string类型"><span class="level-left"><span class="level-item">1.1</span><span class="level-item">string类型</span></span></a></li><li><a class="level is-mobile" href="#hash类型"><span class="level-left"><span class="level-item">1.2</span><span class="level-item">hash类型</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#应用场景"><span class="level-left"><span class="level-item">1.2.1</span><span class="level-item">应用场景</span></span></a></li></ul></li><li><a class="level is-mobile" href="#List类型"><span class="level-left"><span class="level-item">1.3</span><span class="level-item">List类型</span></span></a></li><li><a class="level is-mobile" href="#Set类型"><span class="level-left"><span class="level-item">1.4</span><span class="level-item">Set类型</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#集合应用场景"><span class="level-left"><span class="level-item">1.4.1</span><span class="level-item">集合应用场景</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Zset类型"><span class="level-left"><span class="level-item">1.5</span><span class="level-item">Zset类型</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#有序集合应用场景"><span class="level-left"><span class="level-item">1.5.1</span><span class="level-item">有序集合应用场景</span></span></a></li></ul></li><li><a class="level is-mobile" href="#通用命令"><span class="level-left"><span class="level-item">1.6</span><span class="level-item">通用命令</span></span></a></li></ul></li><li><a class="level is-mobile" href="#底层数据结构"><span class="level-left"><span class="level-item">2</span><span class="level-item">底层数据结构</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#简单动态字符串"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">简单动态字符串</span></span></a></li><li><a class="level is-mobile" href="#压缩链表-ZipList"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">压缩链表 ZipList</span></span></a></li><li><a class="level is-mobile" href="#哈希表"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">哈希表</span></span></a></li><li><a class="level is-mobile" href="#整数集合"><span class="level-left"><span class="level-item">2.4</span><span class="level-item">整数集合</span></span></a></li><li><a class="level is-mobile" href="#跳跃链表-SkipList"><span class="level-left"><span class="level-item">2.5</span><span class="level-item">跳跃链表 SkipList</span></span></a></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

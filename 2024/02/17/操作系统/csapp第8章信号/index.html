@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>CSAPP第八章信号部分 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="信号基本含义linux中信号就是一段消息，通知进程发生了某些事情，类比软件层面的异常（软中断）。 信号是一种软件形式的异常，允许进程和内核中断其他进程，可以用来通知用户进程发生了某些异常"><meta property="og:type" content="blog"><meta property="og:title" content="CSAPP第八章信号部分"><meta property="og:url" content="https://xyz.desirer233.fun/2024/02/17/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/csapp%E7%AC%AC8%E7%AB%A0%E4%BF%A1%E5%8F%B7/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="信号基本含义linux中信号就是一段消息，通知进程发生了某些事情，类比软件层面的异常（软中断）。 信号是一种软件形式的异常，允许进程和内核中断其他进程，可以用来通知用户进程发生了某些异常"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202402171053793.png"><meta property="og:image" content="https://pic3.zhimg.com/80/v2-2cca38d39e27f39367d74d74ad03d07a_720w.webp"><meta property="article:published_time" content="2024-02-17T03:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.495Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="CSAPP"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202402171053793.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/02/17/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/csapp%E7%AC%AC8%E7%AB%A0%E4%BF%A1%E5%8F%B7/"},"headline":"CSAPP第八章信号部分","image":["https://gitee.com/desirer/backup/raw/master/images/202402171053793.png","https://pic3.zhimg.com/80/v2-2cca38d39e27f39367d74d74ad03d07a_720w.webp"],"datePublished":"2024-02-17T03:00:00.000Z","dateModified":"2026-02-21T07:11:50.495Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"信号基本含义linux中信号就是一段消息，通知进程发生了某些事情，类比软件层面的异常（软中断）。 信号是一种软件形式的异常，允许进程和内核中断其他进程，可以用来通知用户进程发生了某些异常"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/02/17/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/csapp%E7%AC%AC8%E7%AB%A0%E4%BF%A1%E5%8F%B7/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-02-17T03:00:00.000Z" title="2024/2/17 11:00:00">2024-02-17</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.495Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/">操作系统</a></span><span class="level-item">14 分钟读完 (大约2117个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">CSAPP第八章信号部分</h1><div class="content"><h1 id="信号基本含义"><a href="#信号基本含义" class="headerlink" title="信号基本含义"></a>信号基本含义</h1><p><strong>linux中信号就是一段消息，通知进程发生了某些事情，类比软件层面的异常（软中断）。</strong></p>
+<p>信号是一种软件形式的异常，允许进程和内核中断其他进程，可以用来通知用户进程发生了某些异常</p>
+<span id="more"></span>
+
+<h1 id="Linux系统基本信号及其行为"><a href="#Linux系统基本信号及其行为" class="headerlink" title="Linux系统基本信号及其行为"></a>Linux系统基本信号及其行为</h1><p>常见的信号有：</p>
+<ul>
+<li>SIGINT（利用ctrl+c键发送给前台组的每个进程，默认是终止进程）</li>
+<li>SIGCHLD（子进程终止时，内核会发送这个信号给父进程）</li>
+</ul>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202402171053793.png"></p>
+<h1 id="信号术语"><a href="#信号术语" class="headerlink" title="信号术语"></a>信号术语</h1><p>发送信号：内核更新进程的某个上下文；</p>
+<p>接收信号：一个进程可以忽略一个信号，或者执行一段处理程序。</p>
+<p>内核为每个进程维护了两个位向量，一个用来标记待处理信号pending，一个标记被阻塞信号blocked。只要传送了一个类型为k的信号，那么进程的pending的第k位就会设置为1。</p>
+<p><strong>这个实现有什么问题？一个信号没有被及时处理，那么后面几个信号就会丢失。</strong>对一个进程而言，同一时刻，同种类型的信号最多只能有一个处于待处理状态，多余的会被直接抛弃。</p>
+<h1 id="发送信号"><a href="#发送信号" class="headerlink" title="发送信号"></a>发送信号</h1><p>在了解发送信号的方式前，需要了解两个概念：进程组和前后台作业</p>
+<h2 id="进程组"><a href="#进程组" class="headerlink" title="进程组"></a>进程组</h2><p>每个进程都属于且只属于一个进程组，一个进程组由一个正整数标识。</p>
+<h2 id="前后台作业"><a href="#前后台作业" class="headerlink" title="前后台作业"></a>前后台作业</h2><p>作业这个概念其实就是进程。不过作业是加了限定词的进程：unix shell用作业表示对一条命令行求值而创建的进程。</p>
+<p>在任何时刻，至多有一个前台作业和0至多个后台作业。</p>
+<p><img src="https://pic3.zhimg.com/80/v2-2cca38d39e27f39367d74d74ad03d07a_720w.webp"></p>
+<h2 id="发送信号的方式"><a href="#发送信号的方式" class="headerlink" title="发送信号的方式"></a>发送信号的方式</h2><p>（1）&#x2F;bin&#x2F;kill程序</p>
+<p><code>linux&gt; /bin/kill -9 15213</code> 表示发送信号9（SIGKILL）给进程24818</p>
+<p><code>linux&gt; /bin/kill -9 -15213</code> 表示发送信号9（SIGKILL）给进程组24818</p>
+<p>（2）键盘发送</p>
+<p> Crtl+C会导致内核发送一个SIGINT信号到前台进程组中的每一个进程。</p>
+<p>（3）标准库接口</p>
+<p>可以在函数中调用<code>kill</code>函数来对目的进程发送信号</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">kill</span><span class="params">(<span class="type">pid_t</span> pid, <span class="type">int</span> sig)</span>; </span><br></pre></td></tr></table></figure>
+
+<p>用<code>alarm</code>函数发送<code>SIGALARM</code>信号</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="type">unsigned</span> <span class="type">int</span> <span class="title function_">alarm</span><span class="params">(<span class="type">unsigned</span> <span class="type">int</span> secs)</span>; </span><br></pre></td></tr></table></figure>
+
+<h1 id="接收信号"><a href="#接收信号" class="headerlink" title="接收信号"></a>接收信号</h1><p>接收信号：当目的进程被内核强迫以某种方式对信号的发送做出反应时，它就接收了信号。</p>
+<p><strong>接收信号的时机：</strong>内核把进程从内核模式切换到用户模式时（例如系统调用返回），它会检查进程的未被阻塞的待处理信号的集合（pending &amp; ~blocked），如果集合非空，那么就会选择某个信号k，强制进程处理信号k。</p>
+<p>接收信号的默认行为：</p>
+<ul>
+<li>进程终止</li>
+<li>忽略该信号</li>
+<li>通过用户层函数<strong>信号处理程序</strong>捕获这个信号</li>
+</ul>
+<h2 id="修改信号的默认行为"><a href="#修改信号的默认行为" class="headerlink" title="修改信号的默认行为"></a>修改信号的默认行为</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="title function_">void</span> <span class="params">(*<span class="type">sighandler_t</span>)</span><span class="params">(<span class="type">int</span>)</span>; </span><br><span class="line"></span><br><span class="line"><span class="type">sighandler_t</span> <span class="title function_">signal</span><span class="params">(<span class="type">int</span> signum, <span class="type">sighandler_t</span> handler)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>signum为信号序号，handler为信号处理程序。我们可以使用自定义的信号处理程序，也可以使用预定义的几个处理程序（<code>SIG_IGN</code>进程忽略该信号、<code>SIG_DFL</code>恢复该信号的默认行为）。</p>
+<p>用户自定义的信号处理程序要遵从sighandler_t的信号处理原型，接收一个整数入参，无出参。</p>
+<p>例子：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="type">void</span> <span class="title function_">handler</span><span class="params">(<span class="type">int</span> sig)</span>&#123;</span><br><span class="line">  <span class="keyword">if</span>((waitpid(<span class="number">-1</span>, <span class="literal">NULL</span>, <span class="number">0</span>)) &lt; <span class="number">0</span>)</span><br><span class="line">    unix_error(<span class="string">&quot;waitpid error&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span>&#123;</span><br><span class="line">  <span class="keyword">if</span>(signal(SIGCHLD, handler) == SIG_ERR)</span><br><span class="line">    unix_error(<span class="string">&quot;signal error&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里只要在<code>main</code>函数开始调用一次<code>signal</code>，就相当于从此以后改变了<code>SIGCHLD</code>信号的默认行为，让它去执行<code>handler</code>处理程序。当子进程终止或停止时，内核就会发送一个<code>SIGCHLD</code>信号到父进程中，此时就能让父进程去执行自己的工作，当子进程终止或停止时，发送<code>SIGCHLD</code>信号到父进程，则父进程会调用<code>handler</code>函数来对该子进程进行回收。</p>
+<h2 id="阻塞信号"><a href="#阻塞信号" class="headerlink" title="阻塞信号"></a>阻塞信号</h2><p>Linux提供阻塞信号的隐式和显示的机制：</p>
+<ul>
+<li><strong>隐式阻塞机制：</strong>内核默认阻塞当前正在处理信号类型的待处理信号。</li>
+<li><strong>显示阻塞机制：</strong>应用程序通过<code>sigprocmask</code>函数来显示阻塞和解阻塞选定的信号。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;signal.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">sigprocmask</span><span class="params">(<span class="type">int</span> how, <span class="type">const</span> <span class="type">sigset_t</span> *<span class="built_in">set</span>, <span class="type">sigset_t</span> *oldset)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>通过<code>how</code>来决定如何改变阻塞的信号集合<code>blocked</code>：</p>
+<ul>
+<li><p>当<code>how=SIG_BLOCK</code>时，<code>blocked = blocked | set</code></p>
+</li>
+<li><p>当<code>how=SIG_UNBLOCK</code>时，<code>blocked = blocked &amp; ~set</code></p>
+</li>
+<li><p>当<code>how=SETMASK</code>时，<code>block = set</code></p>
+</li>
+</ul>
+<h1 id="编写健壮的信号处理程序"><a href="#编写健壮的信号处理程序" class="headerlink" title="编写健壮的信号处理程序"></a>编写健壮的信号处理程序</h1><p>如何编写安全、正确和可移植的信号处理程序？</p>
+<h2 id="并发认知"><a href="#并发认知" class="headerlink" title="并发认知"></a>并发认知</h2><p>信号也是并发的一个例子，信号处理程序是一个独立的逻辑流（不是进程），与主程序并发运行。比如我们在进程A中执行一个<code>while</code>循环，当该进程受到一个信号时，内核会将控制权转移给该信号的处理程序，所以该信号处理程序是并发执行的，当信号处理程序结束时，再将控制转移给主程序。由于信号处理程序与主程序在同一进程中，所以具有相同的上下文，所以会共享程序中的所有全局变量。</p>
+<h2 id="原则"><a href="#原则" class="headerlink" title="原则"></a>原则</h2><ul>
+<li>处理程序尽可能简单</li>
+<li>处理程序使用异步信号安全的函数</li>
+</ul>
+<p>所谓异步信号安全，要么可重入，要么不可中断。</p>
+<ul>
+<li>保存和恢复errno</li>
+<li>暂时阻塞所有信号，保护对全局数据结构的访问</li>
+<li>volatile声明全局变量</li>
+<li>sig_atomic_t 声明全局标志，确保原子操作</li>
+</ul>
+<h2 id="正确的信号处理"><a href="#正确的信号处理" class="headerlink" title="正确的信号处理"></a>正确的信号处理</h2><p>信号位向量的特性导致同类型信号丢弃现象</p>
+<p>处理方法：一次信号处理函数调用尽可能多的处理信号</p>
+<h2 id="可移植的信号处理"><a href="#可移植的信号处理" class="headerlink" title="可移植的信号处理"></a>可移植的信号处理</h2><p>不同的系统有不同的信号处理语义：</p>
+<ul>
+<li><code>signal</code>函数的语义各有不同。</li>
+<li>系统调用可以被中断。</li>
+</ul>
+<p>要解决这些问题，定义了<code>sigaction</code>函数，它允许用户在设置信号处理时，明确指定他们想要的信号处理语义。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">sigaction</span><span class="params">(<span class="type">int</span> signum, <span class="keyword">struct</span> sigaction *act, <span class="keyword">struct</span> sigaction *oldact)</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="信号同步"><a href="#信号同步" class="headerlink" title="信号同步"></a>信号同步</h2><h3 id="案例一：父子进程竞争"><a href="#案例一：父子进程竞争" class="headerlink" title="案例一：父子进程竞争"></a>案例一：父子进程竞争</h3><p>场景：子进程结束出发SIGCHLD信号，导致信号处理函数先运行，造成同步错误。</p>
+<p>解决方法：在fork之前，阻塞SIGCHLD信号，等到某个特定位置运行完，再解锁信号。</p>
+<p><strong>启发：如果想要确保某些code（比如addjob）能在信号handler之前被运行，那么就阻塞该信号，直到该code执行完毕。</strong></p>
+<p>缺点：子进程需要额外解锁该信号。</p>
+<h3 id="案例二：显式等待某信号"><a href="#案例二：显式等待某信号" class="headerlink" title="案例二：显式等待某信号"></a>案例二：显式等待某信号</h3><p>场景：父进程等待子进程执行完毕。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(!pid)</span><br><span class="line">	;</span><br></pre></td></tr></table></figure>
+
+<p>浪费CPU</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(!pid)</span><br><span class="line">	pause();</span><br></pre></td></tr></table></figure>
+
+<p>死锁风险：在while后收到信号，然后pause，永远收不到信号，无法返回。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(!pid)</span><br><span class="line">	sleep(<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p>sleep无法确定睡眠间隔</p>
+<h4 id="最佳实践："><a href="#最佳实践：" class="headerlink" title="最佳实践："></a><strong>最佳实践：</strong></h4><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(!pid)</span><br><span class="line">	sigsuspend(&amp;prev);</span><br></pre></td></tr></table></figure>
+
+<p>解读sigsuspend：</p>
+<ul>
+<li>从语义上看，表示对某信号延迟处理，等待一段时间</li>
+<li>从代码上来看，<code>sigsuspend(&amp;mask)</code>等价于原子版本的以下三句组合：</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sigprocmask(SIG_SETMASK, &amp;mask, &amp;prev);</span><br><span class="line">pause();</span><br><span class="line">sigprocmask(SIG_SETMASK, &amp;prev, <span class="literal">NULL</span>); </span><br></pre></td></tr></table></figure>
+
+<p>其中原子性是第一句和第二句，这两者之间的执行不会被中断。</p>
+<h4 id="实际使用"><a href="#实际使用" class="headerlink" title="实际使用"></a>实际使用</h4><p>在调用sigsuspend前阻塞SIGCHLD信号</p>
+<p>在调用sigsuspend时取消阻塞SIGCHLD信号（利用mask），那么SIGCHLD信号都会被等到pause执行完处理，然后又恢复阻塞SIGCHLD信号。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>CSAPP第八章信号部分</p><p><a href="https://xyz.desirer233.fun/2024/02/17/操作系统/csapp第8章信号/">https://xyz.desirer233.fun/2024/02/17/操作系统/csapp第8章信号/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-02-17</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/CSAPP/">CSAPP</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/02/19/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/Redis%E5%BA%94%E7%94%A8%E7%AF%87/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">Redis 应用篇</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/02/06/MIT6.S081/lab/lab10/"><span class="level-item">MIT6.S081 lab10 file system</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#信号基本含义"><span class="level-left"><span class="level-item">1</span><span class="level-item">信号基本含义</span></span></a></li><li><a class="level is-mobile" href="#Linux系统基本信号及其行为"><span class="level-left"><span class="level-item">2</span><span class="level-item">Linux系统基本信号及其行为</span></span></a></li><li><a class="level is-mobile" href="#信号术语"><span class="level-left"><span class="level-item">3</span><span class="level-item">信号术语</span></span></a></li><li><a class="level is-mobile" href="#发送信号"><span class="level-left"><span class="level-item">4</span><span class="level-item">发送信号</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#进程组"><span class="level-left"><span class="level-item">4.1</span><span class="level-item">进程组</span></span></a></li><li><a class="level is-mobile" href="#前后台作业"><span class="level-left"><span class="level-item">4.2</span><span class="level-item">前后台作业</span></span></a></li><li><a class="level is-mobile" href="#发送信号的方式"><span class="level-left"><span class="level-item">4.3</span><span class="level-item">发送信号的方式</span></span></a></li></ul></li><li><a class="level is-mobile" href="#接收信号"><span class="level-left"><span class="level-item">5</span><span class="level-item">接收信号</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#修改信号的默认行为"><span class="level-left"><span class="level-item">5.1</span><span class="level-item">修改信号的默认行为</span></span></a></li><li><a class="level is-mobile" href="#阻塞信号"><span class="level-left"><span class="level-item">5.2</span><span class="level-item">阻塞信号</span></span></a></li></ul></li><li><a class="level is-mobile" href="#编写健壮的信号处理程序"><span class="level-left"><span class="level-item">6</span><span class="level-item">编写健壮的信号处理程序</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#并发认知"><span class="level-left"><span class="level-item">6.1</span><span class="level-item">并发认知</span></span></a></li><li><a class="level is-mobile" href="#原则"><span class="level-left"><span class="level-item">6.2</span><span class="level-item">原则</span></span></a></li><li><a class="level is-mobile" href="#正确的信号处理"><span class="level-left"><span class="level-item">6.3</span><span class="level-item">正确的信号处理</span></span></a></li><li><a class="level is-mobile" href="#可移植的信号处理"><span class="level-left"><span class="level-item">6.4</span><span class="level-item">可移植的信号处理</span></span></a></li><li><a class="level is-mobile" href="#信号同步"><span class="level-left"><span class="level-item">6.5</span><span class="level-item">信号同步</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#案例一：父子进程竞争"><span class="level-left"><span class="level-item">6.5.1</span><span class="level-item">案例一：父子进程竞争</span></span></a></li><li><a class="level is-mobile" href="#案例二：显式等待某信号"><span class="level-left"><span class="level-item">6.5.2</span><span class="level-item">案例二：显式等待某信号</span></span></a></li></ul></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

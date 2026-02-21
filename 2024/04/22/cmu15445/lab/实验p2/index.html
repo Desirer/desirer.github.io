@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>实验P2 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="实验二要求实现一个数据结构 ：B+树。 实验难点在于理清B+树存储结构、插入分裂、删除合并以及并发控制。 强烈建议阅读教材给出的B+树执行流程的伪代码。"><meta property="og:type" content="blog"><meta property="og:title" content="实验P2"><meta property="og:url" content="https://xyz.desirer233.fun/2024/04/22/cmu15445/lab/%E5%AE%9E%E9%AA%8Cp2/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="实验二要求实现一个数据结构 ：B+树。 实验难点在于理清B+树存储结构、插入分裂、删除合并以及并发控制。 强烈建议阅读教材给出的B+树执行流程的伪代码。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404261519452.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404261525623.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404261528023.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405101713397.png"><meta property="og:image" content="https://farewellyi-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/202306201102875.png"><meta property="article:published_time" content="2024-04-22T08:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.467Z"><meta property="article:author" content="Desirer"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202404261519452.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/04/22/cmu15445/lab/%E5%AE%9E%E9%AA%8Cp2/"},"headline":"实验P2","image":["https://gitee.com/desirer/backup/raw/master/images/202404261519452.png","https://gitee.com/desirer/backup/raw/master/images/202404261525623.png","https://gitee.com/desirer/backup/raw/master/images/202404261528023.png","https://gitee.com/desirer/backup/raw/master/images/202405101713397.png","https://farewellyi-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/202306201102875.png"],"datePublished":"2024-04-22T08:00:00.000Z","dateModified":"2026-02-21T07:11:50.467Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"实验二要求实现一个数据结构 ：B+树。 实验难点在于理清B+树存储结构、插入分裂、删除合并以及并发控制。 强烈建议阅读教材给出的B+树执行流程的伪代码。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/04/22/cmu15445/lab/%E5%AE%9E%E9%AA%8Cp2/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-04-22T08:00:00.000Z" title="2024/4/22 16:00:00">2024-04-22</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.467Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/cmu15445/">cmu15445</a><span> / </span><a class="link-muted" href="/categories/cmu15445/lab/">lab</a></span><span class="level-item">30 分钟读完 (大约4521个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">实验P2</h1><div class="content"><p>实验二要求实现一个数据结构 ：B+树。</p>
+<p>实验难点在于理清B+树存储结构、插入分裂、删除合并以及并发控制。</p>
+<p>强烈建议阅读教材给出的B+树执行流程的伪代码。</p>
+<span id="more"></span>
+
+<h1 id="B-树细节"><a href="#B-树细节" class="headerlink" title="B+树细节"></a>B+树细节</h1><h2 id="B-树的阶数"><a href="#B-树的阶数" class="headerlink" title="B+树的阶数"></a>B+树的阶数</h2><p>m阶B+树，即内部结点最多m个子树。参考教材可以得到：</p>
+<ul>
+<li><p>根结点最少2个孩子，最多m个孩子。根结点既可以是内部结点，也可以是叶子结点。</p>
+</li>
+<li><p>内部结点最少有$\lceil m&#x2F;2\rceil$  孩子，最多m个孩子。</p>
+</li>
+<li><p>叶子结点的键值对最少有$\lceil (m-1) &#x2F;2\rceil$  ，最多m-1。</p>
+</li>
+</ul>
+<p>当根节点是叶子结点时（即当前B+树只有一个结点），根节点最多存储m-1个键值对；当根节点为内部结点时，根节点可以存储最多m个键值对。</p>
+<p>从定义上我们可以窥见：B+树的结点总是不太满又不太少（大于一半），这就有很好的页利用率。</p>
+<blockquote>
+<p> tips: 上取整数的实现技巧 ⌈x&#x2F;2⌉ &#x3D; ⌊(1+x)&#x2F;2⌋</p>
+</blockquote>
+<h2 id="阶数与实现关系"><a href="#阶数与实现关系" class="headerlink" title="阶数与实现关系"></a>阶数与实现关系</h2><p>（1）数组存储</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404261519452.png"></p>
+<p>在键值对的存储上，内部结点和叶子结点都采用一个键值对数组的方式。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> MappingType std::pair<span class="string">&lt;KeyType, ValueType&gt;</span></span></span><br><span class="line">MappingType array_[<span class="number">1</span>];</span><br><span class="line"><span class="comment">// 可以理解为</span></span><br><span class="line">vector&lt;pair&lt;key, value&gt;&gt; array; </span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>内部结点的key就是泛化的键（用于索引比较），value则是指向下一个页的指针（本次实验则是存储下一个页的页ID）。</li>
+<li>叶子结点的key是泛化的键，value就是一个RecordID，RecordID包括PageID和SlotNum（表示一条记录在一个页内的偏移）。</li>
+<li>Pm所在的子树上所有键都小于Km，大于等于Km-1</li>
+</ul>
+<blockquote>
+<p>采取RecordID是间接存储行记录的方式，也有直接存储，即将整个行记录存在value中的方式。</p>
+</blockquote>
+<p>在实现上为了维护内部结点指针比键多一的特性，内部结点的数组的第一个元素的key设置为空。</p>
+<p>回到实验代码上，结点会有size和max_size属性表示当前数组的长度和最大长度。</p>
+<table>
+<thead>
+<tr>
+<th>size_</th>
+<th>4</th>
+<th>Number of Key &amp; Value pairs in page</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>max_size_</td>
+<td>4</td>
+<td>Max number of Key &amp; Value pairs in page</td>
+</tr>
+</tbody></table>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> LEAF_PAGE_HEADER_SIZE 28</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LEAF_PAGE_SIZE ((BUSTUB_PAGE_SIZE - LEAF_PAGE_HEADER_SIZE) / sizeof(MappingType))</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> INTERNAL_PAGE_HEADER_SIZE 24</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> INTERNAL_PAGE_SIZE ((BUSTUB_PAGE_SIZE - INTERNAL_PAGE_HEADER_SIZE) / (sizeof(MappingType)))</span></span><br></pre></td></tr></table></figure>
+
+<p>从宏定义上也能看出，默认的数组的最大长度由一个页减去头部字段大小然后除以kv对计算得到。</p>
+<p>（2）阶数与数组最大长度关系</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">INDEX_TEMPLATE_ARGUMENTS</span></span><br><span class="line"><span class="function"><span class="title">BPLUSTREE_TYPE::BPlusTree</span><span class="params">(std::string name, BufferPoolManager *buffer_pool_manager, <span class="type">const</span> KeyComparator &amp;comparator,</span></span></span><br><span class="line"><span class="params"><span class="function">                          <span class="type">int</span> leaf_max_size, <span class="type">int</span> internal_max_size)</span></span></span><br><span class="line"><span class="function">    : index_name_(std::move(name)),</span></span><br><span class="line"><span class="function">      root_page_id_(INVALID_PAGE_ID),</span></span><br><span class="line"><span class="function">      buffer_pool_manager_(buffer_pool_manager),</span></span><br><span class="line"><span class="function">      comparator_(comparator),</span></span><br><span class="line"><span class="function">      leaf_max_size_(leaf_max_size),</span></span><br><span class="line"><span class="function">      internal_max_size_(internal_max_size) &#123;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在B+树的构造函数中，会传入叶子结点的最大长度和内部结点的最大长度。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">BPlusTree&lt;GenericKey&lt;<span class="number">8</span>&gt;, RID, GenericComparator&lt;<span class="number">8</span>&gt;&gt; <span class="built_in">tree</span>(<span class="string">&quot;foo_pk&quot;</span>, bpm, comparator, <span class="number">2</span>, <span class="number">3</span>);</span><br></pre></td></tr></table></figure>
+
+<p>并且在测试代码中，可以看到这两个最大长度并不是一致的。</p>
+<blockquote>
+<p><strong>问题：为什么这两个size为不一样？</strong></p>
+<p>答：因为叶子结点和内部结点存的东西不一样，一张页的大小是固定的，自然计算出的size不一样。</p>
+<p><strong>问题2：阶数到底是哪一个？是<code>leaf_max_size_</code>还是<code>internal_max_size_</code>？</strong></p>
+<p>答：这里我觉得无需介意，在固定页大小背景下， 这两个都是能真实存储的极限大小，实现上满足内部结点和叶子结点的语义即可。</p>
+<ul>
+<li>内部结点的语义是：给定大小m，我的数组长度最小为$\lceil m&#x2F;2\rceil$ ，最多m，即我可以占满整个页空间。</li>
+<li>叶子结点的语义是：给定大小m，我的数组长度最小$\lceil (m-1) &#x2F;2\rceil$ ，最多m-1，即我的数组最长时，在整个页空间上留下一个空位。</li>
+</ul>
+<p><strong>问题3：为什么要留下一个空位，而不是存满？</strong></p>
+<p>答：想象一下，在数据库的存储中，假设一个页最多存M个数据，叶子页可以存满M个。我现在有一个满叶子页L，此时插入的新数据K正好索引到L上，页满需要页分裂。页分裂的过程：创建新页，然后将M+1个数据平分到两个页上。<strong>但是，你需要先将K插入到M个数据上的合适位置，这就要求申请存储M+1个数据大小的内存空间。</strong>而一个页最多存M个数据，这就很别扭。<strong>而留下空位的做法，使得最后一个位置的元素可以充当哨兵，可以做到先插入再分裂。</strong>插入数据结束后，检查叶子页大小是否已满，已满则进行分裂。</p>
+<p><strong>问题4：为什么内部页可以存满？</strong></p>
+<p>答： 因为内部页的第一个元素的key是未使用的（牵强）</p>
+</blockquote>
+<h2 id="插入过程伪代码"><a href="#插入过程伪代码" class="headerlink" title="插入过程伪代码"></a>插入过程伪代码</h2><p><img src="https://gitee.com/desirer/backup/raw/master/images/202404261525623.png"></p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404261528023.png"></p>
+<p>插入过程需要注意的是：</p>
+<ul>
+<li><p>叶子结点分裂时，中间键作为索引是复制一份插入到parent。而内部结点分裂时，中间键直接被拿走，插入parent中。</p>
+</li>
+<li><p>内部页分裂时必须及时更新孩子结点的父亲指向</p>
+</li>
+</ul>
+<h2 id="删除过程伪代码"><a href="#删除过程伪代码" class="headerlink" title="删除过程伪代码"></a>删除过程伪代码</h2><p><img src="https://gitee.com/desirer/backup/raw/master/images/202405101713397.png"></p>
+<p>删除过程比较复杂，内部结点的删除和中间结点的删除需要单独处理。大致逻辑是从叶子结点删除完一个元素后，如果元素太少，那么就需要和周围结点合并为一个结点，或者重新分配元素（无法合并为一个结点的情况）。最后别忘记更改父亲的指针，整个过程从下往上进行。</p>
+<p>重分配的过程是从邻居结点借一个元素的过程。</p>
+<h2 id="B-树节点页的交互"><a href="#B-树节点页的交互" class="headerlink" title="B+树节点页的交互"></a>B+树节点页的交互</h2><p><img src="https://farewellyi-pic-bed.oss-cn-hangzhou.aliyuncs.com/img/202306201102875.png"></p>
+<p>B+树的节点页是以嵌套的方式存储在页的data区域，通过buffer pool manager进行交互。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span>* p = <span class="built_in">reinterpret_cast</span>&lt;LeafPage*&gt;(buffer_pool_manager_-&gt;<span class="built_in">FetchPage</span>(page_id)-&gt;<span class="built_in">GetData</span>());</span><br></pre></td></tr></table></figure>
+
+<h1 id="B-树并发"><a href="#B-树并发" class="headerlink" title="B+树并发"></a>B+树并发</h1><h2 id="基本思想"><a href="#基本思想" class="headerlink" title="基本思想"></a>基本思想</h2><p>主要思想为像螃蟹一样横着走路，意为先跨出去一步踩稳后，再收回一步。体现在B+树中就是从当前结点N开始获得锁，然后在获得N的儿子C的锁。如果C是<code>安全</code>的，那么就可以释放N的锁。（A thread can <strong>only</strong> release latch on a parent page if its child page considered “safe”. ）</p>
+<p>根据操作的不同，结点安全也有不同的解释：</p>
+<ul>
+<li>对于插入操作，只有当前size小于GetMaxSize() - 1才是安全的</li>
+<li>对于删除操作，只有当前size大于GetMinSize()才是安全的</li>
+</ul>
+<p>基本的螃蟹锁协议：</p>
+<ul>
+<li>查找：从根结点开始，获得儿子结点的共享锁后释放父结点的共享锁。</li>
+<li>插入&#x2F;删除：从根结点开始，获得儿子结点的排它锁 。然后检查儿子的安全性，如果儿子节点是安全的，则释放儿子结点的所有祖先结点的锁。否则一直持有锁。</li>
+</ul>
+<p><strong>注意这里儿子结点安全后是释放所有祖先结点的锁。</strong>如果只释放父结点的锁的话，会出现锁得不到释放的现象。比如ABCD的遍历顺序，A是安全根结点，BC是不安全结点，D是安全结点，根据规则，我们将一直持有锁遍历到D，如果只释放父结点的锁，那么AB的锁就得不到释放。</p>
+<h2 id="优化思想"><a href="#优化思想" class="headerlink" title="优化思想"></a>优化思想</h2><p>The problem with the basic latch crabbing algorithm is that transac- tions always acquire an exclusive latch on the root for every insert&#x2F;delete operation</p>
+<p>基本的螃蟹锁思想缺点是插入与删除操作都要先获得根结点的排它锁，这导致并行度不高。</p>
+<p>一种优化的思想是采用乐观锁的思想，插入与删除操作都先采用共享锁一路<code>爬到</code>叶子结点，然后校验叶子结点的安全性。如果叶子是安全的，采用排它锁完成更新。如果叶子节点不安全，则放弃所有共享锁，从根结点开始一路获取排它锁。</p>
+<ul>
+<li>Search: Same algorithm as before.</li>
+<li>Insert&#x2F;Delete: Set READ latches as if for search, go to leaf, and set WRITE latch on leaf. If the leaf is not safe, release all previous latches, and restart the transaction using previous Insert&#x2F;Delete protocol.</li>
+</ul>
+<p>书本18.10描述的螃蟹锁规则&#x2F;协议：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">When searching for a key value, the crabbing protocol first locks the root node in shared mode. When traversing down the tree, it acquires a shared lock on the child node to be traversed further. After acquiring the lock on the child node, it releases the lock on the parent node. It repeats this process until it reaches a leaf node.</span><br><span class="line"></span><br><span class="line">When inserting or deleting a key value, the crabbing protocol takes these actions:</span><br><span class="line"></span><br><span class="line">° It follows the same protocol as for searching until it reaches the desired leaf node. Up to this point, it obtains (and releases) only shared locks.</span><br><span class="line"></span><br><span class="line">° It locks the leaf node in exclusive mode and inserts or deletes the key value.</span><br><span class="line"></span><br><span class="line">° If it needs to split a node or coalesce it with its siblings, or redistribute key values between siblings, the crabbing protocol locks the parent of the node in exclusive mode. After performing these actions, it releases the locks on the node and siblings.</span><br><span class="line"></span><br><span class="line">If the parent requires splitting, coalescing, or redistribution of key values, the protocol retains the lock on the parent, and splitting, coalescing, or redistri- bution propagates further in the same manner. Otherwise, it releases the lock on the parent.</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>搜索键值时，crabbing 协议首先将根节点锁定为共享模式。向下遍历树时，它会在子节点上获取共享锁，以便进一步遍历。获取子节点上的锁后，它会释放父节点上的锁。它会重复此过程，直到到达叶节点。  </p>
+</li>
+<li><p>插入或删除键值时，Crabbing 协议会执行以下操作：  </p>
+<ul>
+<li><p>它遵循与搜索相同的协议，直到到达所需的叶节点。到目前为止，它只获取（和释放）共享锁。</p>
+</li>
+<li><p>将叶节点锁定为独占模式，并插入或删除键值。  </p>
+</li>
+<li><p>如果它需要拆分节点或将其与其同级合并或在同级之间重新分配密钥值，则 crabbing 协议会以独占模式锁定节点的父节点。执行这些操作后，它会释放节点和同级上的锁。  </p>
+<p>如果父级需要拆分、合并或重新分发密钥值，则协议将保留对父级的锁定，并且拆分、合并或重新分配会以相同的方式进一步传播。否则，它将释放父项上的锁。</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="leaf-node-scan问题"><a href="#leaf-node-scan问题" class="headerlink" title="leaf node scan问题"></a>leaf node scan问题</h2><p>前述加锁方式都是top-down自顶向下式的，一个线程只能获得当前结点的儿子结点的锁，如果不能获得，就必须等待。</p>
+<p>但如果一个线程从一个叶子移动到另外一个叶子，就会出现死锁的情况。此时，需要靠程序进行死锁预防&#x2F;避免。no-wait原则要求一个线程获得锁失败时释放它所有拥有的锁，然后重新开始尝试。</p>
+<h1 id="前置知识点"><a href="#前置知识点" class="headerlink" title="前置知识点"></a>前置知识点</h1><h2 id="flexible-array"><a href="#flexible-array" class="headerlink" title="flexible array"></a>flexible array</h2><p> 柔性数组，可自适应空间大小，避免固定空间浪费。</p>
+<p>具体特点：</p>
+<ul>
+<li>柔性数组为结构体的最后一个成员；</li>
+<li>该结构体至少包含一个非柔性数组成员；</li>
+<li>编译器支持C99标准。</li>
+</ul>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">typedef</span> <span class="keyword">struct</span> &#123;</span><br><span class="line">     <span class="type">int32_t</span> id;</span><br><span class="line">     <span class="type">int32_t</span> grade;</span><br><span class="line">     <span class="type">int8_t</span> name[];</span><br><span class="line"> &#125;student_info_struct;</span><br><span class="line"><span class="comment">// 使用方式</span></span><br><span class="line"><span class="type">int8_t</span> *name = <span class="string">&quot;sdc&quot;</span>;</span><br><span class="line">si = (student_info_struct *)<span class="built_in">malloc</span>(<span class="built_in">sizeof</span>(student_info_struct) + <span class="built_in">strlen</span>(name) + <span class="number">1</span>); </span><br></pre></td></tr></table></figure>
+
+<p>数组名作为地址，可以自适应占据分配给结构体的空间，实现动态扩张。</p>
+<p>好处：直接分配结构体和缓冲区大小，避免两次分配（一次结构体，一次缓冲区）</p>
+<h1 id="踩坑-经验"><a href="#踩坑-经验" class="headerlink" title="踩坑&#x2F;经验"></a>踩坑&#x2F;经验</h1><h2 id="Root-page-id的更新"><a href="#Root-page-id的更新" class="headerlink" title="Root page id的更新"></a>Root page id的更新</h2><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">BPLUSTREE_TYPE::UpdateRootPageId</span><span class="params">(<span class="type">int</span> insert_record)</span></span>;</span><br></pre></td></tr></table></figure>
+
+<p>当第一次创建根结点时，我们需要向header page插入一条root page id的记录，即使用<code>UpdateRootPageId(1);</code></p>
+<p>此后，更新根结点但树不变，采用<code>UpdateRootPageId(0);</code></p>
+<h2 id="InternalPage-和-leafPage-的更新"><a href="#InternalPage-和-leafPage-的更新" class="headerlink" title="InternalPage 和 leafPage 的更新"></a>InternalPage 和 leafPage 的更新</h2><p>（1）数组</p>
+<p>这两个page的array的是不一样的，内部页第一个key为空，leaf则存满。</p>
+<p>在实现插入&#x2F;删除&#x2F;构造新page的API时，这两个不一样的array常常使得我的下标计算错误，出现各种莫名bug。</p>
+<p>（2）叶子是链表关系，内部页是树关系</p>
+<p>在分裂过程中，叶子结点要额外维护链表指针关系；内部页则要维护树关系（及时更新child的parent pointer指向）。</p>
+<h2 id="页管理"><a href="#页管理" class="headerlink" title="页管理"></a>页管理</h2><p>page的缓存管理是个大难题，因为我们要手动进行抓取和释放页面的管理（FetchPage和 UnpinPage）。</p>
+<p><strong>在实践中，我总结出了两种页管理的机制：</strong></p>
+<ul>
+<li><strong>谁fetch，谁unpin；</strong></li>
+<li><strong>谁最后一次用page，谁unpin。</strong></li>
+</ul>
+<p>首先我们需要知道释放一个页面的时机是什么。答案是：这个页面不用时。</p>
+<p>（1）谁fetch，谁unpin</p>
+<p>这个的思想在于让第一次fetch的函数作为页面负责人，由它进行释放页面。好比于小明向图书馆借了一本书，然后小明又将这本书借给同学A、同学B、同学C，最后小明还要负责从C手上拿回书，然后小明将书还给图书馆。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">INDEX_TEMPLATE_ARGUMENTS</span></span><br><span class="line"><span class="function"><span class="keyword">auto</span> <span class="title">BPLUSTREE_TYPE::Insert</span><span class="params">(<span class="type">const</span> KeyType &amp;key, <span class="type">const</span> ValueType &amp;value, Transaction *transaction)</span> -&gt; <span class="type">bool</span> </span>&#123;</span><br><span class="line">	....</span><br><span class="line">  <span class="keyword">auto</span> leaf_page = <span class="built_in">FindLeafPage</span>(key, Operation::INSERT, transaction);</span><br><span class="line">  <span class="keyword">auto</span> *leaf_node = <span class="built_in">reinterpret_cast</span>&lt;LeafPage *&gt;(leaf_page);</span><br><span class="line"></span><br><span class="line">	...</span><br><span class="line">  <span class="built_in">InsertInParent</span>(risen_key, leaf_node, sibling_leaf_node, transaction);</span><br><span class="line">	...</span><br><span class="line">    </span><br><span class="line">  buffer_pool_manager_-&gt;<span class="built_in">UnpinPage</span>(leaf_node-&gt;<span class="built_in">GetPageId</span>(), <span class="literal">true</span>);</span><br><span class="line">  buffer_pool_manager_-&gt;<span class="built_in">UnpinPage</span>(sibling_leaf_node-&gt;<span class="built_in">GetPageId</span>(), <span class="literal">true</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在代码中，实际上是函数嵌套的情况，最后一次拿回书的过程其实不用实现。</p>
+<p>（2）谁最后一次用page，谁unpin</p>
+<p>这个思想应该很好懂了， 结合上面的代码，那么InsertInParent应该负责leaf_node和sibling_leaf_node的页面释放。</p>
+<p>（3）意外情况 &#x2F; 辅助函数设计</p>
+<p>在实际实现中，我们会有一个findLeaf的函数，它需要找到叶子页面并交出去。<strong>显然这个findLeaf的函数并不能很好地适合第一种页管理的原则，因为它抓取了页面，却不能管理页面的释放。</strong></p>
+<p>但是我们这样想就简单多了：将findLeaf视作一个大fetch的函数，其他函数使用它就相当于抓取页面，最后由其他函数负责释放。</p>
+<h2 id="迭代器"><a href="#迭代器" class="headerlink" title="迭代器"></a>迭代器</h2><p>迭代器就是简单的单向链表遍历，只有查找的API，比较容易实现。实现过程犯的错：</p>
+<ul>
+<li><p>在创建迭代器时忘记判断树是否为空，未及时返回END迭代器</p>
+</li>
+<li><p>辅助函数没有设置树空的判断，导致出现逻辑错误。</p>
+</li>
+</ul>
+<h2 id="并发控制"><a href="#并发控制" class="headerlink" title="并发控制"></a>并发控制</h2><p>（1）锁存储</p>
+<p>由于需要“释放之前持有的锁”这一操作，我们需要一个顺序容器来存储锁，这点请看transaction里的page_set_成员。</p>
+<p>（2）锁管理与页管理</p>
+<p>锁管理依然有两种方式：</p>
+<ul>
+<li>谁加锁，谁负责释放锁</li>
+<li>谁最后一次用锁，谁负责释放锁</li>
+</ul>
+<p>但是实现螃蟹锁的过程中，我们管理的其实是page的队列，这要求我们一并管理页面：在队列里拿到page，释放这个page的锁，然后释放这个page。</p>
+<p>（3）root page id锁</p>
+<p>为了代码锁里的简洁，可以添加一个root page id锁，作为root结点的“前置锁”。相当于一个伪根结点，这样判断结点安全的逻辑就很顺畅了：默认我们持有前一个页面锁和现在的结点，再判断结点是否安全后，再释放前一个页面锁或将之添加到锁队列中。</p>
+<h2 id="开发经验"><a href="#开发经验" class="headerlink" title="开发经验"></a>开发经验</h2><p>实验中涉及多个代码文件，虽然实验指导上写着先实现B+树的page，但实际上此时根本不知道怎么设计API。而且这时臆想的接口与直接写B+树时大相径庭。实现中辅助函数是多变的。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">src/include/storage/page/b_plus_tree_page.h</span><br><span class="line">src/storage/page/b_plus_tree_page.cpp</span><br><span class="line">src/include/storage/page/b_plus_tree_internal_page.h</span><br><span class="line">src/storage/page/b_plus_tree_internal_page.cpp</span><br><span class="line">src/include/storage/page/b_plus_tree_leaf_page.h</span><br><span class="line">src/storage/page/b_plus_tree_leaf_page.cpp</span><br><span class="line">src/include/storage/index/b_plus_tree.h</span><br><span class="line">src/storage/index/b_plus_tree.cpp</span><br><span class="line">src/include/storage/index/index_iterator.h</span><br><span class="line">src/storage/index/index_iterator.cpp</span><br></pre></td></tr></table></figure>
+
+<p>开发思路：自顶向下，先填充主干，再丰满细节。</p>
+<ul>
+<li>b_plus_tree_page.h</li>
+<li>b_plus_tree_internal_page.h</li>
+<li>b_plus_tree_leaf_page.h</li>
+</ul>
+<p>以上头文件写函数签名，暂时不要考虑实现。</p>
+<p>然后在b+树的实现文件<code>b_plus_tree.cpp</code>里将整个函数流程实现，遇到辅助函数就在相应头文件定义。最后再去补充各个头文件的实现，最后再补齐<code>b_plus_tree.h</code>的函数签名。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>实验P2</p><p><a href="https://xyz.desirer233.fun/2024/04/22/cmu15445/lab/实验p2/">https://xyz.desirer233.fun/2024/04/22/cmu15445/lab/实验p2/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-04-22</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/05/02/cmu15445/Lec07/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">cmu15-445笔记七 表连接</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/04/19/cmu15445/Lec05/"><span class="level-item">cmu15-445笔记五 索引与B+树</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#B-树细节"><span class="level-left"><span class="level-item">1</span><span class="level-item">B+树细节</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#B-树的阶数"><span class="level-left"><span class="level-item">1.1</span><span class="level-item">B+树的阶数</span></span></a></li><li><a class="level is-mobile" href="#阶数与实现关系"><span class="level-left"><span class="level-item">1.2</span><span class="level-item">阶数与实现关系</span></span></a></li><li><a class="level is-mobile" href="#插入过程伪代码"><span class="level-left"><span class="level-item">1.3</span><span class="level-item">插入过程伪代码</span></span></a></li><li><a class="level is-mobile" href="#删除过程伪代码"><span class="level-left"><span class="level-item">1.4</span><span class="level-item">删除过程伪代码</span></span></a></li><li><a class="level is-mobile" href="#B-树节点页的交互"><span class="level-left"><span class="level-item">1.5</span><span class="level-item">B+树节点页的交互</span></span></a></li></ul></li><li><a class="level is-mobile" href="#B-树并发"><span class="level-left"><span class="level-item">2</span><span class="level-item">B+树并发</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#基本思想"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">基本思想</span></span></a></li><li><a class="level is-mobile" href="#优化思想"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">优化思想</span></span></a></li><li><a class="level is-mobile" href="#leaf-node-scan问题"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">leaf node scan问题</span></span></a></li></ul></li><li><a class="level is-mobile" href="#前置知识点"><span class="level-left"><span class="level-item">3</span><span class="level-item">前置知识点</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#flexible-array"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">flexible array</span></span></a></li></ul></li><li><a class="level is-mobile" href="#踩坑-经验"><span class="level-left"><span class="level-item">4</span><span class="level-item">踩坑/经验</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#Root-page-id的更新"><span class="level-left"><span class="level-item">4.1</span><span class="level-item">Root page id的更新</span></span></a></li><li><a class="level is-mobile" href="#InternalPage-和-leafPage-的更新"><span class="level-left"><span class="level-item">4.2</span><span class="level-item">InternalPage 和 leafPage 的更新</span></span></a></li><li><a class="level is-mobile" href="#页管理"><span class="level-left"><span class="level-item">4.3</span><span class="level-item">页管理</span></span></a></li><li><a class="level is-mobile" href="#迭代器"><span class="level-left"><span class="level-item">4.4</span><span class="level-item">迭代器</span></span></a></li><li><a class="level is-mobile" href="#并发控制"><span class="level-left"><span class="level-item">4.5</span><span class="level-item">并发控制</span></span></a></li><li><a class="level is-mobile" href="#开发经验"><span class="level-left"><span class="level-item">4.6</span><span class="level-item">开发经验</span></span></a></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

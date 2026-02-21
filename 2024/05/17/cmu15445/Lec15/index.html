@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>cmu15-445笔记十四 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="这节课主要讲述数据库恢复。"><meta property="og:type" content="blog"><meta property="og:title" content="cmu15-445笔记十四"><meta property="og:url" content="https://xyz.desirer233.fun/2024/05/17/cmu15445/Lec15/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="这节课主要讲述数据库恢复。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405171449186.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405171524460.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405171548546.png"><meta property="article:published_time" content="2024-05-17T06:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.450Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="数据库"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202405171449186.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/05/17/cmu15445/Lec15/"},"headline":"cmu15-445笔记十四","image":["https://gitee.com/desirer/backup/raw/master/images/202405171449186.png","https://gitee.com/desirer/backup/raw/master/images/202405171524460.png","https://gitee.com/desirer/backup/raw/master/images/202405171548546.png"],"datePublished":"2024-05-17T06:00:00.000Z","dateModified":"2026-02-21T07:11:50.450Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"这节课主要讲述数据库恢复。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/05/17/cmu15445/Lec15/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-05-17T06:00:00.000Z" title="2024/5/17 14:00:00">2024-05-17</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.450Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/cmu15445/">cmu15445</a></span><span class="level-item">16 分钟读完 (大约2375个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">cmu15-445笔记十四</h1><div class="content"><p>这节课主要讲述数据库恢复。</p>
+<span id="more"></span>
+
+<h1 id="ARIES"><a href="#ARIES" class="headerlink" title="ARIES"></a>ARIES</h1><p>Algorithms for Recovery and Isolation Exploiting Semantics，“数据库恢复原型算法“。</p>
+<p>主要思想：</p>
+<ul>
+<li><p>预写式日志</p>
+<ul>
+<li>所有改变记在日志中，日志先于数据落盘</li>
+<li>使用 steal + no-force 缓冲池策略</li>
+</ul>
+</li>
+<li><p>当 DBMS 重启时，按照日志记录的内容做回放，恢复到故障发生前的状态</p>
+</li>
+<li><p>在 undo 过程中记录 undo 操作到日志中，确保在恢复期间再次出现故障时不会执行多次相同的 undo 操作</p>
+</li>
+</ul>
+<h1 id="Log-Sequence-Numbers"><a href="#Log-Sequence-Numbers" class="headerlink" title="Log Sequence Numbers"></a>Log Sequence Numbers</h1><p>WAL中的每条日志记录都需要包含一个全局唯一且一般是单调递增的log sequence number (LSN)。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405171449186.png" style="zoom:80%;" />
+
+<ul>
+<li>flushedLSN：最后一个刷回磁盘的日志序号</li>
+<li>pageLSN：对于一个page x，最后修改它的日志的序号</li>
+<li>recLSN：对于一个page x，它刷回磁盘后第一个修改它的日志序号</li>
+<li>lastLSN：对于一个事务T，它的最后一条日志的序号</li>
+<li>MasterRecord：上一次checkpoint对应的lsn</li>
+</ul>
+<p>事务每一次修改缓存里面的数据页，都要顺带修改page对应的pageLSN。</p>
+<p>每次把内存里的log刷入磁盘时，DBMS也要顺带更新flushedLSN。</p>
+<p>将一个page x刷回磁盘时，要遵循 $pageLSN_X \leq flushedLSN$ ，目的是保证page的修改日志已经落盘。</p>
+<h1 id="事务提交"><a href="#事务提交" class="headerlink" title="事务提交"></a>事务提交</h1><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Assumptions in this lecture:</span><br><span class="line">→ All log records fit within a single page.</span><br><span class="line">→ Disk writes are atomic.</span><br><span class="line">→ Single-versioned tuples with Strong Strict 2PL.</span><br><span class="line">→ STEAL + NO-FORCE buffer management with WAL</span><br></pre></td></tr></table></figure>
+
+<p>当事务提交时，DBMS 先写入一条 COMMIT 记录到 WAL ，然后将 COMMIT 及之前的日志落盘。</p>
+<p>一旦COMMIT记录安全地存储在磁盘上，DBMS就向应用程序返回事务已提交的确认信息，并将flushedLSN 被修改为 COMMIT 记录的 LSN。</p>
+<p>在将来某一时刻，DBMS 会将内存中 COMMIT 及其之前的日志清除，并将缓存池中的脏页刷回磁盘，完成后再写入一条 TXN-END 记录到 WAL 中，作为内部记录。</p>
+<p>When the commit succeeds, write a special TXN-END record to log.</p>
+<p>→ Indicates that no new log record for a txn will appear in the log ever again.</p>
+<p>→ This does not need to be flushed immediately.</p>
+<p>TXN-END日志不需要马上刷新到磁盘，丢失也没关系，因为日志已经持久化了。</p>
+<h1 id="事务回滚"><a href="#事务回滚" class="headerlink" title="事务回滚"></a>事务回滚</h1><p>事务回滚对于数据库来说是特殊情况，因此ARIES算法也会做特殊的处理：在日志记录中再加一个字段：<strong>prevLSN。</strong></p>
+<p>这个字段代表着相同事务的日志的上一条日志，这样同一个事务的日志就形成了链（e.g. 15号日志记录的上一条日志记录不一定是14号日志记录，因为它们可能属于不同的事务）。</p>
+<h2 id="COMPENSATION-LOG-RECORDS"><a href="#COMPENSATION-LOG-RECORDS" class="headerlink" title="COMPENSATION LOG RECORDS"></a>COMPENSATION LOG RECORDS</h2><p>在对事务做回滚，也就是进行undo操作的时候，要记录”compensation log records”（简称CLR），也就是把进行过的回滚操作也写入日志，从而防止在回滚过程中再次故障导致部分操作被执行多次。</p>
+<p>CLR 记录的是 undo 操作，它除了记录原操作相关的记录，还记录了 undoNext 指针，指向下一个将要被 undo 的 LSN。</p>
+<p><strong>CLR日志不需要强制落盘，因为大不了就下次DBMS重启的时候重新回滚一遍，不影响事务的原子性（也就是说，在事务abort的时候可以直接告知用户事务abort了，而不必等到所有的undo操作都做完并且CLR都落盘）</strong></p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405171524460.png" style="zoom:80%;" />
+
+<h2 id="回滚算法"><a href="#回滚算法" class="headerlink" title="回滚算法"></a>回滚算法</h2><p>首先记录一条abort的日志。</p>
+<p>然后反向分析事务的更新，对于每个更新记录，写一个CLR日志，然后加载恢复旧值。</p>
+<p>最后，写TXN-END日志表明回滚完毕，释放所有锁。</p>
+<h1 id="Fuzzy-checkpoints"><a href="#Fuzzy-checkpoints" class="headerlink" title="Fuzzy checkpoints"></a>Fuzzy checkpoints</h1><h2 id="Blocking-CHECKPOINTS"><a href="#Blocking-CHECKPOINTS" class="headerlink" title="Blocking CHECKPOINTS"></a>Blocking CHECKPOINTS</h2><p>DBMS在标记checkpoint的时候不让任何新的事务开始执行，并且把系统中还没有执行完的事务都执行完并且完成相应的数据更新的落盘。如果在还没执行完的那些事务里，有的事务非常的长，那么DBMS就会等待相当长的一段时间，在这段时间里不能接收新的事务，这会使得性能非常的差。</p>
+<h2 id="SLIGHTLY-BETTER-CHECKPOINTS"><a href="#SLIGHTLY-BETTER-CHECKPOINTS" class="headerlink" title="SLIGHTLY BETTER CHECKPOINTS"></a>SLIGHTLY BETTER CHECKPOINTS</h2><p>做checkpoint的时候不必等待当前还没执行完的事务去执行完，让它们停下即可。</p>
+<ul>
+<li>让事务暂停的方法可以是在checkpoint开始后阻止事务获取数据或索引的写锁 (write latch)</li>
+<li>如果事务是read-only的，那么可以让它继续</li>
+</ul>
+<p>这时有些未commit的事务写入的数据可能会被checkpoint线程一起捎带落盘，因此这时磁盘中的数据 snapshot可能处于 inconsistent 的状态。</p>
+<p>但是只要我们在 checkpoint 的时候记录哪些活跃事务正在进行，哪些数据页是脏的，故障恢复时读取 WAL 就能知道存在哪些活跃事务的数据可能被部分写出，从而恢复 inconsistent 的数据。<strong>因此整个 checkpoint 过程需要两类信息：活跃事务表 (ATT)与脏页表(DPT)</strong></p>
+<p>活跃事务表ATT中的entry包含三个字段：事务ID、状态、事务更新的lastLSN</p>
+<ul>
+<li><p>事务彻底完成的时候（也就是它所做的全部更新都落盘，即TXN-END被写入日志时），ATT表中它所对应的entry才可以被删除</p>
+</li>
+<li><p>状态有：Running、Committing、U（Candidate for Undo）</p>
+</li>
+<li><p>（事务状态中的U可以理解为“还没提交”：如果数据库crash的时候这个事务还没提交，那么它就需要undo，所以称为”candidate for undo”）</p>
+</li>
+</ul>
+<p>DPT记录的是缓存池中当前还没落盘的脏页。</p>
+<ul>
+<li>entry代表一个未落盘的脏页，以及recLSN（让这个页开始变脏的log record的LSN）</li>
+</ul>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405171548546.png" style="zoom:80%;" />
+
+<p>采取了<em>slightly better checkpoints</em>策略后的WAL日志，checkpoint存档点中多了ATT和DPT。</p>
+<h2 id="FUZZY-CHECKPOINTS"><a href="#FUZZY-CHECKPOINTS" class="headerlink" title="FUZZY CHECKPOINTS"></a>FUZZY CHECKPOINTS</h2><p>Slightly better checkpoints尽管比 Non-fuzzy 好一些，不需要等待所有活跃事务执行完毕，但仍然需要在 checkpoint 期间暂停执行所有写事务。<strong><em>fuzzy checkpoints</em>策略下，在做checkpoint的时候，所有的事务都可以正常工作，并且不会强制把所有的脏页都</strong></p>
+<p><strong>落盘。</strong></p>
+<p><em>fuzzy checkpoints</em>会把原先的日志中的checkpoint的一个时间点变成一个时间段：</p>
+<ul>
+<li>checkpoint-begin：标志着checkpoint的开始，DBMS拍摄ATT和DPT的快照</li>
+<li>checkpoint-end：标志着checkpoint的结束，带有ATT和DPT（由begin阶段获取而来）</li>
+</ul>
+<p>在checkpoint开始后的事务不会记录到checkpoint-end的ATT表。</p>
+<h1 id="ARIES-Recovery"><a href="#ARIES-Recovery" class="headerlink" title="ARIES Recovery"></a>ARIES Recovery</h1><p>ARIES协议的恢复算法有三个阶段：</p>
+<ul>
+<li>Analysis：读取WAL日志，然后分析哪些脏页还没被刷到磁盘（DPT），哪些事务还是活跃的（ATT）</li>
+<li>Redo：重做</li>
+<li>undo：撤销未提交事务的影响</li>
+</ul>
+<p>The DBMS starts the recovery process by examining the log starting from the last BEGIN-CHECKPOINT found via MasterRecord. It then begins the Analysis phase by scanning forward through time to build out ATT and DPT. </p>
+<p>In the Redo phase, the algorithm jumps to the smallest recLSN, which is the oldest log record that may have modified a page not written to disk. The DBMS then applies all changes from the smallest recLSN. </p>
+<p>The Undo phase starts at the oldest log record of a transaction active at crash and reverses all changes up to that point.</p>
+<h2 id="分析阶段"><a href="#分析阶段" class="headerlink" title="分析阶段"></a>分析阶段</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Analysis Phase</span><br><span class="line">Start from last checkpoint found via the database’s MasterRecord LSN.</span><br><span class="line">1. Scan log forward from the checkpoint.</span><br><span class="line">2. If the DBMS finds a TXN-END record, remove its transaction from ATT.</span><br><span class="line">3. All other records, add transaction to ATT with status UNDO, and on commit, change transaction</span><br><span class="line">status to COMMIT.</span><br><span class="line">4. For UPDATE log records, if page P is not in the DPT, then add P to DPT and set P ’s recLSN to the log</span><br><span class="line">record’s LSN.</span><br></pre></td></tr></table></figure>
+
+<h2 id="Redo阶段"><a href="#Redo阶段" class="headerlink" title="Redo阶段"></a>Redo阶段</h2><p>此阶段的目标是让 DBMS 重复历史记录，以重建其状态，直到崩溃的那一刻。它将重新应用所有更新（甚至中止的事务）并重做 CLR。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">The DBMS scans forward from log record containing smallest recLSN in the DPT. For each update log record or CLR with a given LSN, the DBMS re-applies the update unless:</span><br><span class="line">• Affected page is not in the DPT, or</span><br><span class="line">• Affected page is in DPT but that record’s LSN is less than the recLSN of the page in DPT, or • Affected pageLSN (on disk) ≥ LSN.</span><br></pre></td></tr></table></figure>
+
+<p>若要重做操作，DBMS 会重新应用日志记录中的更改，然后将受影响页面的 pageLSN 设置为该日志记录的 LSN。 在重做阶段结束时，为所有状态为 COMMIT 的事务写入 TXN-END 日志记录，并将其从 ATT 中删除。</p>
+<h2 id="Undo阶段"><a href="#Undo阶段" class="headerlink" title="Undo阶段"></a>Undo阶段</h2><p>在最后阶段，DBMS 会撤消崩溃时处于活动状态的所有事务。这些都是在分析阶段之后在 ATT 中具有 UNDO 状态的事务。</p>
+<p>DBMS 使用 lastLSN 以相反的 LSN 顺序处理事务，以加快遍历速度。</p>
+<p>当它撤消事务的更新时，DBMS 会为每次修改将一个 CLR 条目写入日志。 成功中止最后一个事务后，DBMS 将清除日志，然后准备开始处理新事务。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>cmu15-445笔记十四</p><p><a href="https://xyz.desirer233.fun/2024/05/17/cmu15445/Lec15/">https://xyz.desirer233.fun/2024/05/17/cmu15445/Lec15/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-05-17</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/05/30/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%E5%85%A5%E9%97%A8/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">动态规划入门</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/05/16/cmu15445/Lec14/"><span class="level-item">cmu15-445笔记十三 日志</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#ARIES"><span class="level-left"><span class="level-item">1</span><span class="level-item">ARIES</span></span></a></li><li><a class="level is-mobile" href="#Log-Sequence-Numbers"><span class="level-left"><span class="level-item">2</span><span class="level-item">Log Sequence Numbers</span></span></a></li><li><a class="level is-mobile" href="#事务提交"><span class="level-left"><span class="level-item">3</span><span class="level-item">事务提交</span></span></a></li><li><a class="level is-mobile" href="#事务回滚"><span class="level-left"><span class="level-item">4</span><span class="level-item">事务回滚</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#COMPENSATION-LOG-RECORDS"><span class="level-left"><span class="level-item">4.1</span><span class="level-item">COMPENSATION LOG RECORDS</span></span></a></li><li><a class="level is-mobile" href="#回滚算法"><span class="level-left"><span class="level-item">4.2</span><span class="level-item">回滚算法</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Fuzzy-checkpoints"><span class="level-left"><span class="level-item">5</span><span class="level-item">Fuzzy checkpoints</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#Blocking-CHECKPOINTS"><span class="level-left"><span class="level-item">5.1</span><span class="level-item">Blocking CHECKPOINTS</span></span></a></li><li><a class="level is-mobile" href="#SLIGHTLY-BETTER-CHECKPOINTS"><span class="level-left"><span class="level-item">5.2</span><span class="level-item">SLIGHTLY BETTER CHECKPOINTS</span></span></a></li><li><a class="level is-mobile" href="#FUZZY-CHECKPOINTS"><span class="level-left"><span class="level-item">5.3</span><span class="level-item">FUZZY CHECKPOINTS</span></span></a></li></ul></li><li><a class="level is-mobile" href="#ARIES-Recovery"><span class="level-left"><span class="level-item">6</span><span class="level-item">ARIES Recovery</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#分析阶段"><span class="level-left"><span class="level-item">6.1</span><span class="level-item">分析阶段</span></span></a></li><li><a class="level is-mobile" href="#Redo阶段"><span class="level-left"><span class="level-item">6.2</span><span class="level-item">Redo阶段</span></span></a></li><li><a class="level is-mobile" href="#Undo阶段"><span class="level-left"><span class="level-item">6.3</span><span class="level-item">Undo阶段</span></span></a></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

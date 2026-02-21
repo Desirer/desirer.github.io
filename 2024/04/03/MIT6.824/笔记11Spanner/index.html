@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>MIT6824笔记十 Spanner - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="论文材料： https:&amp;#x2F;&amp;#x2F;pdos.csail.mit.edu&amp;#x2F;6.824&amp;#x2F;papers&amp;#x2F;spanner.pdf Spanner是谷歌公司研发的、可扩展的、多版本、全球分布式、同步复制数据库。它是第一个吧数据分布在全球范围内的系统，并且支持外部一致性的分布式事务。Spanner实现了一个强大的时间API，用于实现非阻塞的读、不采用锁机制的只读事务和原子模式变更。 Spanner论文比较复杂，这里"><meta property="og:type" content="blog"><meta property="og:title" content="MIT6824笔记十 Spanner"><meta property="og:url" content="https://xyz.desirer233.fun/2024/04/03/MIT6.824/%E7%AC%94%E8%AE%B011Spanner/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="论文材料： https:&amp;#x2F;&amp;#x2F;pdos.csail.mit.edu&amp;#x2F;6.824&amp;#x2F;papers&amp;#x2F;spanner.pdf Spanner是谷歌公司研发的、可扩展的、多版本、全球分布式、同步复制数据库。它是第一个吧数据分布在全球范围内的系统，并且支持外部一致性的分布式事务。Spanner实现了一个强大的时间API，用于实现非阻塞的读、不采用锁机制的只读事务和原子模式变更。 Spanner论文比较复杂，这里"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404022007716.jpeg"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404031723994.png"><meta property="article:published_time" content="2024-04-03T01:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.497Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="分布式系统"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202404022007716.jpeg"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/04/03/MIT6.824/%E7%AC%94%E8%AE%B011Spanner/"},"headline":"MIT6824笔记十 Spanner","image":["https://gitee.com/desirer/backup/raw/master/images/202404031723994.png"],"datePublished":"2024-04-03T01:00:00.000Z","dateModified":"2026-02-21T07:11:50.497Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"论文材料： https:&#x2F;&#x2F;pdos.csail.mit.edu&#x2F;6.824&#x2F;papers&#x2F;spanner.pdf Spanner是谷歌公司研发的、可扩展的、多版本、全球分布式、同步复制数据库。它是第一个吧数据分布在全球范围内的系统，并且支持外部一致性的分布式事务。Spanner实现了一个强大的时间API，用于实现非阻塞的读、不采用锁机制的只读事务和原子模式变更。 Spanner论文比较复杂，这里"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/04/03/MIT6.824/%E7%AC%94%E8%AE%B011Spanner/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-04-03T01:00:00.000Z" title="2024/4/3 09:00:00">2024-04-03</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.497Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/MIT6-824/">MIT6.824</a></span><span class="level-item">21 分钟读完 (大约3086个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">MIT6824笔记十 Spanner</h1><div class="content"><p>论文材料： <a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/spanner.pdf">https://pdos.csail.mit.edu/6.824/papers/spanner.pdf</a></p>
+<p>Spanner是谷歌公司研发的、可扩展的、多版本、全球分布式、同步复制数据库。它是第一个吧数据分布在全球范围内的系统，并且支持外部一致性的分布式事务。Spanner实现了一个强大的时间API，用于实现非阻塞的读、不采用锁机制的只读事务和原子模式变更。</p>
+<p>Spanner论文比较复杂，这里我结合课程，只重点讲述如何利用时间API完成分布式事务，包括读写事务和只读事务。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">http://loopjump.com/google_spanner/</span><br><span class="line">十问Spanner https://zhuanlan.zhihu.com/p/47870235</span><br></pre></td></tr></table></figure>
+
+<span id="more"></span>
+
+<h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1><p>略</p>
+<h1 id="True-Time-API"><a href="#True-Time-API" class="headerlink" title="True Time API"></a>True Time API</h1><p>分布式环境里，我们无法保证不同机器的时钟总是具有相同的值。时钟偏移为给事务带来很多困扰，比如：</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404022007716.jpeg"></p>
+<p>假设有3台机器ABC，A的时间戳快50，BC正常。事务T1更新A和C机器上的值，事务T2更新B和C机器上的值。以2PC为例，T1在时间50开始，协调者得到A&#x3D;104（实际上为54）和C&#x3D;50的回复，那么协调者就会选104作为提交时间戳，发起提交请求。T2在时间60开始，协调者得到B&#x3D;100和C&#x3D;60的回复，那么协调者就会选100作为提交时间戳，发起提交请求。然后C机器上，就会认为T2比T1先完成，T2的改变就会被覆盖，实际上T2晚于T1。</p>
+<blockquote>
+<p>本质问题是多机器时间drift引起的多机时钟无法同步，从而使得，由于不同事务参与的集群和他们的时钟不同，则使全部数据库的commit时间戳混乱，无法与真实事件发生顺序一致。</p>
+<p>简单解释Spanner的TrueTime在分布式事务中的作用 - 阿莱克西斯的文章 - 知乎<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/44254954">https://zhuanlan.zhihu.com/p/44254954</a></p>
+</blockquote>
+<p>Spanner的TrueTime利用硬件和软件的优化，保证给出的时间戳在一个时间区间内<code>TT.now() = [earliest, latest]</code>，返回最早的物理时间和最晚的物理时间。这个误差$\epsilon$非常小。</p>
+<p>当coordinator选择好时间戳之后，会等待一个ε的时间才告诉参与transaction的partition这个时间戳来commit。</p>
+<h1 id="读写事务"><a href="#读写事务" class="headerlink" title="读写事务"></a>读写事务</h1><table>
+<thead>
+<tr>
+<th>Client</th>
+<th>事务协调者(Paxos组)</th>
+<th>Sa(A数据分片Paxos组)</th>
+<th>Sb(B数据分片Paxos组)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>事务tid，向Sa的Paxos组leader发起数据分片A的读请求，向Sb的Paxos组leader发起数据分片B的读请求</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>Sa根据2PL，leader对X加锁，Owner是Client</td>
+<td>Sb根据2PL，leader对Y加锁，Owner是Client</td>
+</tr>
+<tr>
+<td>Client向事务协调者发起X&#x3D;X-1，Y&#x3D;Y+1的操作</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>收到X和Y更新的操作，通过2PC流程，分别发送X更新操作和Y更新操作到分片A和分片B的Paxos组leader</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>根据2PC流程，leader发现X已经有锁，将读锁升级为写锁，根据WAL进行事务操作的log</td>
+<td>根据2PC流程，leader发现Y已经有锁，将读锁升级为写锁，根据WAL进行事务操作的log</td>
+</tr>
+<tr>
+<td></td>
+<td>发起prepare请求，确认Sa和Sb是否可以准备事务提交，同样需要Paxos组log、复制</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>检查已拥有锁，log记录事务状态和2PC状态，lock持有状态等信息，以及<strong>在Paxos组内同步</strong>log，确认整个Paxos组可以准备提交，leader回应OK</td>
+<td>检查已拥有锁，log记录事务状态和2PC状态，lock持有状态等信息，以及<strong>在Paxos组内同步</strong>log，确认整个Paxos组可以准备提交，leader回应OK</td>
+</tr>
+<tr>
+<td></td>
+<td>发起commit(tid)请求，要求提交事务，同样需要Paxos组log、复制</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td><strong>Paxos组</strong>实际install log，执行log记录的事务操作，leader释放锁，leaer回应OK</td>
+<td><strong>Paxos组</strong>实际install log，执行log记录的事务操作，leader释放锁，leader回应OK</td>
+</tr>
+</tbody></table>
+<p>读写事务是直接的2PL和2PC，两阶段锁和两阶段提交。TC（Tansaction Coordinator）由参与事务的某个Paxos Group leader担任，而不是设置一个专门的Paxos Group。</p>
+<p><strong>过程：</strong></p>
+<ol>
+<li>client读请求直接发到对应的replica上，写的数据buffer到client自己这里，等执行结束，要提交时，将buffer的这些数据推到对应的参与者，然后选一个参与者作为协调者执行2PC。</li>
+<li>各个参与者先申请写锁，然后分配一个prepare的时间戳，然后写日志，回应协调者。</li>
+<li>所有参与者回应协调者，协调者选择一个时间戳s作为提交时间戳，写commit日志（协调者不写prepare日志），然后按照commit wait规则等待TT.now(s)条件满足后，将commit应用到Paxos状态机，然后通知其他参与者进入2PC Commit阶段，</li>
+<li>其他参与者明白事务确定要提交，因此写outcome日志，这个日志包含了时间戳s的值，同步该日志成功后，应用到状态机，释放锁。</li>
+</ol>
+<h2 id="外部一致性"><a href="#外部一致性" class="headerlink" title="外部一致性"></a>外部一致性</h2><p>为了实现外部一致性：<strong>如果一个事务T2在事务T1提交以后开始执行，那么T2的时间戳一定比T1大。</strong></p>
+<p>分配时间戳时遵循两条规则：Start和Commit Wait。</p>
+<p>记担任协调者的leader发出提交请求的事件为$e_i^{server}$ ，在所有的锁获得以后，被释放之前，就可以为事务分配时间戳s。</p>
+<ul>
+<li>Start规则保证事务协调者分配的时间戳s不会小于TT.now().latest。TT.now().latest在$e_i^{server}$ 后计算。</li>
+<li>提交等待规则，就是确保客户端看到事务提交的数据时，事务已经真正提交了，即TT.after(s)为真。</li>
+</ul>
+<p>那么协调者要怎么选时间戳呢？</p>
+<ol>
+<li>s大于等于所有其他参与者的prepare时间戳；</li>
+<li>大于协调者收到client commit请求时TT.now().latest（<strong>commit wait规则</strong>，先取TT.now().latest为时间戳，等待TT.now().latest为真之后才commit）</li>
+<li>大于已经分配的时间戳</li>
+</ol>
+<h2 id="wound-wait"><a href="#wound-wait" class="headerlink" title="wound wait"></a>wound wait</h2><p>读写事务内部的读操作，使用伤停等待避免死锁。</p>
+<p>2PC+2PL的事务实现非常容易死锁，比如A：lock(a) lock(b)；B：lock(b) lock(a)。</p>
+<p>死锁处理使用伤害等待（wound-wait）的方式，新的事务会等待旧事务，而旧事务杀死新事务，事务被杀死后等待一段时间后用旧的时间戳重启，保证不会饿死也不会出现死锁。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404031723994.png"></p>
+<p>这张图很好说明了伤停等待的效果：优先保证旧事务的执行，旧事务需要新事务的资源时直接杀死新事务；新事务需要旧事务的资源时，等待旧事务完成。</p>
+<blockquote>
+<p>Wait-die 和 wound-die都是利用时间戳进行死锁预防，判断事务的新老级别。</p>
+<p>wait-die和wound-wait两种机制都可以避免饿死。任何时候均存在一个时间戳最小的事务，并且这个事务都不允许回滚。由于时间戳总是增长，并且回滚的事务不赋予新时间戳，被回滚的事务最终会变成最小时间戳事务，从而最终会progress。</p>
+<p>可以发现在wait-die、wound-wait机制中，事务的时间戳相当于事务的优先级，并且时间戳越小的事务优先级越高。wait-die、wound-wait机制之所以可以保证不出现死锁是因为在各自的机制中，事务间的等待都是单向的。wait-die中只有老事务会等待新事务，wound-wait中只有新事务会等待老事务。</p>
+<p>wound-wait机制相比wait-die引起的回滚可能更少。wait-die机制中，如果事务T1由于申请数据项的锁被事务T2持有，而引起T1回滚，则当事务T1重启时，它可能发出相同的申请序列，如果该数据项的锁仍然被T2持有，那么T1会再度死亡，因此在T1最终加锁成功前可能会多次回滚。同样的场景，在wound-wait机制中，T1会一直等待。</p>
+</blockquote>
+<h1 id="只读事务"><a href="#只读事务" class="headerlink" title="只读事务"></a>只读事务</h1><p>Spanner实现了无锁机制的只读事务，怎么实现呢？</p>
+<p>（1）bad implementation：always read lastet committed value</p>
+<table>
+<thead>
+<tr>
+<th>事务</th>
+<th>时间戳10</th>
+<th>时间戳20</th>
+<th>时间戳30</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1</td>
+<td>set X&#x3D;1, Y &#x3D;1, Commit</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>T2</td>
+<td></td>
+<td>Set X&#x3D;2, Y&#x3D;2, Commit</td>
+<td></td>
+</tr>
+<tr>
+<td>T3</td>
+<td>Read X (now X&#x3D;1)</td>
+<td></td>
+<td>Read Y (now Y&#x3D;2), Commit</td>
+</tr>
+</tbody></table>
+<p>T3观察到了来自不同事务的写入，而不是得到一致的结果。（不符合可串行化，理论上T3要么X和Y都读取到1，要么都读取到2，要么都读取到X和Y的原始值）。</p>
+<p>（2）true idea：snapshot isolation</p>
+<p>Spanner实现无锁机制的只读事务，主要依靠时间戳做MVCC（Multi Version Concurrence Control）。</p>
+<ul>
+<li><strong>为事务分配时间戳(Assign TS to TX)</strong><ul>
+<li>读写事务：在<strong>开始提交</strong>时分配时间戳（R&#x2F;W：commit）</li>
+<li>只读事务：在<strong>事务开始</strong>时分配时间戳（R&#x2F;O：start）</li>
+</ul>
+</li>
+<li><strong>按照时间戳顺序执行所有的事务(Execute in TX order)</strong></li>
+<li><strong>每个副本保存多个键的值和对应的时间戳(Each replica stores data with a timestamp)</strong></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>事务(开始的时间戳)</th>
+<th>时间戳10</th>
+<th>时间戳20</th>
+<th>时间戳30</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T1 (10)</td>
+<td>set X&#x3D;1, Y &#x3D;1, Commit</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>T2 (20)</td>
+<td></td>
+<td>Set X&#x3D;2, Y&#x3D;2, Commit</td>
+<td></td>
+</tr>
+<tr>
+<td>T3 (15)</td>
+<td>Read X (X&#x3D;1)</td>
+<td></td>
+<td>Read Y (Y&#x3D;1), Commit</td>
+</tr>
+</tbody></table>
+<p> 这里T3需要读取时间戳15之前的最新提交值，这里时间戳15之前的最新值，只有T1事务提交的写结果，所以T3读取的X和Y都是1。因为所有的事务按照全局时间戳执行，所以保证了我们想要的线性一致性或串行化。</p>
+<p>每个replica给数据维护了version表，可想而之，表中应该是数据的值以及对应的时间戳。</p>
+<h2 id="safe-time机制"><a href="#safe-time机制" class="headerlink" title="safe time机制"></a>safe time机制</h2><p>Spanner还使得读操作能分散到各个机器上，使得读本地副本也能读到最新commit值，依靠的就是safe time机制。</p>
+<ul>
+<li>Paxos按照时间戳顺序发送所有的写入操作(Paxos sends write in timestamp order)</li>
+<li>读取X数据的T时间戳版本数据之前，需等待T时间戳之后的任意数据写入(Before Read X @15, wait for Write &gt; @15)</li>
+<li>这里等待写入，同时还需要等待在2PC中已经prepare但是还没有commit的事务(Also wait for TX that have prepared but not committed)</li>
+</ul>
+<p>每个副本无论主备，都维护一个tsafe的时间戳，这个tsafe是一个副本最近更新后的最大时间戳。只有读操作的时间戳t，满足$t \le t_{safe}$时，读操作才生效。</p>
+<p>$\begin{equation}t_{safe}&#x3D;min(t_{safe}^{Paxos},t_{safe}^{TM}) \end{equation}$</p>
+<p>$t_{safe}^{Paxos}$指已经应用到Paxos状态机的Paxos write的时间戳的安全时间戳，因为Paxos write应用到状态机是顺序应用的，因此只要维护最后一次应用的Paxos write的时间戳就可以了。</p>
+<p>$t_{safe}^{TM}$是指所有没有提交的事务的提交时间戳下界。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>本文对Spanner解读有限，集中讨论了读写事务和只读事务的实现。读写事务依靠2PL+2PC，同时使用wound wait避免死锁。只读事务利用TT无锁进行，利用saft time保证在本地副本读新的操作。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>MIT6824笔记十 Spanner</p><p><a href="https://xyz.desirer233.fun/2024/04/03/MIT6.824/笔记11Spanner/">https://xyz.desirer233.fun/2024/04/03/MIT6.824/笔记11Spanner/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-04-03</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/">分布式系统</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/04/10/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/%E5%89%8D%E7%BC%80%E5%92%8C%E4%B8%8E%E5%B7%AE%E5%88%86/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">前缀和与差分</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/03/30/MIT6.824/%E7%AC%94%E8%AE%B010%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"><span class="level-item">MIT6824笔记十 分布式事务</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#架构"><span class="level-left"><span class="level-item">1</span><span class="level-item">架构</span></span></a></li><li><a class="level is-mobile" href="#True-Time-API"><span class="level-left"><span class="level-item">2</span><span class="level-item">True Time API</span></span></a></li><li><a class="level is-mobile" href="#读写事务"><span class="level-left"><span class="level-item">3</span><span class="level-item">读写事务</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#外部一致性"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">外部一致性</span></span></a></li><li><a class="level is-mobile" href="#wound-wait"><span class="level-left"><span class="level-item">3.2</span><span class="level-item">wound wait</span></span></a></li></ul></li><li><a class="level is-mobile" href="#只读事务"><span class="level-left"><span class="level-item">4</span><span class="level-item">只读事务</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#safe-time机制"><span class="level-left"><span class="level-item">4.1</span><span class="level-item">safe time机制</span></span></a></li></ul></li><li><a class="level is-mobile" href="#总结"><span class="level-left"><span class="level-item">5</span><span class="level-item">总结</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

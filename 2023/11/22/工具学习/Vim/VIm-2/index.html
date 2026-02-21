@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>Learn Vim Efficiently 2 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="这里将介绍vim的语法和光标浏览，这几乎是vim最重要的部分。"><meta property="og:type" content="blog"><meta property="og:title" content="Learn Vim Efficiently 2"><meta property="og:url" content="https://xyz.desirer233.fun/2023/11/22/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/VIm-2/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="这里将介绍vim的语法和光标浏览，这几乎是vim最重要的部分。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://xyz.desirer233.fun/img/og_image.png"><meta property="article:published_time" content="2023-11-21T16:00:00.000Z"><meta property="article:modified_time" content="2023-11-24T03:29:12.000Z"><meta property="article:author" content="Desirer"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://xyz.desirer233.fun/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2023/11/22/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/VIm-2/"},"headline":"Learn Vim Efficiently 2","image":["https://xyz.desirer233.fun/img/og_image.png"],"datePublished":"2023-11-21T16:00:00.000Z","dateModified":"2023-11-24T03:29:12.000Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"这里将介绍vim的语法和光标浏览，这几乎是vim最重要的部分。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2023/11/22/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/VIm-2/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2023-11-21T16:00:00.000Z" title="2023/11/22 00:00:00">2023-11-22</time>发表</span><span class="level-item"><time dateTime="2023-11-24T03:29:12.000Z" title="2023/11/24 11:29:12">2023-11-24</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/">工具学习</a><span> / </span><a class="link-muted" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/">Vim</a></span><span class="level-item">15 分钟读完 (大约2202个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">Learn Vim Efficiently 2</h1><div class="content"><p>这里将介绍vim的语法和光标浏览，这几乎是vim最重要的部分。</p>
+<span id="more"></span>
+
+<h2 id="一、语法"><a href="#一、语法" class="headerlink" title="一、语法"></a>一、语法</h2><p>强烈推荐阅读： <a target="_blank" rel="noopener" href="https://github.com/iggredible/Learn-Vim/blob/master/ch04_vim_grammar.md">https://github.com/iggredible/Learn-Vim/blob/master/ch04_vim_grammar.md</a></p>
+<p>不同于其他文本编辑器的快捷键（需要同时按下两个键或者三个键），vim的命令更像是编程，有一套特定的语法。</p>
+<p>在vim中只有一个语法规则：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">动词+名词</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-1-动词"><a href="#1-1-动词" class="headerlink" title="1.1 动词"></a>1.1 动词</h3><p>所谓动词就是Operator，操作符。</p>
+<p>用<code>:h operator</code>可以查看16种操作符，这里列举三种最常用的操作符。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">y    Yank text (copy)</span><br><span class="line">d    Delete text and save to register</span><br><span class="line">c    Delete text, save to register, and start insert mode</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-2-名词"><a href="#1-2-名词" class="headerlink" title="1.2 名词"></a>1.2 名词</h3><p>所谓名词就是motions，你用来在vim中移动的符号。这里是一些motions。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">h    Left</span><br><span class="line">j    Down</span><br><span class="line">k    Up</span><br><span class="line">l    Right</span><br><span class="line">w			移动到下一个单词</span><br><span class="line">b			反向移动到下一个单词</span><br><span class="line">$			移动到本行末尾</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-3-动词-名词的语法体现"><a href="#1-3-动词-名词的语法体现" class="headerlink" title="1.3 动词+名词的语法体现"></a>1.3 动词+名词的语法体现</h3><p>假设你有如下文本：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cosnt string learn = “vim”;</span><br></pre></td></tr></table></figure>
+
+<p>在正常模式下，你的光标在字母<code>c</code>上。</p>
+<ul>
+<li><p>复制一整行:<code>y$</code></p>
+<ul>
+<li>y是复制，$是移动到一行末尾</li>
+</ul>
+</li>
+<li><p>删除const：<code>dw</code></p>
+<ul>
+<li>d删除w一个单词</li>
+</ul>
+</li>
+<li><p>向左拷贝3个字母：<code>y3h</code></p>
+</li>
+<li><p>删除2个单词：<code>d2w</code></p>
+</li>
+</ul>
+<p>所以vim的命令不需要刻意记忆，就像自然语言。</p>
+<blockquote>
+<p>以行为单位的操作很频繁，所以vim将准备了一些行操作的快捷方式：<code>yy</code>,<code>dd</code>和<code>cc</code></p>
+</blockquote>
+<h3 id="1-4-更加快捷的操作"><a href="#1-4-更加快捷的操作" class="headerlink" title="1.4 更加快捷的操作"></a>1.4 更加快捷的操作</h3><p>假设你有如下文本：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">int print()&#123;</span><br><span class="line">	console.log(&quot;hello vim&quot;);</span><br><span class="line">	int a[15];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>快速删除括号内的内容<code>di(</code></li>
+<li>快速删除双引号里的内容<code>di&quot;</code></li>
+<li>快速删除中括号内的内容<code>di[</code></li>
+</ul>
+<p>这将是vim的<strong>必杀技</strong>。<code>di</code>代表着delete inner。对于结构化的文本，特别是代码。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">i + object    Inner text object</span><br><span class="line">a + object    Outer text object</span><br></pre></td></tr></table></figure>
+
+<p><code>da(</code>将会连括号一起删除。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">w         A word</span><br><span class="line">p         A paragraph</span><br><span class="line">s         A sentence</span><br><span class="line">( or )    A pair of ( )</span><br><span class="line">&#123; or &#125;    A pair of &#123; &#125;</span><br><span class="line">[ or ]    A pair of [ ]</span><br><span class="line">&lt; or &gt;    A pair of &lt; &gt;</span><br><span class="line">t         XML tags</span><br><span class="line">&quot;         A pair of &quot; &quot;</span><br><span class="line">&#x27;         A Pair of &#x27; &#x27;</span><br><span class="line">`         A pair of ` `</span><br></pre></td></tr></table></figure>
+
+<h2 id="二、光标移动"><a href="#二、光标移动" class="headerlink" title="二、光标移动"></a>二、光标移动</h2><p>强烈推荐阅读： <a target="_blank" rel="noopener" href="https://github.com/iggredible/Learn-Vim/blob/master/ch05_moving_in_file.md">https://github.com/iggredible/Learn-Vim/blob/master/ch05_moving_in_file.md</a></p>
+<p>光标移动是很基础且重要的内容，一般我们退出编辑模式就是进行光标的移动。</p>
+<h3 id="2-1-字符移动"><a href="#2-1-字符移动" class="headerlink" title="2.1 字符移动"></a>2.1 字符移动</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">h</span><br><span class="line">j</span><br><span class="line">k</span><br><span class="line">l</span><br><span class="line">N + Motion</span><br></pre></td></tr></table></figure>
+
+<p>比如说<code>5H</code>向左移动5个字符。</p>
+<h3 id="2-2-单词间移动"><a href="#2-2-单词间移动" class="headerlink" title="2.2 单词间移动"></a>2.2 单词间移动</h3><p>顾名思义，在单词间移动。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">w     Move forward to the beginning of the next word</span><br><span class="line"></span><br><span class="line">e     Move forward one word to the end of the next word</span><br><span class="line"></span><br><span class="line">b     Move backward to beginning of the previous word</span><br></pre></td></tr></table></figure>
+
+<p>一般命令都会有大写和小写两个版本，或者代表着两个方向，或者代表着两个不同的意思。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">W     Move forward to the beginning of the next WORD</span><br><span class="line">E     Move forward one word to the end of the next WORD</span><br><span class="line">B     Move backward to beginning of the previous WORD</span><br><span class="line"></span><br><span class="line">ge    Move backward to end of the previous word</span><br><span class="line">gE    Move backward to end of the previous WORD</span><br></pre></td></tr></table></figure>
+
+<p>那么大写的单词和小写的单词有什么区别呢？单词都是被空白字符分隔的字符串。</p>
+<ul>
+<li>小写单词只包括字母和数字</li>
+<li>大写单词包括任何字符除了空格、制表符和 EOL</li>
+</ul>
+<h3 id="2-3-行间移动"><a href="#2-3-行间移动" class="headerlink" title="2.3 行间移动"></a>2.3 行间移动</h3><p>或者叫行内水平移动更佳。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0     Go to the first character in the current line</span><br><span class="line">$     Go to the last char in the current line</span><br><span class="line">n|    Go the column n in the current line</span><br></pre></td></tr></table></figure>
+
+<p>值得说是<code>n|</code>，在代码的报警信息中经常能看到第几行第几列报错，使用这个命令能快速定位到出错列。n代表任意数字。</p>
+<p>快捷的操作：行内搜索。我认为这是vim的第二个必杀技。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">f    Search forward for a match in the same line</span><br><span class="line">t    Search forward for a match in the same line, stopping before match</span><br></pre></td></tr></table></figure>
+
+<p>利用f可以快速到达你想要的字符面前。比如说<code>fa</code>，快速将光标定位到第一个a的位置。</p>
+<p>快速记住f和t的区别：f代表find，找到。t代表till，直到。</p>
+<p>同样大小写两个版本代表着两个方向。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">F    Search backward for a match in the same line</span><br><span class="line">T    Search backward for a match in the same line, stopping before match</span><br><span class="line"></span><br><span class="line">;    Repeat the last search in the same line using the same direction</span><br><span class="line">,    Repeat the last search in the same line using the opposite direction</span><br></pre></td></tr></table></figure>
+
+<p>使用<code>;</code>和<code>.</code>能避免重复劳动。记住上次的 行内查找操作。</p>
+<h3 id="2-4-行号移动"><a href="#2-4-行号移动" class="headerlink" title="2.4 行号移动"></a>2.4 行号移动</h3><p>这才是名副其实的行间移动。比如说你想到第7行，命令<code>7G</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">gg    Go to the first line</span><br><span class="line">G     Go to the last line</span><br><span class="line">nG    Go to line n</span><br><span class="line">n%    Go to n% in file</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-5-搜索与替换"><a href="#2-5-搜索与替换" class="headerlink" title="2.5 搜索与替换"></a>2.5 搜索与替换</h3><p>终于来了，全文搜索与替换。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/    Search forward for a match</span><br><span class="line">?    Search backward for a match</span><br><span class="line">n    Repeat last search in same direction of previous search</span><br><span class="line">N    Repeat last search in opposite direction of previous search</span><br></pre></td></tr></table></figure>
+
+<hr>
+<p>比如说，现在我们有这样一段文本：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">const int a = 1;</span><br><span class="line">const int b = 2;</span><br><span class="line">int c = 3;</span><br></pre></td></tr></table></figure>
+
+<p>现在我们想要将所有的int都替换为float：</p>
+<ul>
+<li><code>\int&lt;Enter&gt;</code><ul>
+<li>这时你将定位到第一个int</li>
+</ul>
+</li>
+<li><code>cwfloat&lt;Esc&gt;</code><ul>
+<li>change word改变一个单词，然后输入float</li>
+</ul>
+</li>
+<li><code>n.</code><ul>
+<li>继续下一个搜索，然后用点命令重复改变</li>
+</ul>
+</li>
+</ul>
+<p>这时你就能发现vim的快捷了。</p>
+<hr>
+<p>还有一些快捷命令：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">*     Search for whole word under cursor forward</span><br><span class="line">#     Search for whole word under cursor backward</span><br><span class="line">g*    Search for word under cursor forward</span><br><span class="line">g#    Search for word under cursor backward</span><br></pre></td></tr></table></figure>
+
+<p><code>g*</code>和<code>*</code>的作用，客观自行搜索。</p>
+<h3 id="2-6-窗口与浏览"><a href="#2-6-窗口与浏览" class="headerlink" title="2.6 窗口与浏览"></a>2.6 窗口与浏览</h3><p>To scroll, you have 3 speed increments: full-screen (<code>Ctrl-F/Ctrl-B</code>), half-screen (<code>Ctrl-D/Ctrl-U</code>), and line (<code>Ctrl-E/Ctrl-Y</code>).</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">* Ctrl-E    Scroll down a line</span><br><span class="line">Ctrl-D    Scroll down half screen</span><br><span class="line">Ctrl-F    Scroll down whole screen</span><br><span class="line">* Ctrl-Y    Scroll up a line</span><br><span class="line">Ctrl-U    Scroll up half screen</span><br><span class="line">Ctrl-B    Scroll up whole screen</span><br></pre></td></tr></table></figure>
+
+<p>You can also scroll relatively to the current line (zoom screen sight):</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">zt    Bring the current line near the top of your screen</span><br><span class="line">* zz    Bring the current line to the middle of your screen</span><br><span class="line">zb    Bring the current line near the bottom of your screen</span><br></pre></td></tr></table></figure>
+
+<p><strong>这里留下作者的话：</strong></p>
+<p>Finally, realize that you do not need to know every single Vim command to be productive. Most Vim users don’t. I don’t. Learn the commands that will help you accomplish your task at that moment.</p>
+<p>Take your time. Navigation skill is a very important skill in Vim. Learn one small thing every day and learn it well.</p>
+<h2 id="三、Vimrc"><a href="#三、Vimrc" class="headerlink" title="三、Vimrc"></a>三、Vimrc</h2><h3 id="3-1-是什么？"><a href="#3-1-是什么？" class="headerlink" title="3.1 是什么？"></a>3.1 是什么？</h3><p>vimrc是vim的配置文件。</p>
+<h3 id="3-2-有什么用？"><a href="#3-2-有什么用？" class="headerlink" title="3.2 有什么用？"></a>3.2 有什么用？</h3><p>它能将某些设置永久保存。什么意思呢？比如说，你现在打开vim设置了行号<code>:set number</code>，当你下一次打开vim时，这个设置就失效了。通过vimrc就能永久保存设置。</p>
+<p>一般vimrc在用户目录下， <code>~/.vimrc</code>.</p>
+<h3 id="3-3-它有哪些内容？"><a href="#3-3-它有哪些内容？" class="headerlink" title="3.3 它有哪些内容？"></a>3.3 它有哪些内容？</h3><p>一般来说，vimrc主要配置以下内容：</p>
+<ul>
+<li>Plugins</li>
+<li>Settings</li>
+<li>Custom Funcitons</li>
+<li>Custom Commands</li>
+<li>Mappings</li>
+</ul>
+<p>我们只挑常用的讲，设置settings和映射mappings。</p>
+<p>当你改变vimrc时，记得source it。 Save it (<code>:w</code>), then source it (<code>:source %</code>). </p>
+<h3 id="3-4-设置"><a href="#3-4-设置" class="headerlink" title="3.4 设置"></a>3.4 设置</h3><p>你可以准备一些常用的设置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">set number</span><br><span class="line">set nocompatible</span><br></pre></td></tr></table></figure>
+
+<p>Since we are learning about Vim and not Vi, a setting that you must have is the <code>nocompatible</code> option. Add <code>set nocompatible</code> in your vimrc. </p>
+<p>Many Vim-specific features are disabled when it is running on <code>compatible</code> option.</p>
+<h3 id="3-5-映射"><a href="#3-5-映射" class="headerlink" title="3.5 映射"></a>3.5 映射</h3><p>你可以将一些键位映射成一系列命令的组合。这是个非常有用的功能。比方说，你如果不习惯vim的hjkl你可以映射为类似方向键布局的jkli。</p>
+<p>语法为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nnoremap &lt;key&gt; &lt;key&gt;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>n意味着normal模式</li>
+<li>nore意味着non-recursive，不递归的</li>
+<li>map就是映射</li>
+</ul>
+<hr>
+<p>如何理解non-recursive呢？让我们来看一个例子：</p>
+<p>你现在想要实现这样一个功能：按B就能在每一行的末尾加一个分号，然后退回到上一个单词。你写出这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nmap B A;&lt;esc&gt;B</span><br></pre></td></tr></table></figure>
+
+<p>注意，A行末尾插入，分号，esc退回到normal模式，B回退一个单词。</p>
+<p>这看起来很美好，但实际上这个命令会加无限多的分号。除非你按<code>Ctrl-C</code>停止。</p>
+<p>为什么？因为没有设置不递归，最后一个B也被解释为映射后的B，而不是映射前的B（回退单词）。</p>
+<p>所以，最好在平常中都使用不递归的映射。</p>
+<hr>
+<p>好了，现在你可以实现一些快捷的功能了。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">inoremap jk &lt;esc&gt;</span><br></pre></td></tr></table></figure>
+
+<p>这个命令在插入模式下，同时按住jk就能退出插入模式。</p>
+<p>map命令的首字母对应不同的模式，这里留给大家探索。</p>
+<h2 id="四、后序"><a href="#四、后序" class="headerlink" title="四、后序"></a>四、后序</h2><p>多用，多折腾。</p>
+<p>这里留下作者的话：</p>
+<p>Vimrc is an important component of Vim customization. </p>
+<p>A good way to start building your vimrc is by reading other people’s vimrcs and gradually build it over time. </p>
+<p>The best vimrc is not the one that developer X uses, but the one that is tailored exactly to fit your thinking framework and editing style.</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>Learn Vim Efficiently 2</p><p><a href="https://xyz.desirer233.fun/2023/11/22/工具学习/Vim/VIm-2/">https://xyz.desirer233.fun/2023/11/22/工具学习/Vim/VIm-2/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2023-11-22</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2023-11-24</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2023/11/25/MIT6.824/%E7%AC%94%E8%AE%B01%E7%BB%AA%E8%AE%BA/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">MIT6824笔记一 绪论与MapReduce</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2023/11/22/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/Vim-1/"><span class="level-item">Learn Vim Efficiently 1</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#一、语法"><span class="level-left"><span class="level-item">1</span><span class="level-item">一、语法</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#1-1-动词"><span class="level-left"><span class="level-item">1.1</span><span class="level-item">1.1 动词</span></span></a></li><li><a class="level is-mobile" href="#1-2-名词"><span class="level-left"><span class="level-item">1.2</span><span class="level-item">1.2 名词</span></span></a></li><li><a class="level is-mobile" href="#1-3-动词-名词的语法体现"><span class="level-left"><span class="level-item">1.3</span><span class="level-item">1.3 动词+名词的语法体现</span></span></a></li><li><a class="level is-mobile" href="#1-4-更加快捷的操作"><span class="level-left"><span class="level-item">1.4</span><span class="level-item">1.4 更加快捷的操作</span></span></a></li></ul></li><li><a class="level is-mobile" href="#二、光标移动"><span class="level-left"><span class="level-item">2</span><span class="level-item">二、光标移动</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#2-1-字符移动"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">2.1 字符移动</span></span></a></li><li><a class="level is-mobile" href="#2-2-单词间移动"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">2.2 单词间移动</span></span></a></li><li><a class="level is-mobile" href="#2-3-行间移动"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">2.3 行间移动</span></span></a></li><li><a class="level is-mobile" href="#2-4-行号移动"><span class="level-left"><span class="level-item">2.4</span><span class="level-item">2.4 行号移动</span></span></a></li><li><a class="level is-mobile" href="#2-5-搜索与替换"><span class="level-left"><span class="level-item">2.5</span><span class="level-item">2.5 搜索与替换</span></span></a></li><li><a class="level is-mobile" href="#2-6-窗口与浏览"><span class="level-left"><span class="level-item">2.6</span><span class="level-item">2.6 窗口与浏览</span></span></a></li></ul></li><li><a class="level is-mobile" href="#三、Vimrc"><span class="level-left"><span class="level-item">3</span><span class="level-item">三、Vimrc</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#3-1-是什么？"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">3.1 是什么？</span></span></a></li><li><a class="level is-mobile" href="#3-2-有什么用？"><span class="level-left"><span class="level-item">3.2</span><span class="level-item">3.2 有什么用？</span></span></a></li><li><a class="level is-mobile" href="#3-3-它有哪些内容？"><span class="level-left"><span class="level-item">3.3</span><span class="level-item">3.3 它有哪些内容？</span></span></a></li><li><a class="level is-mobile" href="#3-4-设置"><span class="level-left"><span class="level-item">3.4</span><span class="level-item">3.4 设置</span></span></a></li><li><a class="level is-mobile" href="#3-5-映射"><span class="level-left"><span class="level-item">3.5</span><span class="level-item">3.5 映射</span></span></a></li></ul></li><li><a class="level is-mobile" href="#四、后序"><span class="level-left"><span class="level-item">4</span><span class="level-item">四、后序</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

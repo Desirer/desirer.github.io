@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>MIT6824笔记八 Aurora - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="本节介绍了一个事务的基本实现方式以及Aurora。 对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。 论文指路：https:&amp;#x2F;&amp;#x2F;pdos.csail.mit.edu&amp;#x2F;6.824&amp;#x2F;papers&amp;#x2F;aurora.pdf"><meta property="og:type" content="blog"><meta property="og:title" content="MIT6824笔记八 Aurora"><meta property="og:url" content="https://xyz.desirer233.fun/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="本节介绍了一个事务的基本实现方式以及Aurora。 对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。 论文指路：https:&amp;#x2F;&amp;#x2F;pdos.csail.mit.edu&amp;#x2F;6.824&amp;#x2F;papers&amp;#x2F;aurora.pdf"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202403311744168.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202403311745195.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202403311749839.png"><meta property="og:image" content="https://pic4.zhimg.com/80/v2-c09698c911b26f2022aa6ac47abd6d3f_720w.webp"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202403311752583.png"><meta property="article:published_time" content="2024-02-27T01:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.497Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="分布式系统"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202403311744168.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/"},"headline":"MIT6824笔记八 Aurora","image":["https://gitee.com/desirer/backup/raw/master/images/202403311744168.png","https://gitee.com/desirer/backup/raw/master/images/202403311745195.png","https://gitee.com/desirer/backup/raw/master/images/202403311749839.png","https://pic4.zhimg.com/80/v2-c09698c911b26f2022aa6ac47abd6d3f_720w.webp","https://gitee.com/desirer/backup/raw/master/images/202403311752583.png"],"datePublished":"2024-02-27T01:00:00.000Z","dateModified":"2026-02-21T07:11:50.497Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"本节介绍了一个事务的基本实现方式以及Aurora。 对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。 论文指路：https:&#x2F;&#x2F;pdos.csail.mit.edu&#x2F;6.824&#x2F;papers&#x2F;aurora.pdf"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-02-27T01:00:00.000Z" title="2024/2/27 09:00:00">2024-02-27</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.497Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/MIT6-824/">MIT6.824</a></span><span class="level-item">29 分钟读完 (大约4333个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">MIT6824笔记八 Aurora</h1><div class="content"><p>本节介绍了一个事务的基本实现方式以及Aurora。</p>
+<p>对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。</p>
+<p>论文指路：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/aurora.pdf">https://pdos.csail.mit.edu/6.824/papers/aurora.pdf</a></p>
+<span id="more"></span>
+
+<h1 id="故障可恢复事务"><a href="#故障可恢复事务" class="headerlink" title="故障可恢复事务"></a>故障可恢复事务</h1><h2 id="认识事务"><a href="#认识事务" class="headerlink" title="认识事务"></a>认识事务</h2><p>Atomic事务是指将多个操作打包成原子操作，并确保多个操作顺序执行。</p>
+<p>Isolation我们希望数据库顺序执行事务里的操作，并且不允许其他任何人看到执行的中间状态。</p>
+<p>Consistency同时，考虑到故障，如果在执行的任何时候出现故障，我们需要确保故障恢复之后，要么所有操作都已经执行完成，要么一个操作也没有执行。</p>
+<p>Duration如果一个事务提交了，用户期望事务的效果是可以持久保存的，即使数据库故障重启了，数据也还能保存。</p>
+<h2 id="事务实现"><a href="#事务实现" class="headerlink" title="事务实现"></a>事务实现</h2><p>通常来说，事务是通过对涉及到的每一份数据加锁来实现。</p>
+<p>在硬盘中，除了有数据之外，还有一个预写式日志（Write-Ahead Log，简称为WAL）。预写式日志对于系统的容错性至关重要。</p>
+<p>当你在执行一个事务内的各个操作时，例如执行 X&#x3D;X+10 的操作时，数据库会从硬盘中读取持有X的记录，给数据加10。但是在事务提交之前，数据的修改还只在本地的缓存中，并没有写入到硬盘。</p>
+<p>在允许数据库软件修改硬盘中真实的data page之前，数据库软件需要先在WAL中添加Log条目来描述事务。在提交事务之前，数据库需要先在WAL中写入完整的Log条目，来描述所有有关数据库的修改，<strong>并且这些Log是写入磁盘的。</strong></p>
+<blockquote>
+<p>在提交并写入硬盘的data page之前，数据库通常需要写入至少3条Log记录：</p>
+<ol>
+<li>第一条表明，作为事务的一部分，我要修改X，它的旧数据是500，我要将它改成510。</li>
+<li>第二条表明，我要修改Y，它的旧数据是750，我要将它改成740。</li>
+<li>第三条记录是一个Commit日志，表明事务的结束。</li>
+</ol>
+<p>通常来说，前两条Log记录会打上事务的ID作为标签，这样在故障恢复的时候，可以根据第三条commit日志找到对应的Log记录，进而知道哪些操作是已提交事务的，哪些是未完成事务的。</p>
+</blockquote>
+<p>如果数据库成功的将事务对应的操作和commit<strong>日志写入到磁盘中</strong>，数据库可以<strong>回复</strong>给客户端说，事务已经提交了。而这时，客户端也可以确认事务是永久可见的。</p>
+<p>接下来有两种情况:</p>
+<ul>
+<li><p>如果数据库没有崩溃，那么在它的cache中，X，Y对应的数值分别是510和740。最终数据库会将cache中的数值写入到磁盘对应的位置。所以数据库写磁盘是一个lazy操作，它会对更新进行累积，每一次写磁盘可能包含了很多个更新操作。这种累积更新可以提升操作的速度。</p>
+</li>
+<li><p>如果数据库在将cache中的数值写入到磁盘之前就崩溃了，这样磁盘中的page仍然是旧的数值。当数据库重启时，恢复软件会扫描WAL日志，发现对应事务的Log，并发现事务的commit记录，那么恢复软件会将新的数值写入到磁盘中。这被称为redo，它会重新执行事务中的写操作。</p>
+</li>
+</ul>
+<h1 id="Aurora"><a href="#Aurora" class="headerlink" title="Aurora"></a>Aurora</h1><p>Amazon Aurora 是专为云构建的一种兼容 MySQL 和 PostgreSQL 的关系数据库，Amazon Aurora 的速度可达标准 MySQL 数据库的五倍、标准 PostgreSQL 数据库的三倍。</p>
+<p>参考：<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/338582762">https://zhuanlan.zhihu.com/p/338582762</a></p>
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>Amazon有装满了服务器的数据中心，并且会在每一个服务器上都运行VMM（Virtual Machine Monitor）。</p>
+<p>（1）EBS（Elastic Block Store，弹性块存储）</p>
+<p>Web服务所在的EC2（Elastic Cloud 2）实例会与数据库所在的EC2实例交互，完成数据库中记录的读写。但是如果数据库所在的服务器宕机了，并且数据存储在服务器的本地硬盘中，那么就会有大问题，因为数据丢失了。<strong>所以，为了向用户提供EC2实例所需的硬盘，并且硬盘数据不会随着服务器故障而丢失，就出现了一个与Aurora相关的服务，并且同时也是容错的且支持持久化存储的服务，这个服务就是EBS。</strong></p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202403311744168.png" style="zoom:50%;" />
+
+<p>在实现上，EBS底层是一对互为副本的存储服务器。一个EBS volume看起来就像是一个普通的硬盘一样，但却是由一对互为副本EBS服务器实现，每个EBS服务器本地有一个硬盘。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202403311745195.png" style="zoom:50%;" />
+
+<p>所以，现在你运行了一个数据库，相应的EC2实例将一个EBS volume挂载成自己的硬盘。当数据库执行写磁盘操作时，数据会通过网络送到EBS服务器。<strong>这两个EBS服务器会使用Chain Replication进行复制</strong>。</p>
+<p>问题一：<strong>网络传输大。</strong>如果你在EBS上运行一个数据库，那么最终会有大量的数据通过网络来传递。</p>
+<p>问题二：<strong>EBS的容错性不是很好</strong>。为了降低使用Chain Replication的代价，Amazon总是将EBS volume的两个副本存放在同一个数据中心，如果整个数据中心挂了，那就没辙了。</p>
+<p>（2）Amazon RDS（Relational Database Service，关系型数据服务）</p>
+<p>在MySQL基础上，结合Amazon自己的基础设施，Amazon为其云用户开发了改进版的数据库，叫做RDS。RDS是第一次尝试将数据库在多个AZ之间做复制，这样就算整个数据中心挂了，你还是可以从另一个AZ重新获得数据而不丢失任何写操作。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202403311749839.png" style="zoom:50%;" />
+
+<blockquote>
+<p>通过EBS存储DB的data page&amp;log。再通过网络传输data个另一个DB。</p>
+</blockquote>
+<p>这个数据库将它的data page和WAL Log存储在EBS，而不是对应服务器的本地硬盘。<strong>当数据库执行了写Log或者写page操作时，这些写请求实际上通过网络发送到了EBS服务器，所有这些服务器都在一个AZ中。</strong></p>
+<p>每一次数据库软件执行一个写操作，Amazon会自动的将写操作拷贝发送到另一个数据中心的AZ中。</p>
+<p>每一次写操作，例如数据库追加日志或者写磁盘的page，数据除了发送给AZ1的两个EBS副本之外，还需要通过网络发送到位于AZ2的副数据库。副数据库接下来会将数据再发送给AZ2的两个独立的EBS副本。之后，AZ2的副数据库会将写入成功的回复返回给AZ1的主数据库，主数据库看到这个回复之后，才会认为写操作完成了。</p>
+<img src="https://pic4.zhimg.com/80/v2-c09698c911b26f2022aa6ac47abd6d3f_720w.webp" style="zoom:80%;" />
+
+<p><strong>RDS的写操作代价极高，因为需要写大量的数据。这意味着，哪怕是只写入这两个数字，当需要更新data page时，需要向磁盘写入多得多的数据。通过网络来传输8k字节的page数据时，RDS的架构很明显太慢了。</strong></p>
+<blockquote>
+<p>学生提问：为什么会慢呢？</p>
+<p>Robert教授：在这个架构中，对于数据库来说是无感知的，每一次数据库调用写操作，更新自己对应的EBS服务器，每一个写操作的拷贝穿过AZ也会写入到另一个AZ中的2个EBS服务器中，另一个AZ会返回确认说写入成功，只有这时，写操作看起来才是完成的。所以这里必须要等待4个服务器更新完成，并且等待数据在链路上传输。</p>
+</blockquote>
+<p><strong>性能低：这种Mirrored MySQL比Aurora慢得多的原因是，它通过网络传输了大量的数据。</strong>并且具有大量串行操作。</p>
+<h2 id="Aurora架构"><a href="#Aurora架构" class="headerlink" title="Aurora架构"></a>Aurora架构</h2><p><img src="https://gitee.com/desirer/backup/raw/master/images/202403311752583.png"><br>整体上来看，我们还是有一个数据库服务器，但是这里运行的是Amazon提供的定制软件。</p>
+<p>第一个是，在替代EBS的位置，有6个数据的副本，位于3个AZ，每个AZ有2个副本。所以现在有了超级容错性，并且每个写请求都需要以Quorum方式发送给这6个副本。</p>
+<p>第二个是，这里通过网络传递的数据只有Log条目。后果是，这里的存储系统不再是通用存储，而是专门理解MySQL Log条目的存储系统。</p>
+<h2 id="Quorum复制思想"><a href="#Quorum复制思想" class="headerlink" title="Quorum复制思想"></a>Quorum复制思想</h2><p>Aurora使用的是一种经典quorum（法定人数机制）思想的变种。通常来说，Quorum系统就是简单的读写系统，支持Put&#x2F;Get操作。</p>
+<ul>
+<li><p>有N个副本；</p>
+</li>
+<li><p>写请求，至少确保写操作被W个副本确认，W小于N。</p>
+</li>
+<li><p>读请求，至少需要从R个副本得到所读取的信息。</p>
+</li>
+</ul>
+<p><strong>Quorum系统要求，发送写请求的W个服务器，必须与任意接收读请求的R个服务器有重叠。</strong>这意味着，R加上W必须大于N（ 至少满足R + W &#x3D; N + 1 ），这样任意W个服务器至少与任意R个服务器有一个重合。</p>
+<h3 id="读请求"><a href="#读请求" class="headerlink" title="读请求"></a>读请求</h3><p><strong>这里还有一个关键的点，客户端读请求可能会得到R个不同的结果，现在的问题是R个结果中，哪一个是正确的呢？</strong>不能使用投票法决定，因为返回的R个结果可能只有一个结果是正确的。</p>
+<p><strong>在Quorum系统中使用的是版本号（Version）。</strong>每一次执行写请求，你需要将新的数值与一个增加的版本号绑定。之后，客户端发送读请求，从Read Quorum得到了一些回复，客户端可以直接使用其中的最高版本号的数值。</p>
+<h3 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h3><p>（1）相比Chain Replication，这里的优势是可以轻易的剔除暂时故障、失联或者慢的服务器。<strong>发N个只需要等最快的R或W个回复。</strong></p>
+<blockquote>
+<p>实际上，这里是这样工作的，当你执行写请求时，你会将新的数值和对应的版本号给所有N个服务器，但是只会等待W个服务器确认。类似的，对于读请求，你可以将读请求发送给所有的服务器，但是只等待R个服务器返回结果。因为你只需要等待R个服务器，这意味着在最快的R个服务器返回了之后，你就可以不用再等待慢服务器或者故障服务器超时。这里忽略慢服务器或者挂了的服务器的机制完全是隐式的。在这里，我们不用决定哪个服务器是在线或者是离线的，只要Quorum能达到，系统就能继续工作，所以我们可以非常平滑的处理慢服务或者挂了的服务。</p>
+</blockquote>
+<p>（2）<strong>Quorum系统可以调整读写的性能。</strong>通过调整Read Quorum和Write Quorum，可以使得系统更好的支持读请求或者写请求。</p>
+<blockquote>
+<p>对于前面的例子，我们可以假设Write Quorum是3，每一个写请求必须被所有的3个服务器所确认。这样的话，Read Quorum可以只是1。所以，如果你想要提升读请求的性能，在一个3个服务器的Quorum系统中，你可以设置R为1，W为3，这样读请求会快得多，因为它只需要等待一个服务器的结果，但是代价是写请求执行的比较慢。</p>
+<p>当R为1，W为3时，写请求就不再是容错的了，同样，当R为3，W为1时，读请求不再是容错。</p>
+</blockquote>
+<h2 id="Aruora的读写存储服务器"><a href="#Aruora的读写存储服务器" class="headerlink" title="Aruora的读写存储服务器"></a>Aruora的读写存储服务器</h2><p>对于Aurora来说<strong>它的写请求只会在当前Log中追加条目（Append Entries）</strong>，不会覆盖数据。</p>
+<p>Aurora使用Quorum只是在数据库执行事务并发出新的Log记录时，确保Log记录至少出现在4个存储服务器之后才能提交事务（Aurora的Quorum系统中，N&#x3D;6，W&#x3D;4，R&#x3D;3）。所以，每个新的Log记录必须至少追加在4个存储服务器中，之后才可以认为写请求完成。</p>
+<h2 id="数据分片"><a href="#数据分片" class="headerlink" title="数据分片"></a>数据分片</h2><p>目前为止，我们已经知道Aurora将自己的数据分布在6个副本上。但是如果只是这样的话，我们不能拥有一个大于单机磁盘空间的数据库。为了能支持超过10TB数据的大型数据库，Amazon将数据按照10GB为单位分割存储到多组存储服务器上。</p>
+<blockquote>
+<p>即把整个DB volume切分成 10GB 的chunk，每个chunk六个副本存储在三个AZ上。Aurora还需要一个成员组管理服务，用来记录各个chunk所在服务器，常见方式是租约机制的一致性共识协议，比如Paxos。</p>
+</blockquote>
+<p>（2）故障恢复</p>
+<p>每个存储服务器有几TB的磁盘，上面存储了属于数百个Aurora实例的10GB数据块。当一个存储服务器故障时，它还带走了其他数百个数据库的10GB数据。如何做崩溃恢复？</p>
+<p>从存储服务器的副本拷贝吗？如果网卡是10Gb&#x2F;S，通过网络传输10TB的数据需要8000秒。</p>
+<p>Aurora实际使用的策略是：对于每一个数据块，从Protection Group中挑选一个副本，作为数据拷贝的源。这样，对于100个数据块，相当于有了100个数据拷贝的源。之后，就可以并行的通过网络将100个数据块从100个源拷贝到100个目的地，时长相当于只拷贝一个数据块。</p>
+<h2 id="只读数据库"><a href="#只读数据库" class="headerlink" title="只读数据库"></a>只读数据库</h2><p>对于Aurora来说，通常会有非常大量的只读数据库查询。读请求，可以发送给多个数据库。</p>
+<p>当客户端向只读数据库发送读请求，只读数据库需要弄清楚它需要哪些data page来处理这个读请求，之后直接从存储服务器读取这些data page，并不需要主数据库的介入。之后它会缓存读取到的page，这样对于将来的一些读请求，可以直接根据缓存中的数据返回。Aurora的主数据库也会将它的Log的拷贝发送给每一个只读数据库来更新自身缓存。</p>
+<p><strong>这的确意味着只读数据库会落后主数据库一点，但是对于大部分的只读请求来说，这没问题。因为如果你查看一个网页，如果数据落后了20毫秒，通常来说不会是一个大问题。</strong></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li><p>事务性数据库是如何工作的、怎么与后端存储交互的（性能、故障修复等）</p>
+</li>
+<li><p>Quorum思想，通过读写Quorum的重合，可以确保总是能看见最新的数据，但是又具备容错性。</p>
+</li>
+<li><p>数据库和存储系统可以耦合开发。通常来说，存储系统是非常通用的，并不会为某个特定的应用程序定制。因为一个通用的设计可以被大量服务使用。但是在Aurora面临的问题中，性能问题是非常严重的，它不得不通过模糊服务和底层基础架构的边界来获得35倍的性能提升，这是个巨大的成功。</p>
+</li>
+</ul>
+</div><div class="article-licensing box"><div class="licensing-title"><p>MIT6824笔记八 Aurora</p><p><a href="https://xyz.desirer233.fun/2024/02/27/MIT6.824/笔记8Aurora/">https://xyz.desirer233.fun/2024/02/27/MIT6.824/笔记8Aurora/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-02-27</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/">分布式系统</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/03/30/MIT6.824/%E7%AC%94%E8%AE%B010%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">MIT6824笔记十 分布式事务</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/02/19/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/Redis%E5%BA%94%E7%94%A8%E7%AF%87/"><span class="level-item">Redis 应用篇</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#故障可恢复事务"><span class="level-left"><span class="level-item">1</span><span class="level-item">故障可恢复事务</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#认识事务"><span class="level-left"><span class="level-item">1.1</span><span class="level-item">认识事务</span></span></a></li><li><a class="level is-mobile" href="#事务实现"><span class="level-left"><span class="level-item">1.2</span><span class="level-item">事务实现</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Aurora"><span class="level-left"><span class="level-item">2</span><span class="level-item">Aurora</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#背景"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">背景</span></span></a></li><li><a class="level is-mobile" href="#Aurora架构"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">Aurora架构</span></span></a></li><li><a class="level is-mobile" href="#Quorum复制思想"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">Quorum复制思想</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#读请求"><span class="level-left"><span class="level-item">2.3.1</span><span class="level-item">读请求</span></span></a></li><li><a class="level is-mobile" href="#优点"><span class="level-left"><span class="level-item">2.3.2</span><span class="level-item">优点</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Aruora的读写存储服务器"><span class="level-left"><span class="level-item">2.4</span><span class="level-item">Aruora的读写存储服务器</span></span></a></li><li><a class="level is-mobile" href="#数据分片"><span class="level-left"><span class="level-item">2.5</span><span class="level-item">数据分片</span></span></a></li><li><a class="level is-mobile" href="#只读数据库"><span class="level-left"><span class="level-item">2.6</span><span class="level-item">只读数据库</span></span></a></li></ul></li><li><a class="level is-mobile" href="#总结"><span class="level-left"><span class="level-item">3</span><span class="level-item">总结</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

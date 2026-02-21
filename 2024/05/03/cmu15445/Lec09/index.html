@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>cmu15-445笔记九 查询优化 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="本节课主要关于查询优化，首先介绍了Sql语句的执行过程，然后就是两种优化方式：基于规则的优化和基于代价的优化。"><meta property="og:type" content="blog"><meta property="og:title" content="cmu15-445笔记九 查询优化"><meta property="og:url" content="https://xyz.desirer233.fun/2024/05/03/cmu15445/Lec09/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="本节课主要关于查询优化，首先介绍了Sql语句的执行过程，然后就是两种优化方式：基于规则的优化和基于代价的优化。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032117315.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032129663.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032130503.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032131310.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032143915.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032139747.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202411192132699.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032144080.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032144556.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032146559.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032152646.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405032158867.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405042117086.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405042118955.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405042054727.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405042123701.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405042128813.png"><meta property="article:published_time" content="2024-05-03T12:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.430Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="数据库"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202405032117315.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/05/03/cmu15445/Lec09/"},"headline":"cmu15-445笔记九 查询优化","image":["https://gitee.com/desirer/backup/raw/master/images/202405032117315.png","https://gitee.com/desirer/backup/raw/master/images/202405032129663.png","https://gitee.com/desirer/backup/raw/master/images/202405032130503.png","https://gitee.com/desirer/backup/raw/master/images/202405032131310.png","https://gitee.com/desirer/backup/raw/master/images/202405032143915.png","https://gitee.com/desirer/backup/raw/master/images/202405032139747.png","https://gitee.com/desirer/backup/raw/master/images/202411192132699.png","https://gitee.com/desirer/backup/raw/master/images/202405032144080.png","https://gitee.com/desirer/backup/raw/master/images/202405032144556.png","https://gitee.com/desirer/backup/raw/master/images/202405032146559.png","https://gitee.com/desirer/backup/raw/master/images/202405032152646.png","https://gitee.com/desirer/backup/raw/master/images/202405032158867.png","https://gitee.com/desirer/backup/raw/master/images/202405042117086.png","https://gitee.com/desirer/backup/raw/master/images/202405042118955.png","https://gitee.com/desirer/backup/raw/master/images/202405042054727.png","https://gitee.com/desirer/backup/raw/master/images/202405042123701.png","https://gitee.com/desirer/backup/raw/master/images/202405042128813.png"],"datePublished":"2024-05-03T12:00:00.000Z","dateModified":"2026-02-21T07:11:50.430Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"本节课主要关于查询优化，首先介绍了Sql语句的执行过程，然后就是两种优化方式：基于规则的优化和基于代价的优化。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/05/03/cmu15445/Lec09/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-05-03T12:00:00.000Z" title="2024/5/3 20:00:00">2024-05-03</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.430Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/cmu15445/">cmu15445</a></span><span class="level-item">22 分钟读完 (大约3273个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">cmu15-445笔记九 查询优化</h1><div class="content"><p>本节课主要关于查询优化，首先介绍了Sql语句的执行过程，然后就是两种优化方式：基于规则的优化和基于代价的优化。</p>
+<span id="more"></span>
+
+<p>SQL语句是声明式的，只说明要什么，没说明怎么做。DBMS的优化器将优化SQL的执行过程。有如下两种方式：</p>
+<ul>
+<li><strong>Heuristics &#x2F; Rules</strong>，启发式&#x2F;基于规则</li>
+<li><strong>Cost-based Search</strong>，基于代价</li>
+</ul>
+<p>启发式方法重写查询语句，以移除低效部分。这种方法有可能需要查阅目录数据结构，但是不需要数据本身。基于代价的方法估计每种执行计划的代价，然后选择代价最低的执行。</p>
+<p>逻辑计划是关系代数级别的，物理计划包括了各个算子的具体执行方式，即物理算子（比如说join算子是用nested-loop join还是merge&#x2F;hash join来完成）。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405032117315.png"></p>
+<p>用户的业务会发出SQL查询语句，少部分DBMS会有SQL Rewriter这个组件，对字符串形式的SQL语句进行文本上的预处理（在字符串层面上做简单的优化）。</p>
+<p>之后SQL查询语句进入Parser，Parser会把SQL语句变成抽象语法树，抽象语法树当中会涉及到库&#x2F;表&#x2F;列的名称，这些名称要和数据库系统元数据里面的库&#x2F;表&#x2F;列&#x2F;索引的ID对应上，因此会有Binder（即连接器）把SQL抽象语法树中用户写的表名&#x2F;列名&#x2F;索引名转化成数据库内部使用的ID，并且这个步骤中会有检查：如果用户请求了一个不存在的表，那么就会直接报错。</p>
+<p>经Binder处理过之后的抽象语法树会被送入Tree Rewriter，这个组件大多数DBMS都有，它会输出一个标准的执行计划（比如说SQL语句里有一堆join操作，一开始的抽象语法树中的join的排布可能是乱的，Tree Rewriter会把所有的join排列成左深树，这个步骤也叫正则化），这个过程中也会查一些系统的元数据，Tree Rewriter输出的原始的逻辑计划是优化器进行优化的源头。</p>
+<p>之后基于规则的优化器（RBO， rule based optimizer）会查询一些系统的元数据来做优化，基于代价的优化器（CBO， cost based optimizer）不仅会查询元数据，还会查询相关的代价模型，根据代价模型去做优化，最后优化器会生成物理计划，被实际使用。</p>
+<h1 id="Relational-Algebra-Equivalences"><a href="#Relational-Algebra-Equivalences" class="headerlink" title="Relational Algebra Equivalences"></a>Relational Algebra Equivalences</h1><p>关系代数表达式的等价，如果两个关系代数表达式所输出的结果集是一样的，那么它们等价。</p>
+<p>比如说谓词下推：</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405032129663.png" style="zoom:50%;" />
+
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405032130503.png" style="zoom:50%;" />
+
+<p>join算子具有结合率、交换率，这会被用于查询优化</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405032131310.png" style="zoom:50%;" />
+
+<p>投影算子也可以有一些优化点：</p>
+<ul>
+<li><p>投影下推，从而把无关的attribute对应的列删掉，让tuple和中间结果更小；</p>
+</li>
+<li><p>project out all attributes except the ones requested or required（e.g. joining keys）</p>
+</li>
+</ul>
+<p>这些查询优化策略对于列存储的数据库不重要，因为列存储的数据库永远都是最后进行对tuple的物化。</p>
+<h1 id="Logical-Query-Optimization"><a href="#Logical-Query-Optimization" class="headerlink" title="Logical Query Optimization"></a>Logical Query Optimization</h1><h2 id="Split-Conjunctive-Predicates分开连接谓词"><a href="#Split-Conjunctive-Predicates分开连接谓词" class="headerlink" title="Split Conjunctive Predicates分开连接谓词"></a>Split Conjunctive Predicates分开连接谓词</h2><p>将连在一起的谓词分开。图片上来看，sql语句并未改变，只不过执行时，将连续的谓词判断分为若干个判断，虽然多了若干个判断，但是方便优化器优化语句。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405032143915.png" style="zoom:50%;" />
+
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405032139747.png" style="zoom:50%;" />
+
+<p>Decompose predicates into their simplest forms to make it easier for the optimizer to move them around.</p>
+<h2 id="Predicate-Pushdown谓词下推"><a href="#Predicate-Pushdown谓词下推" class="headerlink" title="Predicate Pushdown谓词下推"></a>Predicate Pushdown谓词下推</h2><p>谓词下推，把谓词尽量往下推，推到越接近读表越好，这便可以提前筛掉一部分的数据，减少上层算子的负担。</p>
+<p>从图片上可以看到，enrolled表通过谓词下推后，减少了筛选上来的数据，进而减轻了连接时的数据代价。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202411192132699.png"></p>
+<h2 id="Replace-Cartesian-Products-with-Joins取代笛卡尔积"><a href="#Replace-Cartesian-Products-with-Joins取代笛卡尔积" class="headerlink" title="Replace Cartesian Products with Joins取代笛卡尔积"></a>Replace Cartesian Products with Joins取代笛卡尔积</h2><p>根据相应的谓词，把笛卡尔积变成join。笛卡尔积和谓词合为一个等价的join连接。比如：</p>
+<p>如下两图所示，原本artist和appears需要先做笛卡尔积再进行谓词筛选，但是这个操作可以转化为连接。因为DBMS对于Join有多种优化方式（Loop join、sort-merge join和hash join等）。</p>
+<blockquote>
+<p>关于join还有优化手段：<strong>应该用“小表”作为驱动表，“大表”作为被驱动表</strong>。因为nest loop join算法，把缓存池尽可能多地给outer table使用，从而减少遍历inner table表的次数，从而减少开销，毕竟给inner table用的缓存池再大，在遍历inner table时，都会面临缓存重刷的问题。</p>
+</blockquote>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405032144080.png"></p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405032144556.png"></p>
+<h2 id="Projection-Pushdown投影下推"><a href="#Projection-Pushdown投影下推" class="headerlink" title="Projection Pushdown投影下推"></a>Projection Pushdown投影下推</h2><p>执行过程中先执行投影算子，从而把无关的attribute对应的列删掉，让tuple和中间结果更小</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405032146559.png"></p>
+<h2 id="Nested-Queries-嵌套查询优化"><a href="#Nested-Queries-嵌套查询优化" class="headerlink" title="Nested Queries 嵌套查询优化"></a>Nested Queries 嵌套查询优化</h2><p>SQL语句中经常会有一些嵌套的子查询，DBMS一般会用如下两大手段去优化它：</p>
+<ul>
+<li>重写语句，取消嵌套或者扁平化</li>
+<li>分解嵌套查询并将结果存储到临时表中</li>
+</ul>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405032152646.png" style="zoom:80%;" />
+
+<p>原始的SQL语句里的谓词既涉及到了外层的主查询，也涉及到了内层的子查询，可以发现：实际上它想做的就是join，那不妨就直接进行两个表的join，写成上图下方的形式。这样的话接下来优化器只需优化这一个SQL语句，因此也更容易生成比较高效的物理执行计划。</p>
+<p>在一些复杂的查询当中，可能不太容易将内部的子查询和外部的主查询rewrite成一个查询，那么DBMS可以将子查询分离出来，先把子查询做完，把结果存放在一个临时的表里面，然后把这个临时的表带到主查询中。这里的解耦是指：不让子查询嵌套在主查询里面，而是把它拿出来，提前执行它。</p>
+<h2 id="Expression-Rewriting-表达式重写"><a href="#Expression-Rewriting-表达式重写" class="headerlink" title="Expression Rewriting 表达式重写"></a>Expression Rewriting 表达式重写</h2><p>DBMS会通过人为设置的一些规则把查询语句的表达式（尤其是谓词表达式）重写，让它变得更加精简、高效。</p>
+<ul>
+<li>去除无效谓词</li>
+<li>合并谓词</li>
+</ul>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405032158867.png"></p>
+<h1 id="Cost-Estimations"><a href="#Cost-Estimations" class="headerlink" title="Cost Estimations"></a>Cost Estimations</h1><p>基于代价的优化器会根据当前数据库的状态估算出查询计划的代价。</p>
+<ul>
+<li>物理代价：磁盘IO、CPU周期、缓存失效</li>
+<li>逻辑代价：算子开销</li>
+<li>算法开销：细粒度估计单个算子的开销</li>
+</ul>
+<p>为了估算查询成本，DBMS 在其内部目录中维护有关表、属性和索引的内部统计信息。不同的系统以不同的方式维护这些统计信息。大多数系统试图通过维护内部统计表来避免动态计算。然后，这些内部表可能会在后台更新。</p>
+<h2 id="Selection-Statistics"><a href="#Selection-Statistics" class="headerlink" title="Selection Statistics"></a>Selection Statistics</h2><p>对于每张表R，DBMS追踪表中tuple的数量$N_R$以及每个attribute A的distinct value的数量$V(A,R)$。selection cardinality选择基数由 $SC(A, R)&#x3D;\frac{N_R}{V(N,R)} $ 计算得出。</p>
+<p>一个attribute A的选择率selectivity由SC的倒数给出。形象的说，就是“谓词能选上来百分之多少的数据” 。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405042117086.png"></p>
+<p>可以察觉到：选择率和数据出现的概率是很相似的概念。多谓词情况下，可以使用计算概率的方法，根据每个谓词的选择率计算总体的选择率。</p>
+<p>前面所讨论的都是和select语句相关的基数的计算，对于带有join操作的语句来说，两个表join得到的结果集的规模该如何计算呢？</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405042118955.png"></p>
+<p>在计算选择基数的过程中，遵循了几个假设：</p>
+<ul>
+<li>数据一致性</li>
+<li>谓词独立性：The predicates on attributes are independent.</li>
+<li>包括规则：连接键的域重叠，使得内部关系中的每个键将也存在于外表中。</li>
+</ul>
+<p>实际应用场景并不会这么理想化，比如说：关于不同的attribute的不同谓词之间往往不是完全独立的。</p>
+<h2 id="Histograms"><a href="#Histograms" class="headerlink" title="Histograms"></a>Histograms</h2><p>对于不均匀分布&#x2F;attribute之间不独立的数据，可以利用直方图记录信息。</p>
+<ul>
+<li>等宽直方图</li>
+<li>等深直方图</li>
+</ul>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405042054727.png"></p>
+<h2 id="Sampling"><a href="#Sampling" class="headerlink" title="Sampling"></a>Sampling</h2><p>还有一种较为简单粗暴的统计方式，sampling-采样，这种策略的思想是：如果表特别大的话，我们不妨从其中随机选择一些tuple然后构成一个小表，把这个小表作为完整表的一个代表，然后下一步转而分析这个小表，将得出的统计信息用于对完整表的查询代价分析。</p>
+<p>DBMS 可以使用采样将谓词应用于具有类似分布的表的较小副本（参见图 13）。每当基础表的更改量超过某个阈值（例如，元组的 10%）时，DBMS 就会更新样本。</p>
+<p>sampling的问题：额外维护小表（比如说采样时提取出来的tuple如果在完整的表里被删掉了，那么我们也要对小表做相应的改动），而且每个SQL语句在完整的表上面运行之前，还要先在小表上面跑一遍以获取统计信息，这毫无疑问会带来一定的开销。</p>
+<p>sampling的好处就是基于真实的数据去做估计。</p>
+<h1 id="Plan-Enumeration-计划列举"><a href="#Plan-Enumeration-计划列举" class="headerlink" title="Plan Enumeration 计划列举"></a>Plan Enumeration 计划列举</h1><p>基于前面介绍的各种策略，我们可以粗略地去估计谓词的选择率（selectivity），在知道了谓词的选择率之后，就可以计算出有多少数据被送入了每个算子，知道了这个数据之后就可以计算每个算子的开销，进而得出整个执行计划的开销代价，知道了计划的开销，那么优化器就可以进入下一阶段：计划列举。</p>
+<p>对于那些仅涉及单表的查询计划，优化器做的事情非常简单，可以仅仅启发式地依据规则对逻辑计划rewrite，比如说确定访问数据的最佳方式（相关的规则可以是：“若存在这个字段的索引，那么就走索引”），而不用去量化分析查询计划的开销。只涉及单表的OLTP就可以作简单的优化：</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405042123701.png"></p>
+<h1 id="多表查询优化"><a href="#多表查询优化" class="headerlink" title="多表查询优化"></a>多表查询优化</h1><p>对于那些涉及到多个表的查询，不可避免地会有表与表之间的join，而inner-join运算既符合交换律，又符合结合律，因此4～5个表做join时计划列举的空间极大（join操作的顺序，join运算符左边和右边各是哪个表，这些都有极大的搜索空间，因此我们要用一些手段去降低这个搜索空间）。</p>
+<p>IBM的System R只考虑左深树对应的join排列，即join的左子树也是一个join操作（如下图最左侧所示，因此下图的右边两个join排列都会被pass掉）。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202405042128813.png"></p>
+<p>而且左深树带来了意想不到的好处：如果计划的执行模型（process model）是火山模型，那么就可以做到（假设B~D表的哈希表都做好了并且进行的是hash join）：A表和B表做join得到一个tuple，吐给上层的join算子，然后上层的join算子拿这个tuple和C表做join，之后再吐给上层，和D表做join，这便实现了几乎完美的流式操作，极大程度上使中间结果集更小。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>cmu15-445笔记九 查询优化</p><p><a href="https://xyz.desirer233.fun/2024/05/03/cmu15445/Lec09/">https://xyz.desirer233.fun/2024/05/03/cmu15445/Lec09/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-05-03</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/05/14/cmu15445/Lec13/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">cmu15-445笔记十三 MVCC</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/05/03/cmu15445/Lec08/"><span class="level-item">cmu15-445笔记八 Sql执行</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#Relational-Algebra-Equivalences"><span class="level-left"><span class="level-item">1</span><span class="level-item">Relational Algebra Equivalences</span></span></a></li><li><a class="level is-mobile" href="#Logical-Query-Optimization"><span class="level-left"><span class="level-item">2</span><span class="level-item">Logical Query Optimization</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#Split-Conjunctive-Predicates分开连接谓词"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">Split Conjunctive Predicates分开连接谓词</span></span></a></li><li><a class="level is-mobile" href="#Predicate-Pushdown谓词下推"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">Predicate Pushdown谓词下推</span></span></a></li><li><a class="level is-mobile" href="#Replace-Cartesian-Products-with-Joins取代笛卡尔积"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">Replace Cartesian Products with Joins取代笛卡尔积</span></span></a></li><li><a class="level is-mobile" href="#Projection-Pushdown投影下推"><span class="level-left"><span class="level-item">2.4</span><span class="level-item">Projection Pushdown投影下推</span></span></a></li><li><a class="level is-mobile" href="#Nested-Queries-嵌套查询优化"><span class="level-left"><span class="level-item">2.5</span><span class="level-item">Nested Queries 嵌套查询优化</span></span></a></li><li><a class="level is-mobile" href="#Expression-Rewriting-表达式重写"><span class="level-left"><span class="level-item">2.6</span><span class="level-item">Expression Rewriting 表达式重写</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Cost-Estimations"><span class="level-left"><span class="level-item">3</span><span class="level-item">Cost Estimations</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#Selection-Statistics"><span class="level-left"><span class="level-item">3.1</span><span class="level-item">Selection Statistics</span></span></a></li><li><a class="level is-mobile" href="#Histograms"><span class="level-left"><span class="level-item">3.2</span><span class="level-item">Histograms</span></span></a></li><li><a class="level is-mobile" href="#Sampling"><span class="level-left"><span class="level-item">3.3</span><span class="level-item">Sampling</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Plan-Enumeration-计划列举"><span class="level-left"><span class="level-item">4</span><span class="level-item">Plan Enumeration 计划列举</span></span></a></li><li><a class="level is-mobile" href="#多表查询优化"><span class="level-left"><span class="level-item">5</span><span class="level-item">多表查询优化</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

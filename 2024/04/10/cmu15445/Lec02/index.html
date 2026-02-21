@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>cmu15-445笔记二 存储模型 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="存储-1  How the DBMS represents the database in files on disk.  DBMS是怎么在底层表示数据的？ 本节融合了三节课内容，主要是数据库底层存储的表现，讨论了页中tuple的存储模型，包括两种类型基于tuple和基于log。讨论了具体的数据表示，系统元数据。最后介绍OLTP和OLAP，对应的行存储和列存储优缺点。简单介绍了数据压缩方法。"><meta property="og:type" content="blog"><meta property="og:title" content="cmu15-445笔记二 存储模型"><meta property="og:url" content="https://xyz.desirer233.fun/2024/04/10/cmu15445/Lec02/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="存储-1  How the DBMS represents the database in files on disk.  DBMS是怎么在底层表示数据的？ 本节融合了三节课内容，主要是数据库底层存储的表现，讨论了页中tuple的存储模型，包括两种类型基于tuple和基于log。讨论了具体的数据表示，系统元数据。最后介绍OLTP和OLAP，对应的行存储和列存储优缺点。简单介绍了数据压缩方法。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404101604672.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404101607821.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404101646939.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404101719657.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404101720187.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404101737733.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404101741715.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404111450735.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202404111518137.png"><meta property="article:published_time" content="2024-04-10T07:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.458Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="数据库"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202404101604672.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/04/10/cmu15445/Lec02/"},"headline":"cmu15-445笔记二 存储模型","image":["https://gitee.com/desirer/backup/raw/master/images/202404101604672.png","https://gitee.com/desirer/backup/raw/master/images/202404101607821.png","https://gitee.com/desirer/backup/raw/master/images/202404101646939.png","https://gitee.com/desirer/backup/raw/master/images/202404101719657.png","https://gitee.com/desirer/backup/raw/master/images/202404101720187.png","https://gitee.com/desirer/backup/raw/master/images/202404101737733.png","https://gitee.com/desirer/backup/raw/master/images/202404101741715.png","https://gitee.com/desirer/backup/raw/master/images/202404111450735.png","https://gitee.com/desirer/backup/raw/master/images/202404111518137.png"],"datePublished":"2024-04-10T07:00:00.000Z","dateModified":"2026-02-21T07:11:50.458Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"存储-1  How the DBMS represents the database in files on disk.  DBMS是怎么在底层表示数据的？ 本节融合了三节课内容，主要是数据库底层存储的表现，讨论了页中tuple的存储模型，包括两种类型基于tuple和基于log。讨论了具体的数据表示，系统元数据。最后介绍OLTP和OLAP，对应的行存储和列存储优缺点。简单介绍了数据压缩方法。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/04/10/cmu15445/Lec02/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-04-10T07:00:00.000Z" title="2024/4/10 15:00:00">2024-04-10</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.458Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/cmu15445/">cmu15445</a></span><span class="level-item">19 分钟读完 (大约2831个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">cmu15-445笔记二 存储模型</h1><div class="content"><p>存储-1 </p>
+<p>How the DBMS represents the database in files on disk. </p>
+<p>DBMS是怎么在底层表示数据的？</p>
+<p>本节融合了三节课内容，主要是数据库底层存储的表现，讨论了页中tuple的存储模型，包括两种类型基于tuple和基于log。讨论了具体的数据表示，系统元数据。最后介绍OLTP和OLAP，对应的行存储和列存储优缺点。简单介绍了数据压缩方法。</p>
+<span id="more"></span>
+
+<h1 id="存储硬件认知"><a href="#存储硬件认知" class="headerlink" title="存储硬件认知"></a>存储硬件认知</h1><p><img src="https://gitee.com/desirer/backup/raw/master/images/202404101604672.png"></p>
+<p>在非易失性存储上进行随机读写通常慢于顺序读写。</p>
+<p>DBMS will want to maximize sequential access. </p>
+<p>→ Algorithms try to reduce number of writes to random pages so that data is stored in contiguous blocks.</p>
+<p>→ Allocating multiple pages at the same time is called an “extent”.</p>
+<h1 id="基于磁盘的DBMS存储模型"><a href="#基于磁盘的DBMS存储模型" class="headerlink" title="基于磁盘的DBMS存储模型"></a>基于磁盘的DBMS存储模型</h1><p><img src="https://gitee.com/desirer/backup/raw/master/images/202404101607821.png"></p>
+<p>其实这里与OS的VMM无异，BufferPool就是磁盘的缓存，以页为单位进行读取、淘汰。</p>
+<p>为啥不让OS做这个事情呢？当然也有一些基于OS的解决方案。</p>
+<ul>
+<li>OS不懂事务，脏页随时可能被刷回硬盘</li>
+<li>DBMS需要合适页替换策略</li>
+<li>DBMS需要合适的多线程控制</li>
+</ul>
+<h1 id="数据库底层存储表现"><a href="#数据库底层存储表现" class="headerlink" title="数据库底层存储表现"></a>数据库底层存储表现</h1><p>数据库以合适的格式存储在一个或多个文件中，OS不知其内容。</p>
+<p>通常有一个storage manager管理文件，将文件视作页的集合。</p>
+<p>页是固定大小的块，每个页都有唯一的标识。页大小不固定，4KB-16KB不等。</p>
+<h1 id="Heap-File"><a href="#Heap-File" class="headerlink" title="Heap File"></a>Heap File</h1><p>Heap FIile就是存储页的集合，把若干个页放一起作为一个文件管理。当有多个文件时，通过页ID找页的过程就不是那么直观了，我们需要页目录。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404101646939.png"></p>
+<p>页目录需要追踪页的位置、空闲页等</p>
+<h1 id="Page模型"><a href="#Page模型" class="headerlink" title="Page模型"></a>Page模型</h1><p>一个页分为页头和数据两部分。页头包括了页的元信息：页大小、校验和、数据库版本、事务可见性等；数据体则是存储一大堆的tuple。</p>
+<p>数据体该怎么组织？两种方式：</p>
+<ul>
+<li>Tuple-oriented</li>
+<li>Log-structured</li>
+</ul>
+<h2 id="Tuple-oriented-Storage"><a href="#Tuple-oriented-Storage" class="headerlink" title="Tuple-oriented Storage"></a>Tuple-oriented Storage</h2><p>（1）Tuple-oriented Strawman Idea</p>
+<p>基于元组的存储，将一堆tuple放在一起。只能应对固定长度的tuple，无法很好应对删除操作（破坏顺序，内存碎片）。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404101719657.png"></p>
+<p>（2）slotted pages 基于槽的元组存储</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404101720187.png"></p>
+<p>在data区域的最前面有一个slot数组，其中的每个元素和一个tuple构成一对一的映射关系，每个slot记录对应的tuple的位置。</p>
+<p>slot是从页的data区域的最前面往后存，tuple是从data区域的最后面往前存。</p>
+<p>删除操作后，需要对元组进行规整操作。</p>
+<hr>
+<h1 id="Tuple模型"><a href="#Tuple模型" class="headerlink" title="Tuple模型"></a>Tuple模型</h1><p>![image-20240410172509151](&#x2F;Users&#x2F;mac&#x2F;Library&#x2F;Application Support&#x2F;typora-user-images&#x2F;image-20240410172509151.png)</p>
+<p>Each tuple is prefixed with a header that contains meta-data about it. </p>
+<p>→ Visibility info (concurrency control) </p>
+<p>→ Bit Map for NULL values.</p>
+<p>Tuple的头会记录事务可见性以及NULL的位数组。为什么要记录NULL的位数组？因为Tuple里的attribute是没有分隔符，紧挨在一起存储。表的类型要么在Page Header，要么在tabel层面存储，DBMS解析每个字段格式，然后根据字段格式再逐位解析数据。NULL值不会存储，一方面节省空间，另一方面避免避免误读。</p>
+<hr>
+<p>以下来源于next course，但是内容相关，就放在一起了。</p>
+<h1 id="Log-structured-storage"><a href="#Log-structured-storage" class="headerlink" title="Log-structured storage"></a>Log-structured storage</h1><p>log-structured还是page里data部分组织tuple的内容，对比于tuple-oriented storage，log-structured只存储日志而不是数据本身。</p>
+<p>DBMS将tuple的change log以append的方式存储，一页存满就刷回磁盘。</p>
+<p>日志的格式为：操作+tuple ID+value，由此可见，tuple必须具有唯一ID。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404101737733.png"></p>
+<p>读操作需要回放日志，比如我们要读ID为101的记录的值，就必须从磁盘中取出涉及第一条ID101的日志所在页，然后逐条应用日志，最终得到值。</p>
+<p>由此可见，这种操作开销很大。通常有一个索引，记住每个tuple的最新修改在哪一个位置。</p>
+<p>由于日志页会越来越大，通常需要进行日志压缩操作，即将若干个页里冗余的操作合并在一起。合并后还可以根据Tuple的ID进行排序，以便进行更好的读取。那么，这就是Sorted String Tables（SSTables）的思想。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404101741715.png"></p>
+<p>压缩日志的方法也不止一种，首先是层级压缩（Level Compaction）。单page压缩、双page压缩、四page压缩，一层一层向下合并。压缩完读数据，从第0层开始读，层层往上。</p>
+<h2 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h2><p>数据的修改、删除、插入非常快。</p>
+<p>基于log存储只需要执行顺序的添加写。而基于tuple的存储，需要先读取相应数据页，再修改数据，最后写回磁盘。</p>
+<h2 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h2><p>→ Write-Amplification</p>
+<p>写放大，对于一个元组的修改却需要写多次。</p>
+<p>→ Compaction is Expensive</p>
+<p>日志合并过程代价是昂贵的。</p>
+<h1 id="Data-Representation"><a href="#Data-Representation" class="headerlink" title="Data Representation"></a>Data Representation</h1><h2 id="小数的准确存储"><a href="#小数的准确存储" class="headerlink" title="小数的准确存储"></a>小数的准确存储</h2><p>浮点数并不是精确存储，对此，DB采取的措施为字面值，即利用字符串表示数字。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404111450735.png"></p>
+<h2 id="长字段存储"><a href="#长字段存储" class="headerlink" title="长字段存储"></a>长字段存储</h2><p>超长字段，比如字符串类型存储一部小说，那么这个字段长度可能超出一页的大小。</p>
+<p>为了解决这个问题，DB采用引用+溢出页方式管理。字符串内容存储在溢出页中，字段值存储溢出页地址。</p>
+<p>如果一个溢出页不够存储，那么采用溢出页链表形式。第二种方式采用外部文件，external file。</p>
+<h1 id="System-Catalogs"><a href="#System-Catalogs" class="headerlink" title="System Catalogs"></a>System Catalogs</h1><p>System Catalogs，即DBMS的目录，用于存储DBMS的元数据，比如说表结构，列的结构，索引，视图，用户，权限，内部的统计信息，数据库的元数据都是以表的形式存在的。</p>
+<ul>
+<li>表、列、索引、视图</li>
+<li>用户、权限</li>
+<li>Internal statistics其他统计数据</li>
+</ul>
+<p>You can query the DBMS’s internal <code>INFORMATION_SCHEMA</code> catalog to get info about the database.</p>
+<hr>
+<h1 id="Database-workloads"><a href="#Database-workloads" class="headerlink" title="Database workloads"></a>Database workloads</h1><p>OLTP，在线事务&#x2F;交易处理，支持快速的操作，读写数据量很小的tuple，而且一般是高并发的，像微信支付这样的场景，同时发生很多交易，但每笔交易涉及的数据量都很小</p>
+<p>OLAP，在线分析处理，OLTP这种workload一般来自用户，OLAP则来自于提供相应软件服务的公司本身，比如说微信支付要统计当天有多少笔交易，交易的平均金额是多少，交易总额是多少，这一般对应着复杂的SQL语句，要读大量的数据</p>
+<p>第三种，HTAP，则是前两者的混合，意味着可以同时应对这两种类型的workload的数据库架构</p>
+<p>OLTP更倾向于写，OLAP更倾向于读。</p>
+<p>在不考虑HTAP的情况下（目前工业界HTAP的实践并不多），软件公司会将OLTP和OLAP这两类工作负载分开处理，用小数据库的集群处理OLTP，用分库分表的策略将工作负载分开，等到需要统计分析数据（即OLAP对应的场景）时，对这个集群执行ETL操作（提取数据-&gt;做变换-&gt;加载），把得到的数据转存到大的数据仓库里，让数据仓库应对OLAP的负载；</p>
+<h1 id="行存储"><a href="#行存储" class="headerlink" title="行存储"></a>行存储</h1><p>数据库的关系模型和SQL语句并没有要求或者限制数据库底层的数据存储方式，只要通过层层的向上封装能满足它们想提出的抽象即可，即“SQL想查出来一行一行的数据，但数据库不一定在磁盘上一行一行的存”，我们可以修改底层的存储方式，进而更好的应对OLTP&#x2F;OLAP。</p>
+<p>Ideal for OLTP workloads where queries tend to operate only on an individual entity and insert- heavy workloads. 行存储有利于OLTP，因为OLTP的查询通常针对的是一个实体，并且写频繁。比如修改一个用户的用户名，密码等。</p>
+<h2 id="Advantages"><a href="#Advantages" class="headerlink" title="Advantages"></a>Advantages</h2><p>→ Fast inserts, updates, and deletes.</p>
+<p>→ Good for queries that need the entire tuple.</p>
+<h2 id="Disadvantages"><a href="#Disadvantages" class="headerlink" title="Disadvantages"></a>Disadvantages</h2><p>→ Not good for scanning large portions of the table and&#x2F;or a subset of the attributes.</p>
+<p>对于大量数据针对几个字段的查询不友好。因为基于行存储的引擎需要将所有行读出，解析大量无关字段。</p>
+<h1 id="列存储"><a href="#列存储" class="headerlink" title="列存储"></a>列存储</h1><p>列存储的情况下，一个字段的所有记录值被连续存储。一个tuple就是存储数据表里的一列数据，实际存储中，数据库不同的页存储不同字段&#x2F;列。</p>
+<p><img src="https://gitee.com/desirer/backup/raw/master/images/202404111518137.png"></p>
+<h2 id="列存储的整行读"><a href="#列存储的整行读" class="headerlink" title="列存储的整行读"></a>列存储的整行读</h2><ul>
+<li>基于固定偏移</li>
+<li>Embedded Tuple Ids</li>
+</ul>
+<p>第一种方法，找到每个字段第offset个值，然后拼起来，得到一行数据。</p>
+<h2 id="Advantages-1"><a href="#Advantages-1" class="headerlink" title="Advantages"></a>Advantages</h2><p>→ Reduces the amount wasted I&#x2F;O because the DBMS only reads the data that it needs.</p>
+<p>→ Better query processing and data compression (more on this later).</p>
+<p>适合大量读</p>
+<h2 id="Disadvantages-1"><a href="#Disadvantages-1" class="headerlink" title="Disadvantages"></a>Disadvantages</h2><p>→ Slow for point queries, inserts, updates, and deletes because of tuple splitting&#x2F;stitching.</p>
+<p>插入行记录更费劲了，因为字段被分裂存储到各个表中。</p>
+<h1 id="数据压缩"><a href="#数据压缩" class="headerlink" title="数据压缩"></a>数据压缩</h1><p>数据压缩可以节省空间。基于columns的数据压缩方法。</p>
+<ul>
+<li>Run-length Encoding  将单列中相同值的运行压缩为三元组</li>
+<li>Bit-Packing Encoding 当属性的值始终小于该值声明的最大大小时，请将其存储为较小的数据类型。比如64位只存8位，前56位均为0.</li>
+<li>Bitmap Encoding 为属性的每个唯一值存储单独的位图，其中矢量中的偏移量对应于元组。比如男女属性用bit表示。</li>
+<li>Delta Encoding 记录同一列中彼此跟随的值之间的差异。类似差分</li>
+<li>Incremental Encoding 避免在连续元组之间重复公共前缀&#x2F;后缀的增量编码类型。这最适用于排序数据。</li>
+<li>Dictionary Encoding 构建将可变长度值映射到较小的整数标识符的数据结构。将这些值替换为字典数据结构中的相应标识符。（应该是额外表存储映射关系。用序号代替商品类型，避免长字段商品类型重复，节省空间）</li>
+</ul>
+</div><div class="article-licensing box"><div class="licensing-title"><p>cmu15-445笔记二 存储模型</p><p><a href="https://xyz.desirer233.fun/2024/04/10/cmu15445/Lec02/">https://xyz.desirer233.fun/2024/04/10/cmu15445/Lec02/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-04-10</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/04/10/cmu15445/Lec03/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">cmu15-445笔记三 缓存池</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/04/10/cmu15445/Lec01/"><span class="level-item">cmu15-445笔记一 Introduction</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#存储硬件认知"><span class="level-left"><span class="level-item">1</span><span class="level-item">存储硬件认知</span></span></a></li><li><a class="level is-mobile" href="#基于磁盘的DBMS存储模型"><span class="level-left"><span class="level-item">2</span><span class="level-item">基于磁盘的DBMS存储模型</span></span></a></li><li><a class="level is-mobile" href="#数据库底层存储表现"><span class="level-left"><span class="level-item">3</span><span class="level-item">数据库底层存储表现</span></span></a></li><li><a class="level is-mobile" href="#Heap-File"><span class="level-left"><span class="level-item">4</span><span class="level-item">Heap File</span></span></a></li><li><a class="level is-mobile" href="#Page模型"><span class="level-left"><span class="level-item">5</span><span class="level-item">Page模型</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#Tuple-oriented-Storage"><span class="level-left"><span class="level-item">5.1</span><span class="level-item">Tuple-oriented Storage</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Tuple模型"><span class="level-left"><span class="level-item">6</span><span class="level-item">Tuple模型</span></span></a></li><li><a class="level is-mobile" href="#Log-structured-storage"><span class="level-left"><span class="level-item">7</span><span class="level-item">Log-structured storage</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#优点"><span class="level-left"><span class="level-item">7.1</span><span class="level-item">优点</span></span></a></li><li><a class="level is-mobile" href="#缺点"><span class="level-left"><span class="level-item">7.2</span><span class="level-item">缺点</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Data-Representation"><span class="level-left"><span class="level-item">8</span><span class="level-item">Data Representation</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#小数的准确存储"><span class="level-left"><span class="level-item">8.1</span><span class="level-item">小数的准确存储</span></span></a></li><li><a class="level is-mobile" href="#长字段存储"><span class="level-left"><span class="level-item">8.2</span><span class="level-item">长字段存储</span></span></a></li></ul></li><li><a class="level is-mobile" href="#System-Catalogs"><span class="level-left"><span class="level-item">9</span><span class="level-item">System Catalogs</span></span></a></li><li><a class="level is-mobile" href="#Database-workloads"><span class="level-left"><span class="level-item">10</span><span class="level-item">Database workloads</span></span></a></li><li><a class="level is-mobile" href="#行存储"><span class="level-left"><span class="level-item">11</span><span class="level-item">行存储</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#Advantages"><span class="level-left"><span class="level-item">11.1</span><span class="level-item">Advantages</span></span></a></li><li><a class="level is-mobile" href="#Disadvantages"><span class="level-left"><span class="level-item">11.2</span><span class="level-item">Disadvantages</span></span></a></li></ul></li><li><a class="level is-mobile" href="#列存储"><span class="level-left"><span class="level-item">12</span><span class="level-item">列存储</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#列存储的整行读"><span class="level-left"><span class="level-item">12.1</span><span class="level-item">列存储的整行读</span></span></a></li><li><a class="level is-mobile" href="#Advantages-1"><span class="level-left"><span class="level-item">12.2</span><span class="level-item">Advantages</span></span></a></li><li><a class="level is-mobile" href="#Disadvantages-1"><span class="level-left"><span class="level-item">12.3</span><span class="level-item">Disadvantages</span></span></a></li></ul></li><li><a class="level is-mobile" href="#数据压缩"><span class="level-left"><span class="level-item">13</span><span class="level-item">数据压缩</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

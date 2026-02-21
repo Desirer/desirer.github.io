@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>cmu15-445笔记十三 MVCC - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="这节课主要介绍了多版本并发控制。"><meta property="og:type" content="blog"><meta property="og:title" content="cmu15-445笔记十三 MVCC"><meta property="og:url" content="https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec13/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="这节课主要介绍了多版本并发控制。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405161124749.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405161401398.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405161403299.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405161414501.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405161416739.png"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202405161429447.png"><meta property="article:published_time" content="2024-05-14T03:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.431Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="数据库"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202405161124749.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec13/"},"headline":"cmu15-445笔记十三 MVCC","image":["https://gitee.com/desirer/backup/raw/master/images/202405161124749.png","https://gitee.com/desirer/backup/raw/master/images/202405161401398.png","https://gitee.com/desirer/backup/raw/master/images/202405161403299.png","https://gitee.com/desirer/backup/raw/master/images/202405161414501.png","https://gitee.com/desirer/backup/raw/master/images/202405161416739.png","https://gitee.com/desirer/backup/raw/master/images/202405161429447.png"],"datePublished":"2024-05-14T03:00:00.000Z","dateModified":"2026-02-21T07:11:50.431Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"这节课主要介绍了多版本并发控制。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec13/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-05-14T03:00:00.000Z" title="2024/5/14 11:00:00">2024-05-14</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.431Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/cmu15445/">cmu15445</a></span><span class="level-item">15 分钟读完 (大约2258个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">cmu15-445笔记十三 MVCC</h1><div class="content"><p>这节课主要介绍了多版本并发控制。</p>
+<span id="more"></span>
+
+<h1 id="多版本并发控制基本思想"><a href="#多版本并发控制基本思想" class="headerlink" title="多版本并发控制基本思想"></a>多版本并发控制基本思想</h1><p>DBMS保持一个逻辑对象的多个物理版本：</p>
+<ul>
+<li>当事务写一个对象时，事务创建一个新版本</li>
+<li>当事务读一个对象时，事务读创建时最新的版本</li>
+</ul>
+<p><strong>MVCC解决的问题&#x2F;存在的原因：</strong></p>
+<ul>
+<li><p>2PL协议中，一个事务更新一个对象到它提交的期间，其他的事务均无法读取对象（即其他读取这个对象的事物都阻塞在这里）。</p>
+</li>
+<li><p><strong>而MVCC的基础思想是，留下数据的历史版本，这样其他的事务可以读历史版本而不是被阻塞。只读的事务就可以在无锁的情况下读它所需要的那个版本的一致性快照，不受数据库动态变化的影响。</strong></p>
+</li>
+</ul>
+<h1 id="WRITE-SKEW-ANOMALY-写偏斜"><a href="#WRITE-SKEW-ANOMALY-写偏斜" class="headerlink" title="WRITE SKEW ANOMALY 写偏斜"></a>WRITE SKEW ANOMALY 写偏斜</h1><p>在快照隔离的基础下，每个事务看到的都是它开始的一致性快照。</p>
+<p>假设当前有一黑一杯两个棋子，事务1是将所有白棋变成黑棋，事务2是将所有黑棋变为白棋。如果仅使用快照隔离，那么这两个事务最终运行结果是一黑一白两个棋子（因为这两个事务恰好各自更新了一颗棋子）。但是在可串行化的语义下，运行结果应该是全黑或者全白。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405161124749.png" style="zoom:50%;" />
+
+<p><strong>写偏斜的原因是：一个事务读出的数据作为写入的依据，而在提交前，这个读出的数据被其他事物改变。</strong></p>
+<blockquote>
+<p>让我们重复一下快照隔离的效果是：</p>
+<p>一个事务读到的数据都来自于数据库某同一个时刻（时刻甲）的状态，然后所有写都发生在之后的某同一个时刻（时刻乙）。</p>
+<p>这里的矛盾的矛盾就清楚了：</p>
+<p>时刻甲时数据有个状态，等到了时刻乙，数据的状态可能不一样了。根据时刻甲的状态作出写的决定，这个决定到时刻乙真正写时，就未必适用了。</p>
+<p>有点刻舟求剑的味道。</p>
+</blockquote>
+<p>因此只依靠MVCC是不能达到调度的串行化，因此MVCC需要结合其他并发控制手段。</p>
+<h1 id="设计MVCC的选择"><a href="#设计MVCC的选择" class="headerlink" title="设计MVCC的选择"></a>设计MVCC的选择</h1><p>并发控制协议</p>
+<p>版本存储</p>
+<p>垃圾回收</p>
+<p>索引管理</p>
+<p>删除管理</p>
+<h1 id="MVCC并发控制"><a href="#MVCC并发控制" class="headerlink" title="MVCC并发控制"></a>MVCC并发控制</h1><p>只使用MVCC无法做到serializable的隔离级别，因此会和如下的其他一些协议结合在一起：</p>
+<ul>
+<li>基于时间戳：事务被赋予时间戳，然后决定串行顺序</li>
+<li>乐观控制：三阶段协议，每个事务都有一个私有工作区</li>
+<li>两阶段锁协议</li>
+</ul>
+<h1 id="版本存储"><a href="#版本存储" class="headerlink" title="版本存储"></a>版本存储</h1><p>DBMS可以用tuple对象所包含的指针，建立一个包含各个版本的链表，因此DBMS可以在这个链表上去寻找各个版本，如果对表构建了B+树之类的索引，那么索引最后指向的是版本链表的头节点。</p>
+<h2 id="简单追加-append-only-storage"><a href="#简单追加-append-only-storage" class="headerlink" title="简单追加 append only storage"></a>简单追加 append only storage</h2><p>新版本的tuple被追加到表中，一个logical tuple的多个版本通过链表被连起来。</p>
+<p>简单追加也有两种思路：</p>
+<ul>
+<li>oldest to newest 在链表末尾追加新版本</li>
+<li>newest to oldest 在链表头头结点插入新版本</li>
+</ul>
+<p>如果把新的版本放在链表的末尾，那么经过索引查到的是最老的版本。也就是说，这么做的话，追加新版本的时候开销小，但想要读取快照，即执行查询时搜索对应版本的时候开销会大。</p>
+<p>反之，如果把新的版本放在链表的头部，那么执行查询，搜索相应版本的时候效率会高，但追加新版本时维护链表的工作量大，因为要更新索引结构中的指针。</p>
+<h2 id="Time-travel-storage"><a href="#Time-travel-storage" class="headerlink" title="Time travel storage"></a>Time travel storage</h2><p>单独建立一个额外的表用于存储历史数据，主表（Main Table）存储的就是当前最新的数据，历史数据在单独的Time-Travel Table（历史表）里。</p>
+<p>当事务对数据进行更新时，也就是产生新版本时，DBMS会把旧版本的对象拷贝至历史表中，并且在历史表中维护好串联起多个旧版本的链表，之后在主表里写入新版本的数据，覆盖旧版本，然后再修改主表中相应的tuple的指针，令其指向历史表里最新的历史版本。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405161401398.png" style="zoom:80%;" />
+
+<h2 id="Delta-Storage-增量存储"><a href="#Delta-Storage-增量存储" class="headerlink" title="Delta Storage 增量存储"></a>Delta Storage 增量存储</h2><p>实际的数据库的表中，每个tuple不止有一个attribute，而事务对tuple的一次更新可能只是修改了众多attribute里的一个，因此在历史表里每次都追加一个完整的tuple，这未免有些浪费存储空间。因此就有了只存储每次数据更新时的增量的idea。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405161403299.png" style="zoom:80%;" />
+
+<h1 id="垃圾回收"><a href="#垃圾回收" class="headerlink" title="垃圾回收"></a>垃圾回收</h1><p>数据库不可能无限地存储各个数据的历史版本，否则就会导致数据库爆炸，存不下那么多的数据，因此DBMS需要把那些已经没有用了，作废了的历史版本删除。</p>
+<ul>
+<li>如果任何active状态的事务都看不到某个历史版本（比如说现在的事务的时间戳都是10以上的，但这个历史版本的时间戳&#x2F;版本号是1），那么这个古老的历史版本可以把它删除</li>
+<li>如果某个事务创建了某个历史版本，但这个事务后来回滚了。那么这个历史版本可以删除</li>
+</ul>
+<p>在实现垃圾回收时，要解决如下两个问题：</p>
+<ul>
+<li>如何发现无用的历史版本？</li>
+<li>什么时候去删除无用的历史版本？</li>
+</ul>
+<h2 id="Tuple级别的垃圾回收"><a href="#Tuple级别的垃圾回收" class="headerlink" title="Tuple级别的垃圾回收"></a>Tuple级别的垃圾回收</h2><p>（1）后台清理</p>
+<p>后台会有一个单独的线程每隔一段时间就扫描历史表（或同类的其他表），然后结合当前active的事务的时间戳去分析表中哪一个版本是无用的。</p>
+<p>优化手段：维护一个dirty block bitmap，去跟踪自从上次垃圾回收至今表里有哪些页被事务修改过，因此下一次垃圾回收的时候，只需要扫描自从上次GC以来被修改过的页面。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405161414501.png" style="zoom:80%;" />
+
+<p>（2）合作清理</p>
+<p>事务执行SQL查询语句时需要通过索引来访问相应的tuple及其历史版本，在这个过程中可以顺便扫描tuple，把无用的历史版本删除。</p>
+<p>这只对尾插法的版本存储有用。</p>
+<p>这样的话就不需要额外的GC线程来完成垃圾回收，而是各个事务在执行的时候都会做一点垃圾回收的工作。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405161416739.png" style="zoom:80%;" />
+
+<h2 id="事务级别的垃圾回收"><a href="#事务级别的垃圾回收" class="headerlink" title="事务级别的垃圾回收"></a>事务级别的垃圾回收</h2><p>每个事务会记下来它读&#x2F;写的集合，记录因为更新导致无用的历史版本，当事务提交时，将这些信息交给垃圾回收器。</p>
+<p>垃圾回收器会检查所有正在运行的事物，判断哪些旧版本可以删除。这样，回收器就无需扫描所有tuple了。</p>
+<h1 id="索引管理"><a href="#索引管理" class="headerlink" title="索引管理"></a>索引管理</h1><p>一般情况下，主键索引相对比较好处理，因为主键索引会指向版本链表的头部，而且是通过物理地址（在哪个页的哪个slot）来定位的（如下图）。</p>
+<p>辅助索引有点难处理，辅助索引的key是建索引的attribute的值，但val有两种选择：</p>
+<ul>
+<li>逻辑指针</li>
+<li>物理指针</li>
+</ul>
+<p>逻辑指针指的是val为Tuple的主键或者ID，需要再次通过主键索引找到完整的tuple。</p>
+<p>物理指针则直接存储完整Tuple的物理地址（比如哪个页的哪个slot），但是缺点在于更新维护。一张表可能存在多个辅助索引，如果对某个tuple进行更新，不仅要维护主键索引，还要修改所有辅助索引的指针。</p>
+<img src="https://gitee.com/desirer/backup/raw/master/images/202405161429447.png" style="zoom:80%;" />
+
+<h1 id="MVCC-Deletes"><a href="#MVCC-Deletes" class="headerlink" title="MVCC Deletes"></a>MVCC Deletes</h1><p>当一个tuple的所有版本都不可见时，DBMS物理地将这个tuple删除。</p>
+<p>需要一种方式来表明tuple已经逻辑删除：</p>
+<ul>
+<li>deleted flag</li>
+<li>tombstone tuple</li>
+</ul>
+<p>可以在tuple的header中加删除标识位；或者加入一个空tuple的版本作为标志。</p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>cmu15-445笔记十三 MVCC</p><p><a href="https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec13/">https://xyz.desirer233.fun/2024/05/14/cmu15445/Lec13/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-05-14</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/05/14/cmu15445/Lec11/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">cmu15-445笔记十一 并发控制：二阶段锁</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/05/03/cmu15445/Lec09/"><span class="level-item">cmu15-445笔记九 查询优化</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#多版本并发控制基本思想"><span class="level-left"><span class="level-item">1</span><span class="level-item">多版本并发控制基本思想</span></span></a></li><li><a class="level is-mobile" href="#WRITE-SKEW-ANOMALY-写偏斜"><span class="level-left"><span class="level-item">2</span><span class="level-item">WRITE SKEW ANOMALY 写偏斜</span></span></a></li><li><a class="level is-mobile" href="#设计MVCC的选择"><span class="level-left"><span class="level-item">3</span><span class="level-item">设计MVCC的选择</span></span></a></li><li><a class="level is-mobile" href="#MVCC并发控制"><span class="level-left"><span class="level-item">4</span><span class="level-item">MVCC并发控制</span></span></a></li><li><a class="level is-mobile" href="#版本存储"><span class="level-left"><span class="level-item">5</span><span class="level-item">版本存储</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#简单追加-append-only-storage"><span class="level-left"><span class="level-item">5.1</span><span class="level-item">简单追加 append only storage</span></span></a></li><li><a class="level is-mobile" href="#Time-travel-storage"><span class="level-left"><span class="level-item">5.2</span><span class="level-item">Time travel storage</span></span></a></li><li><a class="level is-mobile" href="#Delta-Storage-增量存储"><span class="level-left"><span class="level-item">5.3</span><span class="level-item">Delta Storage 增量存储</span></span></a></li></ul></li><li><a class="level is-mobile" href="#垃圾回收"><span class="level-left"><span class="level-item">6</span><span class="level-item">垃圾回收</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#Tuple级别的垃圾回收"><span class="level-left"><span class="level-item">6.1</span><span class="level-item">Tuple级别的垃圾回收</span></span></a></li><li><a class="level is-mobile" href="#事务级别的垃圾回收"><span class="level-left"><span class="level-item">6.2</span><span class="level-item">事务级别的垃圾回收</span></span></a></li></ul></li><li><a class="level is-mobile" href="#索引管理"><span class="level-left"><span class="level-item">7</span><span class="level-item">索引管理</span></span></a></li><li><a class="level is-mobile" href="#MVCC-Deletes"><span class="level-left"><span class="level-item">8</span><span class="level-item">MVCC Deletes</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

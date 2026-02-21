@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>MIT6824笔记七 链式复制 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="这节课主要介绍了链复制的基本思想以及链复制的改进（Chain Replication with Apportioned Queries，CRAQ）。 CRAQ通过引入版本机制以及clean&amp;#x2F;dirty状态机制来改进多个节点的分散读。当数据首次到达中间节点时，该数据会被标识为dirty；当数据达到tail节点时，数据标识为clean，并进行反向传播，使之前的节点也将该数据标识为clean。"><meta property="og:type" content="blog"><meta property="og:title" content="MIT6824笔记七 链式复制"><meta property="og:url" content="https://xyz.desirer233.fun/2023/12/13/MIT6.824/%E7%AC%94%E8%AE%B07CRAQ/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="这节课主要介绍了链复制的基本思想以及链复制的改进（Chain Replication with Apportioned Queries，CRAQ）。 CRAQ通过引入版本机制以及clean&amp;#x2F;dirty状态机制来改进多个节点的分散读。当数据首次到达中间节点时，该数据会被标识为dirty；当数据达到tail节点时，数据标识为clean，并进行反向传播，使之前的节点也将该数据标识为clean。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://gitee.com/desirer/backup/raw/master/images/202403311728317.png"><meta property="article:published_time" content="2023-12-13T05:54:00.000Z"><meta property="article:modified_time" content="2026-02-21T07:11:50.497Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="分布式系统"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://gitee.com/desirer/backup/raw/master/images/202403311728317.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2023/12/13/MIT6.824/%E7%AC%94%E8%AE%B07CRAQ/"},"headline":"MIT6824笔记七 链式复制","image":["https://gitee.com/desirer/backup/raw/master/images/202403311728317.png"],"datePublished":"2023-12-13T05:54:00.000Z","dateModified":"2026-02-21T07:11:50.497Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"这节课主要介绍了链复制的基本思想以及链复制的改进（Chain Replication with Apportioned Queries，CRAQ）。 CRAQ通过引入版本机制以及clean&#x2F;dirty状态机制来改进多个节点的分散读。当数据首次到达中间节点时，该数据会被标识为dirty；当数据达到tail节点时，数据标识为clean，并进行反向传播，使之前的节点也将该数据标识为clean。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2023/12/13/MIT6.824/%E7%AC%94%E8%AE%B07CRAQ/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2023-12-13T05:54:00.000Z" title="2023/12/13 13:54:00">2023-12-13</time>发表</span><span class="level-item"><time dateTime="2026-02-21T07:11:50.497Z" title="2026/2/21 15:11:50">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/MIT6-824/">MIT6.824</a></span><span class="level-item">20 分钟读完 (大约2992个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">MIT6824笔记七 链式复制</h1><div class="content"><p>这节课主要介绍了链复制的基本思想以及链复制的改进（Chain Replication with Apportioned Queries，CRAQ）。</p>
+<p>CRAQ通过引入版本机制以及clean&#x2F;dirty状态机制来改进多个节点的分散读。当数据首次到达中间节点时，该数据会被标识为dirty；当数据达到tail节点时，数据标识为clean，并进行反向传播，使之前的节点也将该数据标识为clean。</p>
+<p>论文：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/craq.pdf">https://pdos.csail.mit.edu/6.824/papers/craq.pdf</a></p>
+<span id="more"></span>
+
+<h1 id="链复制"><a href="#链复制" class="headerlink" title="链复制"></a>链复制</h1><h2 id="基本方法"><a href="#基本方法" class="headerlink" title="基本方法"></a>基本方法</h2><p>![image-20231213135524616](&#x2F;Users&#x2F;mac&#x2F;Library&#x2F;Application Support&#x2F;typora-user-images&#x2F;image-20231213135524616.png)</p>
+<p>为了保持线性一致的语义，链复制的基本思想是将服务器组成链表，请求从头部开始，一直链式传递到尾部。</p>
+<p>写请求发往头部，读请求发往尾部。不同的是，写请求要经过完整的链传递复制，读请求不需要。</p>
+<p>具体而言，当链表头部的服务器收到写请求时，它应用写请求，然后传递给下一个服务器。下一个服务器同样应用写请求，再传递下一个服务器。当尾部服务器应用完写请求时，它才回复客户端写请求已经完成。</p>
+<p>读请求则十分简单，直接根据尾部服务器的状态读取。没有完成的写请求要么没有传递到尾服务器，要么就是回复丢失。<strong>而链复制一次只处理一个请求。</strong>所以读请求能看到最新的写请求状态，自然就是线性一致。</p>
+<h2 id="故障恢复"><a href="#故障恢复" class="headerlink" title="故障恢复"></a>故障恢复</h2><p>链复制的写请求出现故障只有两种情况：要么写请求被所有服务器看到（commited），要么写请求只传递到中间某个服务器。</p>
+<p>（1）Head故障</p>
+<p>写请求在Head转发前，Head就故障了。那么没有服务器能看到这个写请求，第二个节点成为新的Head。</p>
+<p>写请求在Head转发后，Head故障了，那么这个写请求还是会被持续转发下去，所有live服务器都看到这个写请求。</p>
+<p>（2）Tail故障</p>
+<p>如果TAIL出现故障，处理流程也非常相似，TAIL的前一个节点可以接手成为新的TAIL。所有TAIL知道的信息，TAIL的前一个节点必然都知道，因为TAIL的所有信息都是其前一个节点告知的。</p>
+<p>（3）中间节点故障</p>
+<p>或许有一些写请求被故障节点接收了，但是还没有被故障节点之后的节点接收，所以，当我们将其从链中移除时，故障节点的前一个节点或许需要重发最近的一些写请求给它的新后继节点。这是恢复中间节点流程的简单版本。</p>
+<h2 id="对比Raft"><a href="#对比Raft" class="headerlink" title="对比Raft"></a>对比Raft</h2><p>（1）性能</p>
+<p>对于Raft，如果我们有一个Leader和一些Follower。Leader需要直接将数据发送给所有的Follower</p>
+<p>然而在Chain Replication中，HEAD只需要将写请求发送到一个其他节点。</p>
+<p>所以Raft Leader的负担会比Chain Replication中HEAD的负担更高。当客户端请求变多时，Raft Leader会到达一个瓶颈，而不能在单位时间内处理更多的请求。</p>
+<p>（2）读写分离</p>
+<p>另一个与Raft相比的有趣的差别是，Raft中读请求同样也需要在Raft Leader中处理，所以Raft Leader可以看到所有的请求。而在Chain Replication中，每一个节点都可以看到写请求，但是只有TAIL可以看到读请求。所以负载在一定程度上，在HEAD和TAIL之间分担了，而不是集中在单个Leader节点。</p>
+<p>（3）故障恢复</p>
+<p>Chain Replication故障恢复更加简单。</p>
+<h2 id="配置管理器"><a href="#配置管理器" class="headerlink" title="配置管理器"></a>配置管理器</h2><p><strong>Chain Replication并不能抵御网络分区，也不能抵御脑裂。</strong>在实际场景中，这意味它不能单独使用。总是会有一个外部的权威（External Authority）来决定谁是活的，谁挂了，并确保所有参与者都认可由哪些节点组成一条链，这样在链的组成上就不会有分歧。这个外部的权威通常称为Configuration Manager。</p>
+<p><strong>Configuration Manager的工作就是监测节点存活性，一旦Configuration Manager认为一个节点挂了，它会生成并送出一个新的配置，在这个新的配置中，描述了链的新的定义，包含了链中所有的节点，HEAD和TAIL。</strong>Configuration Manager认为挂了的节点，或许真的挂了也或许没有，但是我们并不关心。因为所有节点都会遵从新的配置内容，所以现在不存在分歧了。</p>
+<p>现在只有一个角色（Configuration Manager）在做决定，它不可能否认自己，所以可以解决脑裂的问题。</p>
+<p>当然，你是如何使得一个服务是容错的，不否认自己，同时当有网络分区时不会出现脑裂呢？答案是，Configuration Manager通常会基于Raft或者Paxos。在CRAQ的场景下，它会基于Zookeeper。而Zookeeper本身又是基于类似Raft的方案。</p>
+<p>所以，你的数据中心内的设置通常是，你有一个基于Raft或者Paxos的Configuration Manager，它是容错的，也不会受脑裂的影响。之后，通过一系列的配置更新通知，Configuration Manager将数据中心内的服务器分成多个链。</p>
+<h1 id="CRAQ"><a href="#CRAQ" class="headerlink" title="CRAQ"></a>CRAQ</h1><p><strong>Chain Replication with Apportioned Queries (CRAQ)</strong> 是一种对链式复制的改进，它通过在所有对象副本上分配负载，在保持强一致性的同时极大地提高了读吞吐量。</p>
+<h2 id="对象存储"><a href="#对象存储" class="headerlink" title="对象存储"></a>对象存储</h2><p>对象存储支持两种基本原语：</p>
+<ul>
+<li><code>read</code> 或 <code>query</code> 操作返回存储在对象名称下的数据块</li>
+<li><code>write</code> 或 <code>update</code> 操作更改单个对象的状态</li>
+</ul>
+<h2 id="一致性模型"><a href="#一致性模型" class="headerlink" title="一致性模型"></a>一致性模型</h2><p>本文涉及到的两种一致性模型为：</p>
+<ul>
+<li><strong>强一致性</strong>：系统保证对一个对象的读写操作都以顺序执行，并且对于一个对象的读操作总是会观察到最新被写入的值。</li>
+<li><strong>最终一致性</strong>：在系统中，对一个对象的写入仍是按顺序在所有节点上应用的，但对不同节点的最终一致性读取可能会在一段时间内（即，在写操作应用于所有节点之前）返回过时的数据。但是，一旦所有副本都接收到写入操作，则读操作将不会返回比最新提交的写操作更早的版本。</li>
+</ul>
+<h2 id="链复制-1"><a href="#链复制-1" class="headerlink" title="链复制"></a>链复制</h2><p>基本方法是将所有存储对象的节点组织在一条链中，其中链的尾节点处理所有读取请求，而链的头节点处理所有写入请求。在客户端收到确认之前，写操作沿链向下传播，因此尾节点可以得到所有对象操作的执行顺序，具有强一致性。该方法没有任何复杂或多轮通信的协议，但是提供了简单、高吞吐量和容易故障恢复的特性。</p>
+<p>不幸的是，基础的链复制方法有一些局限性。对一个对象的所有读取都在头节点，从而导致潜在的热点问题。虽然可以通过一致性哈希方法或更中心化的目录方法将集群中的节点组织到多个链中，以实现更好的负载均衡，但是如果特定对象访问较少，这些算法仍然可能会负载不平衡，这在实践中是一个真实的问题。</p>
+<p>链式复制的 <strong>故障恢复</strong>：</p>
+<ul>
+<li>当头节点出故障时：后续节点取代它成为头节点，没有丢失的已提交写操作</li>
+<li>当尾节点出故障时：前一个节点取代它成为尾节点，没有丢失的写操作</li>
+<li>当中间节点故障时：从链中去掉，前一个节点需要重新发送最近的写操作</li>
+</ul>
+<p><strong>局限性</strong>：对一个对象的所有读取必须都要转到同一个节点，尾节点的负载很大。</p>
+<h2 id="CRAQ分散读的改进"><a href="#CRAQ分散读的改进" class="headerlink" title="CRAQ分散读的改进"></a>CRAQ分散读的改进</h2><p><img src="https://gitee.com/desirer/backup/raw/master/images/202403311728317.png"></p>
+<p>CRAQ的主要思想，在保证强一致性的前提下，通过允许任意节点接收处理client读请求，提升系统读吞吐量。其主要扩展包括：</p>
+<ol>
+<li><p><strong>每个节点都可以存储一个object的多个版本</strong>，每个版本包含一个<strong>单调递增的版本号</strong>和一个表示该版本<strong>dirty&#x2F;clean状态的附加属性</strong>。每个版本的初始状态设置为clean。</p>
+</li>
+<li><p>当节点接收到一个object的新版本时（写入操作沿着复制链传播），将其加入到该object的版本列表中，存在以下两种情况：</p>
+<ul>
+<li>若该节点不是TAIL节点，<strong>则将object的当前版本状态标记为dirty</strong>，并传播write请求；</li>
+<li>若该节点是TAIL节点，<strong>则将object的当前版本状态标记为clean</strong>，意味着该write请求已committed，并发送ack确认消息（ack消息沿着复制链传播）。</li>
+</ul>
+</li>
+<li><p><strong>当节点收到一个object的某个版本的ack消息时，将object对应版本状态标记为clean，并删除之前所有的版本。</strong></p>
+</li>
+<li><p>当节点接收到一个object的读请求时，按照以下方式处理：</p>
+<ul>
+<li>若object的最新版本状态为clean，则返回该值；</li>
+<li>否则，向TAIL节点获取该object最新提交的版本号，<strong>并返回该版本的值</strong>。（TAIL节点在回复object的最新提交版本号之后，可能又提交了新的write请求，但并不破坏强一致性保证：读写请求最终都是由TAIL节点确定执行顺序。）</li>
+</ul>
+</li>
+</ol>
+<h2 id="CRAQ的一致性模型"><a href="#CRAQ的一致性模型" class="headerlink" title="CRAQ的一致性模型"></a>CRAQ的一致性模型</h2><p>CRAQ同时提供3种读一致性模型，允许读请求指明可选的一致性类型。</p>
+<p>• 强一致性，默认的一致性类型，允许从任意节点均可读取到object最近已提交的数据。</p>
+<p>• 最终一致性，从任意节点读，均返回该节点已知的object的最新版本数据（clean）。这可能会导致连续两次从不同节点读取到不一致的数据，因此，不满足单调读一致性保证。</p>
+<p>• 具有最大不一致边界的最终一致性，从任意节点能读取到object新写入的未提交的数据（dirty），但需要满足某些限制条件。该模型下，读请求的返回值具有最大不一致的周期（时间或版本号）。对于正常情况下，该不一致表示获取到比最后一次提交的版本更新的版本。对于异常情况下，比如网络分区导致部分节点未参与写请求，该不一致表示获取到比当前已提交的版本更旧的版本。</p>
+<h2 id="CRAQ的拓展"><a href="#CRAQ的拓展" class="headerlink" title="CRAQ的拓展"></a>CRAQ的拓展</h2><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/539352802">https://zhuanlan.zhihu.com/p/539352802</a></p>
+</div><div class="article-licensing box"><div class="licensing-title"><p>MIT6824笔记七 链式复制</p><p><a href="https://xyz.desirer233.fun/2023/12/13/MIT6.824/笔记7CRAQ/">https://xyz.desirer233.fun/2023/12/13/MIT6.824/笔记7CRAQ/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2023-12-13</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/">分布式系统</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2023/12/13/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/Redis%E7%B3%BB%E7%BB%9F%E7%AF%87/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">Redis系统篇</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2023/12/13/MIT6.824/%E7%AC%94%E8%AE%B05Raft/"><span class="level-item">MIT6824笔记五 Raft</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#链复制"><span class="level-left"><span class="level-item">1</span><span class="level-item">链复制</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#基本方法"><span class="level-left"><span class="level-item">1.1</span><span class="level-item">基本方法</span></span></a></li><li><a class="level is-mobile" href="#故障恢复"><span class="level-left"><span class="level-item">1.2</span><span class="level-item">故障恢复</span></span></a></li><li><a class="level is-mobile" href="#对比Raft"><span class="level-left"><span class="level-item">1.3</span><span class="level-item">对比Raft</span></span></a></li><li><a class="level is-mobile" href="#配置管理器"><span class="level-left"><span class="level-item">1.4</span><span class="level-item">配置管理器</span></span></a></li></ul></li><li><a class="level is-mobile" href="#CRAQ"><span class="level-left"><span class="level-item">2</span><span class="level-item">CRAQ</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#对象存储"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">对象存储</span></span></a></li><li><a class="level is-mobile" href="#一致性模型"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">一致性模型</span></span></a></li><li><a class="level is-mobile" href="#链复制-1"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">链复制</span></span></a></li><li><a class="level is-mobile" href="#CRAQ分散读的改进"><span class="level-left"><span class="level-item">2.4</span><span class="level-item">CRAQ分散读的改进</span></span></a></li><li><a class="level is-mobile" href="#CRAQ的一致性模型"><span class="level-left"><span class="level-item">2.5</span><span class="level-item">CRAQ的一致性模型</span></span></a></li><li><a class="level is-mobile" href="#CRAQ的拓展"><span class="level-left"><span class="level-item">2.6</span><span class="level-item">CRAQ的拓展</span></span></a></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">7</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>
