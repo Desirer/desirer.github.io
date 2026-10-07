@@ -1,0 +1,1217 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>扩散模型推理（采样）完整过程讲解 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="扩散模型推理（采样）完整过程讲解 配套文档：DDPM基本原理讲解.md（讲训练与公式推导）。本文只讲推理——模型训好之后，一张图是怎么被”生”出来的。写法约定：每个公式后面都跟一段”说人话”，只想搞懂思路的话，只读”说人话”也能通。  本文由AI生成。"><meta property="og:type" content="blog"><meta property="og:title" content="扩散模型推理（采样）完整过程讲解"><meta property="og:url" content="https://xyz.desirer233.fun/2026/10/07/AI/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86%E8%BF%87%E7%A8%8B%E8%AE%B2%E8%A7%A3/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="扩散模型推理（采样）完整过程讲解 配套文档：DDPM基本原理讲解.md（讲训练与公式推导）。本文只讲推理——模型训好之后，一张图是怎么被”生”出来的。写法约定：每个公式后面都跟一段”说人话”，只想搞懂思路的话，只读”说人话”也能通。  本文由AI生成。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://xyz.desirer233.fun/img/og_image.png"><meta property="article:published_time" content="2026-10-07T06:00:00.000Z"><meta property="article:modified_time" content="2026-10-07T12:32:10.063Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="AI生成"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://xyz.desirer233.fun/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2026/10/07/AI/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86%E8%BF%87%E7%A8%8B%E8%AE%B2%E8%A7%A3/"},"headline":"扩散模型推理（采样）完整过程讲解","image":["https://xyz.desirer233.fun/img/og_image.png"],"datePublished":"2026-10-07T06:00:00.000Z","dateModified":"2026-10-07T12:32:10.063Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"扩散模型推理（采样）完整过程讲解 配套文档：DDPM基本原理讲解.md（讲训练与公式推导）。本文只讲推理——模型训好之后，一张图是怎么被”生”出来的。写法约定：每个公式后面都跟一段”说人话”，只想搞懂思路的话，只读”说人话”也能通。  本文由AI生成。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2026/10/07/AI/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86%E8%BF%87%E7%A8%8B%E8%AE%B2%E8%A7%A3/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2026-10-07T06:00:00.000Z" title="2026/10/7 14:00:00">2026-10-07</time>发表</span><span class="level-item"><time dateTime="2026-10-07T12:32:10.063Z" title="2026/10/7 20:32:10">2026-10-07</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/AI/">AI</a></span><span class="level-item">1 小时读完 (大约13110个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">扩散模型推理（采样）完整过程讲解</h1><div class="content"><h1 id="扩散模型推理（采样）完整过程讲解"><a href="#扩散模型推理（采样）完整过程讲解" class="headerlink" title="扩散模型推理（采样）完整过程讲解"></a>扩散模型推理（采样）完整过程讲解</h1><blockquote>
+<p>配套文档：<code>DDPM基本原理讲解.md</code>（讲训练与公式推导）。本文只讲<strong>推理</strong>——模型训好之后，一张图是怎么被”生”出来的。<br><strong>写法约定</strong>：每个公式后面都跟一段”说人话”，只想搞懂思路的话，只读”说人话”也能通。</p>
+</blockquote>
+<p>本文由AI生成。</p>
+<span id="more"></span>
+
+<h2 id="0-一个比喻：大理石里本来就有一尊雕像"><a href="#0-一个比喻：大理石里本来就有一尊雕像" class="headerlink" title="0. 一个比喻：大理石里本来就有一尊雕像"></a>0. 一个比喻：大理石里本来就有一尊雕像</h2><p>米开朗基罗说过一句话：<strong>雕像本来就在那块大理石里，我只是把不属于它的部分去掉。</strong></p>
+<p>扩散模型的推理过程就是这个动作的精确版本：</p>
+<table>
+<thead>
+<tr>
+<th>比喻</th>
+<th>推理时对应</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一整块粗糙的大理石</td>
+<td>一团纯随机噪声 $x_T$（雪花屏）</td>
+</tr>
+<tr>
+<td>雕像</td>
+<td>最终要生成的图 $x_0$</td>
+</tr>
+<tr>
+<td>凿子每敲一下</td>
+<td>一次”去噪步”</td>
+</tr>
+<tr>
+<td>敲多少下</td>
+<td>采样步数（1000 步 &#x2F; 20 步 &#x2F; 4 步）</td>
+</tr>
+<tr>
+<td>雕刻师心里的样子</td>
+<td>文本提示词（”一只戴帽子的猫”）</td>
+</tr>
+</tbody></table>
+<p>关键区别在于：<strong>雕刻师不知道石子里藏的是什么</strong>。他每敲一下之前，都必须先判断”哪些部分是多余的石头”。扩散模型里的这个”判断”，就是网络预测噪声的那一步。</p>
+<hr>
+<h2 id="1-一句话版本"><a href="#1-一句话版本" class="headerlink" title="1. 一句话版本"></a>1. 一句话版本</h2><p>推理就三件事，循环做：</p>
+<ol>
+<li><strong>看一眼</strong>当前的噪声图 $x_t$，网络猜出”这里头掺了多少噪声” $\epsilon_\theta$；</li>
+<li><strong>减掉一点</strong>：用猜出来的噪声往前回退一步，得到 $x_{t-1}$；</li>
+<li><strong>重复</strong>$T$ 次，直到 $t &#x3D; 0$，得到成品图。</li>
+</ol>
+<p>$$\underbrace{x_T}<em>{\text{纯噪声}} ;\to; x</em>{T-1} ;\to; \cdots ;\to; x_t ;\to; x_{t-1} ;\to; \cdots ;\to; \underbrace{x_0}_{\text{成图}}$$</p>
+<blockquote>
+<p><strong>说人话</strong>：从一团雪花屏开始，反复问网络”噪声在哪”，然后擦掉一点点，擦几百次，图就浮出来了。</p>
+</blockquote>
+<hr>
+<h2 id="2-推理-vs-训练：谁干什么"><a href="#2-推理-vs-训练：谁干什么" class="headerlink" title="2. 推理 vs 训练：谁干什么"></a>2. 推理 vs 训练：谁干什么</h2><p>很多人把这两件事搞混。它们的分工非常干净：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>训练</strong>（已讲过）</th>
+<th><strong>推理</strong>（本文）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>起点</td>
+<td>真实图 $x_0$</td>
+<td>纯噪声 $x_T \sim \mathcal N(0, I)$</td>
+</tr>
+<tr>
+<td>方向</td>
+<td>往图里<strong>加</strong>噪声</td>
+<td>从图里<strong>减</strong>噪声</td>
+</tr>
+<tr>
+<td>谁在主控</td>
+<td>前向规则 $q$（固定，不用学）</td>
+<td>网络 $\epsilon_\theta$（训练好的，冻结不动）</td>
+</tr>
+<tr>
+<td>网络在做什么</td>
+<td>学参数（被更新）</td>
+<td>只做前向推理（参数不动）</td>
+</tr>
+<tr>
+<td>需要 $x_0$ 吗</td>
+<td><strong>需要</strong>（监督标签就是它）</td>
+<td><strong>不需要</strong>（它正是要生成的东西）</td>
+</tr>
+<tr>
+<td>一步的代价</td>
+<td>一次前向 + 一次反向传播</td>
+<td>只有一次前向</td>
+</tr>
+<tr>
+<td>干多少次</td>
+<td>几百万个样本 × 随机 $t$</td>
+<td>每个图走 $T$ 步</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：训练是”看着答案学解题”，推理是”上考场，没有答案，只能一步步自己推”。</p>
+</blockquote>
+<p>一个必须记住的事实：<strong>推理时网络从来没有见过清晰图</strong>。它从头到尾只见过带噪的 $x_t$，它唯一会做的事就是”猜噪声”。最终那张清晰的图，是几百次”猜噪声 → 减一点”累积出来的结果，不是网络直接画出来的。</p>
+<hr>
+<h2 id="3-出发前要备好的四样东西"><a href="#3-出发前要备好的四样东西" class="headerlink" title="3. 出发前要备好的四样东西"></a>3. 出发前要备好的四样东西</h2><p>推理不像训练那样需要数据和优化器，只需要这四样：</p>
+<table>
+<thead>
+<tr>
+<th>编号</th>
+<th>东西</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>①</td>
+<td>训练好的噪声预测网络 $\epsilon_\theta(x_t, t, c)$</td>
+<td>U-Net（或 DiT）。<strong>参数全部冻结</strong></td>
+</tr>
+<tr>
+<td>②</td>
+<td>噪声调度 $\beta_t$、$\alpha_t$、$\bar\alpha_t$</td>
+<td>训练时用的那组，<strong>一个数字都不能改</strong></td>
+</tr>
+<tr>
+<td>③</td>
+<td>采样器（scheduler）的规则</td>
+<td>决定”这一步怎么回退”，DDPM &#x2F; DDIM &#x2F; DPM-Solver…</td>
+</tr>
+<tr>
+<td>④</td>
+<td>条件 $c$（可选）</td>
+<td>文本提示词编码后的向量</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：网络是”工人”，$\bar\alpha_t$ 是”施工进度表”，采样器是”施工规范”，提示词是”甲方要求”。</p>
+</blockquote>
+<p>其中最容易踩的坑：<strong>② 必须和训练时完全一致</strong>。换成另一条调度曲线，等于让工人按错误的进度表施工，出来的图会崩。</p>
+<hr>
+<h2 id="4-第-0-步：起点是一团纯噪声"><a href="#4-第-0-步：起点是一团纯噪声" class="headerlink" title="4. 第 0 步：起点是一团纯噪声"></a>4. 第 0 步：起点是一团纯噪声</h2><p>$$x_T \sim \mathcal N(0, I)$$</p>
+<p>看清楚：这一步<strong>没有任何输入，没有任何参数</strong>。就是随机采一张每个像素都独立、服从标准高斯的雪花屏。</p>
+<blockquote>
+<p><strong>说人话</strong>：这就是为什么同一个提示词每次生成的图都不一样——<strong>起点是随机的</strong>。想要复现结果，就得固定这个随机数（就是大家常说的 seed）。</p>
+</blockquote>
+<p><strong>为什么起点必须是标准高斯？</strong> 因为训练时前向过程走到 $T$ 步，$\bar\alpha_T \approx 0$，图已经彻底变成 $\mathcal N(0, I)$ 了。推理是从终点往回走，自然就得<strong>从同一个分布出发</strong>——否则网络会收到一个它在训练中从没见过的输入，直接懵掉。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>训练时的终点</th>
+<th>推理时的起点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>是什么</td>
+<td>$x_T &#x3D; \sqrt{\bar\alpha_T}x_0 + \sqrt{1-\bar\alpha_T}\epsilon \approx \epsilon$</td>
+<td>$x_T \sim \mathcal N(0, I)$</td>
+</tr>
+<tr>
+<td>分布</td>
+<td>$\mathcal N(0, I)$</td>
+<td>$\mathcal N(0, I)$</td>
+</tr>
+<tr>
+<td>关系</td>
+<td>训练把图推到这里</td>
+<td>推理从这里往回走</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="5-单步去噪到底在做什么"><a href="#5-单步去噪到底在做什么" class="headerlink" title="5. 单步去噪到底在做什么"></a>5. 单步去噪到底在做什么</h2><p>这一步是全文的核心。看起来是一行公式，其实内部分成<strong>四个小动作</strong>：</p>
+<p>$$\underbrace{x_t}<em>{\text{当前}} \xrightarrow{\ \text{① 预测噪声}\ } \epsilon_\theta \xrightarrow{\ \text{② 反推}\ } \hat x_0 \xrightarrow{\ \text{③ 求均值}\ } \mu_\theta(x_t, t) \xrightarrow{\ \text{④ 加抖动}\ } \underbrace{x</em>{t-1}}_{\text{上一步}}$$</p>
+<h3 id="5-1-动作①：网络预测噪声"><a href="#5-1-动作①：网络预测噪声" class="headerlink" title="5.1 动作①：网络预测噪声"></a>5.1 动作①：网络预测噪声</h3><p>$$\epsilon_\theta &#x3D; \epsilon_\theta(x_t,\ t,\ c)$$</p>
+<p>输入三样：当前的带噪图 $x_t$、当前的时间步 $t$、条件 $c$（比如提示词）。输出一张和 $x_t$ <strong>一样大</strong>的图，每个位置是一个数——“我觉得这个像素上的噪声分量是多少”。</p>
+<blockquote>
+<p><strong>说人话</strong>：网络不是画家，它是”噪声探测器”。你把一张糊图给它，它还你一张噪声图。</p>
+</blockquote>
+<p><strong>为什么必须把 $t$ 也喂进去？</strong> 因为不同噪声水平下”噪声长什么样”完全不同。$t$ 很大时整张图几乎全是噪声，$t$ 很小时只有细微的颗粒。不给 $t$，网络就不知道该用哪套判断标准。时间步通常编码成一个向量，加到网络的每一层里。</p>
+<h3 id="5-2-动作②：反推”原图大概长什么样”"><a href="#5-2-动作②：反推”原图大概长什么样”" class="headerlink" title="5.2 动作②：反推”原图大概长什么样”"></a>5.2 动作②：反推”原图大概长什么样”</h3><p>训练时我们是从 $x_0$ 造出 $x_t$ 的：</p>
+<p>$$x_t &#x3D; \sqrt{\bar\alpha_t},x_0 + \sqrt{1-\bar\alpha_t},\epsilon$$</p>
+<p>现在把它<strong>反着解</strong>出 $x_0$：</p>
+<p>$$\hat x_0 &#x3D; \frac{1}{\sqrt{\bar\alpha_t}}\Big(x_t - \sqrt{1-\bar\alpha_t};\epsilon_\theta\Big)$$</p>
+<blockquote>
+<p><strong>说人话</strong>：这就是个<strong>移项</strong>——把”噪声 × 系数”从当前图里减掉，剩下的部分再放大回原来的尺度，就得到一张”我认为的原图” $\hat x_0$。<br>注意它叫 $\hat x_0$（带个帽子），表示<strong>这是猜的，不是真的</strong>。$t$ 很大的时候这个猜测非常不准，越往后越准。</p>
+</blockquote>
+<p><strong>为什么要绕这一圈？</strong> 因为网络只会输出噪声，而我们真正想要的是”上一步的图”。$\hat x_0$ 是从”噪声语言”翻译回”图像语言”的桥梁。</p>
+<h3 id="5-3-动作③：求上一步的均值-mu-theta"><a href="#5-3-动作③：求上一步的均值-mu-theta" class="headerlink" title="5.3 动作③：求上一步的均值 $\mu_\theta$"></a>5.3 动作③：求上一步的均值 $\mu_\theta$</h3><p>这一步直接借用训练时推导出来的”标准答案”公式（见原理文档 5.3 节），把里面的真实 $x_0$ **换成我们猜的 $\hat x_0$**：</p>
+<p>$$\mu_\theta(x_t, t) &#x3D; \frac{\sqrt{\bar\alpha_{t-1}},\beta_t}{1 - \bar\alpha_t},\hat x_0 ;+; \frac{\sqrt{\alpha_t},(1 - \bar\alpha_{t-1})}{1 - \bar\alpha_t},x_t$$</p>
+<blockquote>
+<p><strong>说人话</strong>：上一步的图应该落在”<strong>我猜的原图 $\hat x_0$</strong>“和”<strong>当前这张 $x_t$</strong>“之间。这两个系数就是配方，告诉我们往哪边偏多少。<br>而这两个系数是<strong>训练时就算好的常数</strong>，跟网络无关，推理时直接查表。</p>
+</blockquote>
+<p>通常第二个系数（$x_t$ 那一项）<strong>占大头</strong>——上一步跟当前步本来就很像，$\hat x_0$ 只起到”往真实图上拉一把”的修正作用。</p>
+<h3 id="5-4-动作④：加一点随机抖动"><a href="#5-4-动作④：加一点随机抖动" class="headerlink" title="5.4 动作④：加一点随机抖动"></a>5.4 动作④：加一点随机抖动</h3><p>$$x_{t-1} &#x3D; \mu_\theta(x_t, t) + \sigma_t,z, \qquad z \sim \mathcal N(0, I)$$</p>
+<p>其中 $\sigma_t$ 有两种常见取法：</p>
+<p>$$\text{DDPM 原版：}\ \sigma_t &#x3D; \sqrt{\beta_t} \qquad\text{或}\qquad \sigma_t &#x3D; \sqrt{\tilde\beta_t},\ \ \tilde\beta_t &#x3D; \frac{1-\bar\alpha_{t-1}}{1-\bar\alpha_t}\beta_t$$</p>
+<blockquote>
+<p><strong>说人话</strong>：不要直接跳到均值，要在均值<strong>附近随机挑一个点</strong>。这是”抽样”（sampling），不是”求平均”。</p>
+</blockquote>
+<p><strong>这里有个特别反直觉的问题：我们明明在去噪，为什么还要主动加噪声？</strong></p>
+<p>三个理由：</p>
+<ol>
+<li><strong>我们在采样，不是在做点估计。</strong> 目标是从一个概率分布里抽一个样本，而不是取它的均值。直接取均值会导致生成的图过度平滑、缺乏细节（类似”把所有可能性平均一下”）。</li>
+<li><strong>单步的模型不完美。</strong> 网络猜的 $\hat x_0$ 有误差，$\mu_\theta$ 就不准。随机抖动给了模型”纠错”的机会——这一步走偏了，下一步还能走回来。</li>
+<li><strong>它对应理论上的逆过程。</strong> 数学上真正的反向过程是随机的（除非 $\beta_t \to 0$），去掉随机项反而是对理论的偏离。</li>
+</ol>
+<blockquote>
+<p><strong>但注意</strong>：这也正是 DDIM 能做确定性采样的切入点——如果愿意接受一点点理论偏差，就可以把 $\sigma_t$ 直接设成 0，换来大幅加速。见第 9 节。</p>
+</blockquote>
+<h3 id="5-5-完整公式与一个数值例子"><a href="#5-5-完整公式与一个数值例子" class="headerlink" title="5.5 完整公式与一个数值例子"></a>5.5 完整公式与一个数值例子</h3><p>把上面四步合并，就是 DDPM 论文里那条采样公式：</p>
+<p>$$\boxed{x_{t-1} &#x3D; \frac{1}{\sqrt{\alpha_t}}\left(x_t - \frac{1 - \alpha_t}{\sqrt{1 - \bar\alpha_t}},\epsilon_\theta(x_t, t)\right) + \sigma_t z}$$</p>
+<blockquote>
+<p><strong>说人话</strong>：括号里是”去掉噪声并放大回原尺度”，外面的 $1&#x2F;\sqrt{\alpha_t}$ 是补偿收缩，最后那个 $\sigma_t z$ 是随机抖动。一行公式，四个动作全在里面。</p>
+</blockquote>
+<p><strong>一维数值例子</strong>（真实图像是几千维，这里用一个数字示意）：</p>
+<p>设当前处在 $t$ 时刻，$\bar\alpha_{t-1} &#x3D; 0.95$，$\bar\alpha_t &#x3D; 0.94$，于是 $\alpha_t &#x3D; 0.94&#x2F;0.95 &#x3D; 0.9895$，$\beta_t &#x3D; 0.0105$。</p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>计算</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>当前状态</td>
+<td>$x_t$</td>
+<td>$0.438$</td>
+</tr>
+<tr>
+<td>① 网络预测</td>
+<td>$\epsilon_\theta(x_t, t)$</td>
+<td>$0.55$</td>
+</tr>
+<tr>
+<td>② 反推原图</td>
+<td>$\hat x_0 &#x3D; \dfrac{0.438 - \sqrt{0.06}\times 0.55}{\sqrt{0.94}}$</td>
+<td>$0.313$</td>
+</tr>
+<tr>
+<td>③ 求均值</td>
+<td>$\mu_\theta &#x3D; 0.171,\hat x_0 + 0.829,x_t$</td>
+<td>$0.416$</td>
+</tr>
+<tr>
+<td>④ 加抖动</td>
+<td>$x_{t-1} &#x3D; 0.416 + 0.094\times(-0.5)$</td>
+<td>$0.369$</td>
+</tr>
+</tbody></table>
+<p>而这张图的真值是 $x_0 &#x3D; 0.3$。看整个过程：$0.438 \to 0.416 \to 0.369$，<strong>一步就往真值靠近了</strong>。网络猜的原图 $0.313$ 也很接近真值 $0.3$。</p>
+<blockquote>
+<p><strong>说人话</strong>：单步只挪动了一点点（0.438 → 0.369）。别嫌慢——<strong>每一步的小挪动才是”稳”的来源</strong>。一次想挪到位，反而会崩。</p>
+</blockquote>
+<hr>
+<h2 id="6-整个循环：从-T-到-0"><a href="#6-整个循环：从-T-到-0" class="headerlink" title="6. 整个循环：从 $T$ 到 $0$"></a>6. 整个循环：从 $T$ 到 $0$</h2><p>把单步串起来，完整流程是：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">① 采起点           x_T ~ N(0, I)</span><br><span class="line">② for t = T, T-1, ..., 1:</span><br><span class="line">      预测噪声      ε_θ = ε_θ(x_t, t, c)</span><br><span class="line">      反推原图      x̂_0 = (x_t - √(1-ᾱ_t)·ε_θ) / √ᾱ_t</span><br><span class="line">      求均值        μ_θ = 系数₁·x̂_0 + 系数₂·x_t</span><br><span class="line">      加抖动        x_&#123;t-1&#125; = μ_θ + σ_t·z</span><br><span class="line">③ 输出              x_0</span><br></pre></td></tr></table></figure>
+
+<p><strong>这个过程中几个值得盯着的量：</strong></p>
+<table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>$\bar\alpha_t$（原图还剩多少）</th>
+<th>图长什么样</th>
+<th>网络在干什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$t &#x3D; T$</td>
+<td>$\approx 0$</td>
+<td>纯雪花屏</td>
+<td>猜大轮廓、构图、色块分布</td>
+</tr>
+<tr>
+<td>$t$ 中等</td>
+<td>$\approx 0.5$</td>
+<td>模糊的影子</td>
+<td>定主体形状、大致结构</td>
+</tr>
+<tr>
+<td>$t$ 较小</td>
+<td>$\approx 0.9$</td>
+<td>看得清了，有噪点</td>
+<td>补纹理、边缘、细节</td>
+</tr>
+<tr>
+<td>$t \to 0$</td>
+<td>$\to 1$</td>
+<td>成品</td>
+<td>最后抛光</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：这是一个<strong>从粗到细</strong>的过程——先定骨架，再填血肉，最后磨皮。所以你中途去看中间结果，会先看到一团模糊的色块，慢慢才变清晰。<br>这也解释了一个现象：<strong>前几步基本决定整张图的构图和内容，后面几十步主要是在补细节</strong>。</p>
+</blockquote>
+<p><strong>每步都要跑一次完整的网络。</strong> 这是扩散模型慢的根本原因——生成一张图 &#x3D; 网络跑 $T$ 次。$T &#x3D; 1000$ 时，一次生成要跑一千次 U-Net。</p>
+<hr>
+<h2 id="6-5-番外：视频扩散模型-vs-图片扩散模型，原理差在哪"><a href="#6-5-番外：视频扩散模型-vs-图片扩散模型，原理差在哪" class="headerlink" title="6.5 番外：视频扩散模型 vs 图片扩散模型，原理差在哪"></a>6.5 番外：视频扩散模型 vs 图片扩散模型，原理差在哪</h2><blockquote>
+<p><strong>一句话</strong>：<strong>骨架一条都没变</strong>（加噪 → 预测噪声 → 回退），<strong>图片扩散就是视频扩散在 $F &#x3D; 1$ 时的特例</strong>。所有差别都来自同一件事：<strong>多了一个轴之后，哪些环节必须跟着改</strong>。</p>
+</blockquote>
+<h3 id="6-5-1-最本质的区别：噪声加在「整段视频」上，不是逐帧加"><a href="#6-5-1-最本质的区别：噪声加在「整段视频」上，不是逐帧加" class="headerlink" title="6.5.1 最本质的区别：噪声加在「整段视频」上，不是逐帧加"></a>6.5.1 最本质的区别：噪声加在「整段视频」上，不是逐帧加</h3><table>
+<thead>
+<tr>
+<th></th>
+<th>图片扩散</th>
+<th>视频扩散</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>数据</td>
+<td>一张图 $x_0 \in \mathbb{R}^{C \times H \times W}$</td>
+<td>一个片段 $x_0 \in \mathbb{R}^{F \times C \times H \times W}$</td>
+</tr>
+<tr>
+<td>时间步</td>
+<td>整张图一个 $t$</td>
+<td><strong>整段共用一个 $t$</strong></td>
+</tr>
+<tr>
+<td>噪声</td>
+<td>$\epsilon \in \mathbb{R}^{C \times H \times W}$</td>
+<td>$\epsilon \in \mathbb{R}^{F \times C \times H \times W}$，一个<strong>时空噪声场</strong></td>
+</tr>
+</tbody></table>
+<p>加噪公式还是同一条：</p>
+<p>$$x_t &#x3D; \sqrt{\bar\alpha_t},x_0 + \sqrt{1 - \bar\alpha_t},\epsilon$$</p>
+<blockquote>
+<p><strong>说人话</strong>：变的只是 $\epsilon$ 的形状。加噪规则、损失函数、采样循环<strong>全部照搬</strong>，一句没改。</p>
+</blockquote>
+<p><strong>为什么非得整段共用一个 $t$？</strong> 看反例最清楚：如果每帧各自独立采 $t$、独立加噪，那训练时帧与帧之间<strong>没有任何关联</strong>，网络也不可能有理由去学跨帧关系——生成时每帧各画各的，结果就是疯狂闪烁。</p>
+<p>共用一个 $t$ 之后，模型要<strong>一次性预测整个时空噪声场</strong>。为了把损失降下来，它必须利用”相邻帧应该长得差不多”这个规律。所以<strong>时间一致性不是被显式教出来的，是被损失函数逼出来的</strong>。</p>
+<blockquote>
+<p><strong>补充</strong>：近年确实出现了”每帧不同噪声水平”的做法（Diffusion Forcing、FIFO、CausVid 等），目的是做流式生成、无限长视频和自回归续写。但主流文生视频（Mochi、CogVideoX、HunyuanVideo 等）仍然整段共享 $t$。</p>
+</blockquote>
+<h3 id="6-5-2-逐项对照"><a href="#6-5-2-逐项对照" class="headerlink" title="6.5.2 逐项对照"></a>6.5.2 逐项对照</h3><table>
+<thead>
+<tr>
+<th>环节</th>
+<th>图片扩散</th>
+<th>视频扩散</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>训练样本</td>
+<td>单张图</td>
+<td>一个 clip（常见 16–121 帧）</td>
+</tr>
+<tr>
+<td>编码器</td>
+<td>2D VAE，空间压缩 $8\times8$</td>
+<td><strong>3D VAE</strong>，额外压缩时间（常见 $4\times8\times8$）</td>
+</tr>
+<tr>
+<td>潜变量形状</td>
+<td>$c \times h \times w$</td>
+<td>$f \times c \times h \times w$</td>
+</tr>
+<tr>
+<td>卷积</td>
+<td>2D conv</td>
+<td>3D conv（卷积核多一维时间）</td>
+</tr>
+<tr>
+<td>DiT 切块</td>
+<td>2D patch</td>
+<td><strong>3D tubelet</strong>（时空小块）</td>
+</tr>
+<tr>
+<td>位置编码</td>
+<td>2D RoPE</td>
+<td>3D RoPE（多一维时间）</td>
+</tr>
+<tr>
+<td>网络层</td>
+<td>只有空间层</td>
+<td>空间层 <strong>+ 时间层</strong>（见 7.2.0）</td>
+</tr>
+<tr>
+<td>损失函数</td>
+<td>$\lVert \epsilon - \epsilon_\theta \rVert^2$</td>
+<td><strong>完全一样</strong>，只是张量多一维</td>
+</tr>
+<tr>
+<td>条件</td>
+<td>文本</td>
+<td>文本 +（可选）首帧&#x2F;尾帧、运动强度、帧率、音频</td>
+</tr>
+<tr>
+<td>算力</td>
+<td>基准</td>
+<td>大致 × $F$</td>
+</tr>
+<tr>
+<td>评测</td>
+<td>FID、CLIP score</td>
+<td><strong>FVD</strong>、VBench（含 Dynamic Degree）</td>
+</tr>
+</tbody></table>
+<h3 id="6-5-3-视频独有的三个麻烦"><a href="#6-5-3-视频独有的三个麻烦" class="headerlink" title="6.5.3 视频独有的三个麻烦"></a>6.5.3 视频独有的三个麻烦</h3><p><strong>① 时间一致性（flicker）</strong>。不但每帧要好看，相邻帧的纹理、颜色、人物身份还不能跳。这是图片模型根本不存在的问题。</p>
+<p><strong>② 动态程度（dynamic degree）</strong>。一个模型可以靠”<strong>干脆不动</strong>“来骗过一致性指标——生成一段每帧都清晰、但完全静止的东西。所以视频评测必须同时看”稳不稳”和”动不动”两个维度。</p>
+<blockquote>
+<p>这一条直接解释了<strong>为什么需要 STG</strong>：CFG 把画面推清晰的同时会把动态一起推掉（因为它推离的是”没动态的无条件模型”）。STG 的全部意义就是”<strong>提清晰度，但不牺牲动态程度</strong>“。</p>
+</blockquote>
+<p><strong>③ 长度</strong>。一次能生成的帧数受显存限制。长视频要靠滑窗或自回归续写（拿前一段的尾帧当条件），于是又冒出”长期一致性”问题——几十秒之后，人物可能已经悄悄变了。</p>
+<h3 id="6-5-4-对推理流程的实际影响"><a href="#6-5-4-对推理流程的实际影响" class="headerlink" title="6.5.4 对推理流程的实际影响"></a>6.5.4 对推理流程的实际影响</h3><ul>
+<li>起点 $x_T$ 不再是”一张噪声图”，而是 $f \times c \times h \times w$ 的<strong>一整块时空噪声</strong>。</li>
+<li>每一步网络输出的是<strong>整个时空噪声场</strong> $\epsilon_\theta$，采样器对它整体做一次回退。</li>
+<li><strong>视频上的 CFG 要比文生图保守</strong>（常取 3–7 而非 7.5），否则视频会变静止。</li>
+<li>多出一类<strong>视频专属旋钮</strong>：STG、时间层引导、运动强度（motion bucket）。</li>
+<li>端到端成本 ≈ 单帧 × 帧数 × 去噪步数，这是视频推理昂贵的根源。</li>
+</ul>
+<hr>
+<h2 id="7-引导（Guidance）：三种让生成更听话的技术"><a href="#7-引导（Guidance）：三种让生成更听话的技术" class="headerlink" title="7. 引导（Guidance）：三种让生成更听话的技术"></a>7. 引导（Guidance）：三种让生成更听话的技术</h2><p>前面讲的采样循环有个前提：<strong>网络输出的 $\epsilon_\theta$ 是拿来直接用的</strong>。但实践中大家几乎不会直接用——而是先对它做一番”加工”，让生成结果更清晰、更贴合条件。这类加工统称 <strong>guidance（引导）</strong>。</p>
+<blockquote>
+<p><strong>说人话</strong>：网络给的是”原始意见”，引导就是对这份意见做<strong>加权、放大、外推</strong>，把生成轨迹往我们想要的方向推一把。</p>
+</blockquote>
+<p>三种常见引导，解决的问题各不相同：</p>
+<table>
+<thead>
+<tr>
+<th>技术</th>
+<th>要解决的问题</th>
+<th>核心手法</th>
+<th>代价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>CFG</strong></td>
+<td>让图贴合提示词</td>
+<td>跑”有条件 &#x2F; 无条件”两遍，做外推</td>
+<td>成本 ×2，多样性下降</td>
+</tr>
+<tr>
+<td><strong>STG</strong></td>
+<td>提升画面质量但不牺牲动态</td>
+<td>跑”完整 &#x2F; 跳层”两遍，做外推</td>
+<td>成本 ×3（含 CFG）</td>
+</tr>
+<tr>
+<td><strong>Modality Guidance</strong></td>
+<td>控制多模态之间的一致性与耦合强度</td>
+<td>给每个模态配权重，或用跨模态相似度做梯度</td>
+<td>模态冲突、过耦合</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="7-1-Classifier-Free-Guidance（CFG）"><a href="#7-1-Classifier-Free-Guidance（CFG）" class="headerlink" title="7.1 Classifier-Free Guidance（CFG）"></a>7.1 Classifier-Free Guidance（CFG）</h3><p>不带条件的扩散模型只能”随机画一张说得通的图”。要让它听提示词，就得把条件 $c$ 送进网络，并且用外推放大效果。</p>
+<h4 id="7-1-1-条件怎么进网络"><a href="#7-1-1-条件怎么进网络" class="headerlink" title="7.1.1 条件怎么进网络"></a>7.1.1 条件怎么进网络</h4><p>文本提示词先被一个<strong>文本编码器</strong>（如 CLIP &#x2F; T5）转成一串向量，然后通过 <strong>cross-attention</strong> 注入 U-Net 的中间层。</p>
+<blockquote>
+<p><strong>说人话</strong>：U-Net 每层在处理图像时，都可以”抬头看一眼”提示词，决定哪些词跟当前这块区域有关。</p>
+</blockquote>
+<h4 id="7-1-2-为什么要做两次预测"><a href="#7-1-2-为什么要做两次预测" class="headerlink" title="7.1.2 为什么要做两次预测"></a>7.1.2 为什么要做两次预测</h4><p>推理时，网络被要求跑<strong>两遍</strong>：</p>
+<p>$$\epsilon_{\text{cond}} &#x3D; \epsilon_\theta(x_t, t, c) \qquad \text{（带提示词）}$$</p>
+<p>$$\epsilon_{\text{uncond}} &#x3D; \epsilon_\theta(x_t, t, \varnothing) \qquad \text{（把提示词换成”空”）}$$</p>
+<p>然后做<strong>外推</strong>：</p>
+<p>$$\boxed{\epsilon &#x3D; \epsilon_{\text{uncond}} + w,(\epsilon_{\text{cond}} - \epsilon_{\text{uncond}})}$$</p>
+<p>$w$ 就是大家熟悉的 <strong>guidance scale</strong>（默认常取 7.5）。</p>
+<blockquote>
+<p><strong>说人话</strong>：$\epsilon_{\text{cond}} - \epsilon_{\text{uncond}}$ 是”这个提示词让噪声预测<strong>改变了多少</strong>“，也就是提示词起作用的方向。$w$ 是放大倍数——<strong>沿着这个方向多走几步</strong>，效果就更明显。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>$w$</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$w &#x3D; 1$</td>
+<td>不做外推，就是普通的条件生成</td>
+</tr>
+<tr>
+<td>$w &#x3D; 7.5$</td>
+<td>常用默认值，明显贴合提示词</td>
+</tr>
+<tr>
+<td>$w &gt; 15$</td>
+<td>过度饱和、颜色炸裂、结构扭曲</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话（代价）</strong>：$w$ 越大越贴合提示词，但<strong>多样性越低、越容易过曝</strong>。这是一个”听话程度 ↔ 画面质量&#x2F;多样性”的权衡。<br>另外注意：<strong>每步都要跑两次网络</strong>，所以带 CFG 的推理成本是普通推理的两倍。</p>
+</blockquote>
+<h4 id="7-1-3-常见误解：-w-7-5-是”放大-7-5-倍”吗？要不要归一化？"><a href="#7-1-3-常见误解：-w-7-5-是”放大-7-5-倍”吗？要不要归一化？" class="headerlink" title="7.1.3 常见误解：$w &#x3D; 7.5$ 是”放大 7.5 倍”吗？要不要归一化？"></a>7.1.3 常见误解：$w &#x3D; 7.5$ 是”放大 7.5 倍”吗？要不要归一化？</h4><p><strong>不是 7.5 倍。</strong> 把公式展开就清楚了：</p>
+<p>$$\epsilon &#x3D; \epsilon_{\text{uncond}} + 7.5,(\epsilon_{\text{cond}} - \epsilon_{\text{uncond}}) &#x3D; 7.5,\epsilon_{\text{cond}} - 6.5,\epsilon_{\text{uncond}}$$</p>
+<p><strong>被放大的是”差值”，基线仍然是 $\epsilon_{\text{uncond}}$。</strong></p>
+<blockquote>
+<p><strong>说人话</strong>：条件通常只让预测偏移一点点（比如 0.20 → 0.25，差 0.05）。$w$ 把<strong>这一小段偏移量</strong>拉长 7.5 倍，得到 $0.20 + 7.5 \times 0.05 &#x3D; 0.575$。<br>如果真是”7.5 倍原值”，那应该是 $7.5 \times 0.25 &#x3D; 1.875$——整张图每个像素都这么放大的话，画面立刻就炸了。</p>
+</blockquote>
+<p><strong>那为什么 $w$ 大了还是会过曝？</strong> 因为虽然不是 7.5 倍，尺度<strong>确实会飘</strong>。设两个预测高度相关（相关系数 $\rho &#x3D; 0.95$，各自 $\text{std} &#x3D; 1$）：</p>
+<p>$$\text{Var}(\epsilon_{\text{cfg}}) &#x3D; \underbrace{1}<em>{\text{Var}(\epsilon</em>{\text{uncond}})} + w^2\underbrace{(2-2\rho)}<em>{&#x3D;,0.1} + 2w\underbrace{(\rho-1)}</em>{&#x3D;,-0.05} &#x3D; 1 + 5.625 - 0.75 &#x3D; 5.875 ;\Rightarrow; \text{std} \approx 2.42$$</p>
+<p>标准差从 1.0 涨到约 <strong>2.42</strong>。采样器拿到的 $\epsilon$ 比训练时见过的”胖了一倍多”，去噪步子迈过头 → <strong>过饱和</strong>。这就是”w 太大画面炸掉”的定量来源。</p>
+<p><strong>于是就有了归一化，这件事专门叫 rescaling</strong>（Lin et al., WACV 2024）：</p>
+<p>$$\epsilon_{\text{rescaled}} &#x3D; \epsilon_{\text{cfg}} \times \frac{\text{std}(\epsilon_{\text{cond}})}{\text{std}(\epsilon_{\text{cfg}})}$$</p>
+<p>$$\epsilon_{\text{final}} &#x3D; r \cdot \epsilon_{\text{rescaled}} + (1-r) \cdot \epsilon_{\text{cfg}}$$</p>
+<blockquote>
+<p><strong>说人话</strong>：把外推结果的”胖瘦”按 $\epsilon_{\text{cond}}$ 的标准重新校准回去。$r$ 是混合系数，控制”校准得多彻底”。<br>注意 std 是对<strong>整张预测图的所有空间位置和通道统一算一个值</strong>，不是逐像素做——否则会破坏空间结构。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>$r$</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$r &#x3D; 0$</td>
+<td><strong>不归一化</strong>（多数框架的默认值）</td>
+</tr>
+<tr>
+<td>$r &#x3D; 0.7$</td>
+<td>常用取值，明显缓解高 $w$ 下的过饱和</td>
+</tr>
+<tr>
+<td>$r &#x3D; 1$</td>
+<td>完全校准，但画面容易发平、对比度下降</td>
+</tr>
+</tbody></table>
+<p><strong>为什么默认不做归一化？</strong> 因为完全 rescale 会让画面对比度下降、显得平淡（论文原文的说法正是 avoid “plain looking” images）。而在常用 $w$ 区间（6–9），那一点点过饱和带来的观感反而”讨喜”，社区也就默认接受了。<strong>只有当 $w$ 明显偏大、画面开始炸时才值得打开它。</strong></p>
+<blockquote>
+<p>顺带一提：7.2 节 STG 里提到的 <strong>rescaling 是同一个手法</strong>。凡是靠”外推”做引导的地方（CFG、STG、Autoguidance），都会遇到尺度漂移，都可以用这一招拉回来。</p>
+</blockquote>
+<p><strong>CFG 最大的毛病</strong>：它把生成结果推离”无条件方向”，而”无条件”意味着<strong>低信息量、低动态、低多样性</strong>。在文生图上这还能接受（不过是画面变艳一点），但在<strong>视频生成</strong>里就致命了——$w$ 一拉高，画面清晰了，但视频<strong>不动了</strong>，看起来像一张静止的图。</p>
+<hr>
+<h3 id="7-2-Spatiotemporal-Skip-Guidance（STG）"><a href="#7-2-Spatiotemporal-Skip-Guidance（STG）" class="headerlink" title="7.2 Spatiotemporal Skip Guidance（STG）"></a>7.2 Spatiotemporal Skip Guidance（STG）</h3><blockquote>
+<p>论文：Hyung et al., <em>Spatiotemporal Skip Guidance for Enhanced Video Diffusion Sampling</em>, CVPR 2025（arXiv:2411.18664）</p>
+</blockquote>
+<p><strong>动机</strong>：有没有一种引导，能提升质量但<strong>不牺牲动态性</strong>？</p>
+<p>先说它的思想来源 <strong>Autoguidance</strong>：不用”无条件模型”当参照，而是用一个<strong>更弱但同任务</strong>的模型当参照，然后把结果推离它：</p>
+<p>$$\tilde\epsilon_w &#x3D; \epsilon_{\text{强}} + w,(\epsilon_{\text{强}} - \epsilon_{\text{弱}})$$</p>
+<p>问题是：训练一个额外的弱模型，对十亿参数的视频模型来说<strong>贵到做不了</strong>。</p>
+<h4 id="7-2-0-先搞清楚：什么是「空间层」和「时间层」"><a href="#7-2-0-先搞清楚：什么是「空间层」和「时间层」" class="headerlink" title="7.2.0 先搞清楚：什么是「空间层」和「时间层」"></a>7.2.0 先搞清楚：什么是「空间层」和「时间层」</h4><blockquote>
+<p>如果还没看 6.5 节，建议先读它：<strong>视频扩散和图片扩散的整体差异</strong>（尤其是”整段共用一个 $t$”这一点）是理解本节的前提。</p>
+</blockquote>
+<blockquote>
+<p><strong>先排一个雷</strong>：视频扩散模型里”时间”这个词出现了两次，指的是完全不同的东西。<br><strong>扩散时间步 $t$<strong>（加噪到第几步）≠ <strong>视频时间轴</strong>（第几帧）。空间层 &#x2F; 时间层里的”时间”是</strong>后者</strong>。</p>
+</blockquote>
+<p>视频的 latent 比图片多一个维度：图片是 $N$ 个 patch token，一段 $F$ 帧的视频就是 $F \times N$ 个 token。网络里每一层做的事都是”让 token 之间互相看、交换信息”，区别只在于<strong>允许谁看谁</strong>：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>允许哪些 token 互相看</th>
+<th>负责什么</th>
+<th>这一层变弱之后</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>空间层</strong></td>
+<td>同一帧内部的 $N$ 个</td>
+<td>画面结构：轮廓、纹理、构图、物体长相</td>
+<td>画面糊、结构散、细节丢失</td>
+</tr>
+<tr>
+<td><strong>时间层</strong></td>
+<td>跨帧、<strong>同一位置</strong>的 $F$ 个</td>
+<td>运动与一致性：往哪动、颜色&#x2F;身份跨帧是否稳定</td>
+<td>帧间闪烁、物体变形、运动不连贯</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：空间层管”<strong>每一帧画得像不像</strong>“，时间层管”<strong>帧和帧之间连不连得上</strong>“。</p>
+</blockquote>
+<p><strong>一个检验方法</strong>：把视频的帧顺序打乱再喂进去——还能正常干活的就是空间层（它根本不在乎顺序），一打乱就崩的就是时间层（它靠顺序建模运动）。</p>
+<p><strong>两种摆法</strong>（决定了后面用哪种跳法）</p>
+<table>
+<thead>
+<tr>
+<th>架构</th>
+<th>怎么摆</th>
+<th>代表模型</th>
+<th>适合哪种跳法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>3D 全注意力</strong>（joint）</td>
+<td>一层 attention 直接把 $F\times N$ 个 token 一起算，时空交互一次完成</td>
+<td>Mochi、HunyuanVideo</td>
+<td>两个轴拆不开 → <strong>Residual Skip</strong></td>
+</tr>
+<tr>
+<td><strong>时空分离</strong>（factorized）</td>
+<td>先一层 Spatial Attention（帧内），再一层 Temporal Attention（跨帧），串起来</td>
+<td>Open-Sora、CogVideoX、LTX-Video</td>
+<td>层级清楚 → <strong>Attention Skip</strong>，且可分别引导</td>
+</tr>
+</tbody></table>
+<p>**还有三类层不属于”时空层”**：</p>
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>干什么</th>
+<th>STG 跳不跳</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>文本交叉注意力（cross-attention）</td>
+<td>图像 token 去读提示词</td>
+<td><strong>不跳</strong></td>
+</tr>
+<tr>
+<td>时间步调制（AdaLN &#x2F; 时间嵌入）</td>
+<td>把扩散步数 $t$ 告诉网络</td>
+<td><strong>不跳</strong></td>
+</tr>
+<tr>
+<td>前馈层 FFN</td>
+<td>对每个 token 独立做变换</td>
+<td>通常不跳</td>
+</tr>
+</tbody></table>
+<p><strong>回到 STG</strong>：正因为只跳时空层，跳层后的那个”弱模型”<strong>仍然读得到提示词</strong>（cross-attention 还在）、<strong>仍然知道现在加噪到第几步</strong>（时间嵌入还在），只是”把画面组织起来”的能力被削掉了。所以它恰好是一个”<strong>懂我意思、也知道该怎么动，就是画得糙</strong>“的自己——这正是 STG 需要的参照物。</p>
+<p>如果模型是时空分离架构，两项还能分开调（对应 7.2.2 里的 $w_1, w_2$）：跳<strong>空间</strong>层 → 主要提升<strong>画面清晰度</strong>；跳<strong>时间</strong>层 → 主要提升<strong>时间一致性</strong>。</p>
+<h4 id="7-2-0-1-具体到代码：怎么判断一个层是”空间层”还是”时间层”"><a href="#7-2-0-1-具体到代码：怎么判断一个层是”空间层”还是”时间层”" class="headerlink" title="7.2.0.1 具体到代码：怎么判断一个层是”空间层”还是”时间层”"></a>7.2.0.1 具体到代码：怎么判断一个层是”空间层”还是”时间层”</h4><p>判据只有一个：<strong>看 attention 之前那一行 reshape，把哪个维度折叠进了 batch</strong>。以 Stable Video Diffusion 为例（<code>src/diffusers/models/attention.py</code> L1214–1257，<code>TemporalBasicTransformerBlock.forward</code>）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 进来时形状是 (B·F, N, C)，N = h × w 个空间位置</span></span><br><span class="line">hidden_states = hidden_states[<span class="literal">None</span>, :].reshape(batch_size, num_frames, seq_length, channels)  <span class="comment"># (B, F, N, C)</span></span><br><span class="line">hidden_states = hidden_states.permute(<span class="number">0</span>, <span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>)                                    <span class="comment"># (B, N, F, C)</span></span><br><span class="line">hidden_states = hidden_states.reshape(batch_size * seq_length, num_frames, channels) <span class="comment"># (B·N, F, C)</span></span><br><span class="line">attn_output = self.attn1(hidden_states)        <span class="comment"># ← attention 现在只在 F 这一维内做</span></span><br><span class="line"><span class="comment"># 做完再原路 reshape 变回去</span></span><br></pre></td></tr></table></figure>
+
+<p>对比一下两个模块收到的形状：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>attention 看到的形状</th>
+<th>被折叠进 batch 的是</th>
+<th>所以它是</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BasicTransformerBlock.attn1</code></td>
+<td>$(B\cdot F,\ N,\ C)$</td>
+<td>帧 $F$</td>
+<td><strong>空间层</strong>（attention 只在空间维 $N$ 内做）</td>
+</tr>
+<tr>
+<td><code>TemporalBasicTransformerBlock.attn1</code></td>
+<td>$(B\cdot N,\ F,\ C)$</td>
+<td>空间位置 $N$</td>
+<td><strong>时间层</strong>（attention 只在帧维 $F$ 内做）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：同一个 attention 算子，喂进去的形状不同，它就变成不同的层。<strong>折叠谁，谁之间就不通信。</strong></p>
+</blockquote>
+<p>在 SVD 里，这两个模块是<strong>一一配对</strong>出现的（<code>src/diffusers/models/transformers/transformer_temporal.py</code> L205 的 <code>TransformerSpatioTemporalModel</code>）：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">self.transformer_blocks          = nn.ModuleList([BasicTransformerBlock(...)])         <span class="comment"># 空间 + 文本交叉注意力</span></span><br><span class="line">self.temporal_transformer_blocks = nn.ModuleList([TemporalBasicTransformerBlock(...)]) <span class="comment"># 时间</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> block, temporal_block <span class="keyword">in</span> <span class="built_in">zip</span>(self.transformer_blocks, self.temporal_transformer_blocks):</span><br><span class="line">    hidden_states = block(hidden_states, encoder_hidden_states=...)                  <span class="comment"># 先做空间</span></span><br><span class="line">    hidden_states_mix = temporal_block(hidden_states_mix + emb, num_frames=...)       <span class="comment"># 再做时间（+ 帧序号嵌入）</span></span><br><span class="line">    hidden_states = self.time_mixer(x_spatial=..., x_temporal=...)                    <span class="comment"># AlphaBlender 按 alpha 混合</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="7-2-0-2-一个反直觉的事实：很多模型根本没有独立的”时间层”"><a href="#7-2-0-2-一个反直觉的事实：很多模型根本没有独立的”时间层”" class="headerlink" title="7.2.0.2 一个反直觉的事实：很多模型根本没有独立的”时间层”"></a>7.2.0.2 一个反直觉的事实：很多模型根本没有独立的”时间层”</h4><p>上面那种”空间层 + 时间层配对”的写法叫 <strong>factorized</strong>。但<strong>现在主流的视频大模型不这么干</strong>——它们把 $F\times N$ 个 token 直接展平成一个长序列，<strong>用一个 attention 一次性把时空全做完</strong>，靠 <strong>3D RoPE</strong> 让模型自己分辨谁跟谁隔得近。</p>
+<p>这类架构叫 <strong>full 3D attention</strong>，里面既没有”纯空间层”也没有”纯时间层”，只有合体的<strong>时空层</strong>。在你本地这份 diffusers 里可以直接验证：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>是否有独立时间层</th>
+<th>具体模块</th>
+<th>文件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Stable Video Diffusion</td>
+<td><strong>有</strong></td>
+<td><code>TransformerSpatioTemporalModel</code>（空间 Block + 时间 Block 配对）</td>
+<td><code>models/transformers/transformer_temporal.py</code> L205</td>
+</tr>
+<tr>
+<td>AnimateDiff</td>
+<td><strong>有</strong></td>
+<td>MotionAdapter 插入 U-Net 的 motion module（时间自注意力）</td>
+<td><code>models/unets/unet_motion_model.py</code></td>
+</tr>
+<tr>
+<td><strong>Mochi</strong></td>
+<td><strong>没有</strong></td>
+<td>展平后一个 3D 全注意力</td>
+<td><code>models/transformers/transformer_mochi.py</code></td>
+</tr>
+<tr>
+<td><strong>HunyuanVideo</strong></td>
+<td><strong>没有</strong></td>
+<td>同上</td>
+<td><code>models/transformers/transformer_hunyuan_video.py</code></td>
+</tr>
+<tr>
+<td><strong>LTX-Video</strong></td>
+<td><strong>没有</strong></td>
+<td>同上（整个文件搜不到任何 temporal 模块）</td>
+<td><code>models/transformers/transformer_ltx.py</code></td>
+</tr>
+<tr>
+<td>EasyAnimate &#x2F; Allegro</td>
+<td><strong>没有</strong></td>
+<td>同上，用 3D RoPE 区分时空</td>
+<td><code>transformer_easyanimate.py</code> &#x2F; <code>transformer_allegro.py</code></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：如果你去找”时间层”这个模块，在 Mochi、HunyuanVideo、LTX 里是<strong>找不到的</strong>——它根本不是一个独立模块，而是融在同一个 attention 里了。</p>
+</blockquote>
+<p><strong>这正好解释了 STG 为什么叫 “Spatio</strong>temporal**”<strong>：因为在这些模型里空间和时间</strong>拆不开**，只能整个残差块一起跳（Residual Skip）。只有 SVD、AnimateDiff 这类分离架构，才有真正意义上的”独立时间层”，可以用 Attention Skip 分别引导（也就是 7.2.2 里 $w_1, w_2$ 那两条只对分离架构成立）。</p>
+<h4 id="7-2-1-STG-的核心招数：自己给自己当弱模型"><a href="#7-2-1-STG-的核心招数：自己给自己当弱模型" class="headerlink" title="7.2.1 STG 的核心招数：自己给自己当弱模型"></a>7.2.1 STG 的核心招数：自己给自己当弱模型</h4><p>STG 的洞察非常巧：<strong>不需要真的去训练一个弱模型，把原模型的某些层”跳过”就得到了一个弱模型</strong>。</p>
+<p>两种跳法：</p>
+<table>
+<thead>
+<tr>
+<th>跳法</th>
+<th>做法</th>
+<th>公式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Residual Skip</strong></td>
+<td>整个残差块直接置为恒等（这一层什么都不做）</td>
+<td>$\text{Res}’(z_l) &#x3D; z_{l+1} &#x3D; z_l$</td>
+</tr>
+<tr>
+<td><strong>Attention Skip</strong></td>
+<td>把注意力矩阵换成单位阵（每个位置只看自己）</td>
+<td>$\text{SA}’(Q,K,V) &#x3D; I \cdot V &#x3D; V$</td>
+</tr>
+</tbody></table>
+<p>关键是**只跳”时空层”**（spatiotemporal layers）——也就是负责建模空间结构和时间演化的那些层，而不是文本交叉注意力层。</p>
+<h4 id="7-2-2-公式"><a href="#7-2-2-公式" class="headerlink" title="7.2.2 公式"></a>7.2.2 公式</h4><p>基本形式（和 Autoguidance 同构）：</p>
+<p>$$\boxed{\tilde\epsilon_w &#x3D; \epsilon_\theta + w,(\epsilon_\theta - \epsilon_\theta^b)}$$</p>
+<p>其中 $\epsilon_\theta^b$ 是”跳层版”的预测。</p>
+<p>如果模型的空间层和时间层是<strong>分开的</strong>（factorized），可以分别引导：</p>
+<p>$$\tilde\epsilon_\theta &#x3D; \underbrace{\epsilon_\theta(x_t)}_{\text{完整}} + w_1\big(\epsilon_\theta(x_t) - \epsilon_\theta^{s}(x_t)\big) + w_2\big(\epsilon_\theta(x_t) - \epsilon_\theta^{t}(x_t)\big)$$</p>
+<blockquote>
+<p><strong>说人话</strong>：$w_1$ 管”画面清晰度”，$w_2$ 管”时间一致性”。两项可以<strong>正交化</strong>后再相加，避免互相干扰。</p>
+</blockquote>
+<p><strong>实际使用时 STG 通常和 CFG 一起用</strong>，于是每步要跑<strong>三遍</strong>网络：</p>
+<p>$$\epsilon_{\text{final}} &#x3D; \underbrace{\epsilon_{\text{uncond}}}<em>{\text{空提示}} + \underbrace{w</em>{\text{cfg}}(\epsilon_{\text{cond}} - \epsilon_{\text{uncond}})}<em>{\text{CFG 项}} + \underbrace{w</em>{\text{stg}}(\epsilon_{\text{cond}} - \epsilon_{\text{perturbed}})}_{\text{STG 项}}$$</p>
+<blockquote>
+<p><strong>说人话</strong>：把三路预测（空提示 &#x2F; 正常 &#x2F; 跳层）拼成一个 batch 一起送进网络，最后按两个系数合成。</p>
+</blockquote>
+<h4 id="7-2-3-为什么-STG-比-CFG-好"><a href="#7-2-3-为什么-STG-比-CFG-好" class="headerlink" title="7.2.3 为什么 STG 比 CFG 好"></a>7.2.3 为什么 STG 比 CFG 好</h4><p>差别在于<strong>参照物是谁</strong>：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>CFG 推离的是</th>
+<th>STG 推离的是</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>参照模型</td>
+<td>无条件模型</td>
+<td><strong>跳层的自己</strong></td>
+</tr>
+<tr>
+<td>参照物特性</td>
+<td>质量低、<strong>且不懂提示词、且没动态</strong></td>
+<td>质量低，但<strong>懂同一个提示词、有同样的动态</strong></td>
+</tr>
+<tr>
+<td>外推副作用</td>
+<td>多样性↓、动态性↓、过饱和</td>
+<td>主要只推”质量”这一个方向</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：CFG 是”离那个啥都不懂的版本远一点”，结果连多样性和运动一起被推掉了。STG 是”离那个<strong>懂我意思但画得糙</strong>的版本远一点”——它俩在”画什么、怎么动”上是一致的，差值里只剩”画得好不好”，所以只推质量，不伤动态。</p>
+</blockquote>
+<p><strong>论文实测</strong>（VBench &#x2F; FVD）：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>指标</th>
+<th>CFG</th>
+<th>STG</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Mochi</td>
+<td>Imaging Quality</td>
+<td>0.524</td>
+<td><strong>0.628</strong></td>
+</tr>
+<tr>
+<td>Mochi</td>
+<td>Dynamic Degree</td>
+<td>0.87</td>
+<td>0.86（几乎不掉）</td>
+</tr>
+<tr>
+<td>SVD</td>
+<td>FVD ↓</td>
+<td>151.3</td>
+<td><strong>128.7</strong></td>
+</tr>
+<tr>
+<td>SVD</td>
+<td>Dynamic Degree</td>
+<td>0.562</td>
+<td><strong>0.694</strong>（反而涨了）</td>
+</tr>
+</tbody></table>
+<p>可以看到：质量明显提升，而<strong>动态程度基本不掉甚至回升</strong>——这正是 CFG 做不到的。</p>
+<h4 id="7-2-4-实践要点"><a href="#7-2-4-实践要点" class="headerlink" title="7.2.4 实践要点"></a>7.2.4 实践要点</h4><ul>
+<li><strong>跳哪一层是超参</strong>，得按模型调。官方实现的默认值：Mochi 第 34 层、CogVideoX 第 11 层、LTX-Video 第 19 层、HunyuanVideo 第 2 层。</li>
+<li><strong>架构决定跳法</strong>：3D 全注意力的大模型（如 Mochi）适合 <strong>Residual Skip</strong>；空间&#x2F;时间层分离的模型（如 Open-Sora）适合 <strong>Attention Skip</strong>。</li>
+<li>$w_{\text{stg}}$ 太大也会过冲，可配合 <strong>rescaling</strong>（约束方差）或 <strong>restart sampling</strong> 把轨迹拉回数据流形。</li>
+<li><strong>代价</strong>：每步三路前向，比纯 CFG 再贵 50%。</li>
+</ul>
+<hr>
+<h3 id="7-3-Modality-Guidance（模态引导：跨模态对齐与耦合强度）"><a href="#7-3-Modality-Guidance（模态引导：跨模态对齐与耦合强度）" class="headerlink" title="7.3 Modality Guidance（模态引导：跨模态对齐与耦合强度）"></a>7.3 Modality Guidance（模态引导：跨模态对齐与耦合强度）</h3><p><strong>要解决的问题和前两个不一样</strong>：前面两个关心”画得好不好 &#x2F; 贴不贴合文本”，而 Modality Guidance 关心的是——<strong>当有多个模态的条件同时存在时，它们之间该”绑”多紧？</strong></p>
+<p>典型场景：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>涉及的模态</th>
+<th>要控制的”耦合强度”</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>图生视频（I2V）</td>
+<td>首帧图 + 文本</td>
+<td>新生成的帧要多大程度保持首帧的样子</td>
+</tr>
+<tr>
+<td>多 ControlNet</td>
+<td>深度图 + 边缘图 + 姿态 + 文本</td>
+<td>各控制信号谁说了算</td>
+</tr>
+<tr>
+<td>参考图生成 &#x2F; ID 保持</td>
+<td>参考图 + 文本</td>
+<td>是”神似”还是”像素级复刻”</td>
+</tr>
+<tr>
+<td>音频驱动视频</td>
+<td>音频 + 文本 + 视频</td>
+<td>口型&#x2F;动作跟音频对齐到什么程度</td>
+</tr>
+<tr>
+<td>图像编辑</td>
+<td>原图 + 编辑指令</td>
+<td>哪些区域必须保持、哪些可以放开了改</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：这是一个”<strong>松紧旋钮</strong>“。拧太松，两个模态各说各话（图不对文、视频不像参考图）；拧太紧，输出被参考模态<strong>吸死</strong>，失去创造性和细节，还容易产生伪影。</p>
+</blockquote>
+<h4 id="7-3-1-形式一：在预测空间给每个模态配权重"><a href="#7-3-1-形式一：在预测空间给每个模态配权重" class="headerlink" title="7.3.1 形式一：在预测空间给每个模态配权重"></a>7.3.1 形式一：在预测空间给每个模态配权重</h4><p>最自然的形式是 CFG 的多模态推广——<strong>每个模态一支预测，各自一个外推系数</strong>：</p>
+<p>$$\hat\epsilon_\theta &#x3D; \epsilon_{\text{uncond}} + \sum_{k} \lambda_k \big(\epsilon_\theta(x_t, t, c_k) - \epsilon_{\text{uncond}}\big)$$</p>
+<p>其中 $c_k$ 是第 $k$ 个模态的条件，$\lambda_k$ 是它的引导强度。</p>
+<blockquote>
+<p><strong>说人话</strong>：总预测 &#x3D; 无条件基线 + 每个模态各自”贡献”的方向 × 权重。只有一个模态、$\lambda &#x3D; w$ 时，它<strong>退化成普通 CFG</strong>。<br>$\lambda_k$ 之间的<strong>相对比例</strong>决定了”谁说了算”，它们的<strong>绝对值</strong>决定了”总体绑多紧”。</p>
+</blockquote>
+<p><strong>权重归一化规则很重要</strong>（多控制模型的通用做法）：</p>
+<ul>
+<li>所有 $\lambda_k$ 之和 $\le 1$：<strong>原样使用</strong>，各模态按字面权重生效；</li>
+<li>之和 $&gt; 1$：<strong>按比例缩放到和为 1</strong>。</li>
+</ul>
+<blockquote>
+<p><strong>说人话</strong>：比如 ${\text{seg}: 4.0,\ \text{edge}: 1.0}$ 之和是 5，会被归一化成 ${0.8,\ 0.2}$。<strong>所以重要的不是绝对数值，是比例</strong>——你把两个都乘 10 倍，结果一模一样。</p>
+</blockquote>
+<h4 id="7-3-2-形式二：用跨模态相似度做梯度引导"><a href="#7-3-2-形式二：用跨模态相似度做梯度引导" class="headerlink" title="7.3.2 形式二：用跨模态相似度做梯度引导"></a>7.3.2 形式二：用跨模态相似度做梯度引导</h4><p>前一种是”跑多遍网络求差”，另一种思路是<strong>直接算一个跨模态对齐得分，然后沿它的梯度推</strong>：</p>
+<p>$$\hat\epsilon_\theta(x_t, t, c) &#x3D; \epsilon_\theta(x_t, t, c) ;+; \lambda_t ,\nabla_{x_t},\mathcal S\Big(f_{\text{img}}(\hat x_0),\ f_{\text{mod}}(c_m)\Big)$$</p>
+<p>其中：</p>
+<ul>
+<li>$\hat x_0$ 是当前步反推出来的”我猜的原图”；</li>
+<li>$f_{\text{img}}$、$f_{\text{mod}}$ 是把图像和另一模态（文本&#x2F;音频&#x2F;参考图）映射到<strong>同一个语义空间</strong>的编码器（最典型就是 CLIP 的图像塔和文本塔）；</li>
+<li>$\mathcal S$ 是两者在这个空间里的相似度（通常就是余弦相似度）；</li>
+<li>$\lambda_t$ 是<strong>这一时刻的耦合强度</strong>。</li>
+</ul>
+<blockquote>
+<p><strong>说人话</strong>：每一步都问一句——“我猜的这张图，和那个参考模态<strong>像不像</strong>？”像的话就加分；不像的话，梯度会告诉我们”往哪个方向改能更像”，于是顺着推一把。<br>这就是经典的 <strong>CLIP guidance &#x2F; 语义扩散引导（SDG）</strong> 那一类做法：文本权重、图像权重两个旋钮，分别控制”贴合文字”和”贴合参考图”。</p>
+</blockquote>
+<p><strong>一个非常实用的技巧：到点就放手（stop guidance）。</strong></p>
+<p>反向过程大致分三段：<strong>混沌期</strong>（$t$ 大，只有模糊轮廓）→ <strong>语义期</strong>（定结构、定内容）→ <strong>细化期</strong>（$t$ 小，补纹理）。</p>
+<p>经验是：<strong>只在语义期施加跨模态引导，进入细化期就把 $\lambda_t$ 置 0</strong>。</p>
+<p>$$\lambda_t &#x3D; \begin{cases} \lambda, &amp; t &gt; t_{\text{stop}} \ 0, &amp; t \le t_{\text{stop}} \end{cases}$$</p>
+<blockquote>
+<p><strong>说人话</strong>：早期用引导”把方向掰对”，后期松手让它自由发挥细节。全程死拽着不放，反而会损害画面真实度、引入伪影。</p>
+</blockquote>
+<h4 id="7-3-3-耦合强度的三种状态"><a href="#7-3-3-耦合强度的三种状态" class="headerlink" title="7.3.3 耦合强度的三种状态"></a>7.3.3 耦合强度的三种状态</h4><table>
+<thead>
+<tr>
+<th>$\lambda$</th>
+<th>现象</th>
+<th>什么时候要</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>太小</td>
+<td>模态”脱钩”——生成结果跟参考图&#x2F;控制信号对不上</td>
+<td>几乎不要</td>
+</tr>
+<tr>
+<td>适中</td>
+<td>语义一致、结构对齐，但细节自由</td>
+<td><strong>绝大多数情况</strong></td>
+</tr>
+<tr>
+<td>太大</td>
+<td><strong>模态坍缩</strong>：输出被参考模态吸死，过饱和、边缘伪影、失去多样性</td>
+<td>只在需要严格复刻结构时</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：这是个典型的”过拟合旋钮”。$\lambda$ 太大不是”更听话”，而是<strong>把生成问题退化成了复制问题</strong>。</p>
+</blockquote>
+<h4 id="7-3-4-坑"><a href="#7-3-4-坑" class="headerlink" title="7.3.4 坑"></a>7.3.4 坑</h4><ol>
+<li><strong>模态冲突</strong>：两个模态本身互相矛盾（比如文本要”白天”，参考图是”夜景”），加大 $\lambda$ 只会让网络左右为难，结果是四不像。<strong>先解决条件冲突，再调权重。</strong></li>
+<li><strong>编码器自身的偏差</strong>：用 CLIP 做对齐，就会继承 CLIP 的偏好（它对风格、构图敏感，对细节、数量、空间关系迟钝）。</li>
+<li><strong>梯度引导要反传</strong>：形式二需要对 $x_t$ 求梯度，比形式一更慢、更吃显存。</li>
+<li><strong>跨模态对齐 ≠ 像素级对齐</strong>：相似度是在语义空间算的，它能保证”像那个意思”，<strong>不保证</strong>逐像素一致。要像素级一致得走 ControlNet &#x2F; 编码器特征注入那一类结构条件。</li>
+</ol>
+<h3 id="7-4-三种引导怎么选"><a href="#7-4-三种引导怎么选" class="headerlink" title="7.4 三种引导怎么选"></a>7.4 三种引导怎么选</h3><table>
+<thead>
+<tr>
+<th></th>
+<th>CFG</th>
+<th>STG</th>
+<th>Modality Guidance</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>控制的是什么</strong></td>
+<td>贴合文本的程度</td>
+<td>画面质量（不伤动态）</td>
+<td>多模态之间的一致性与耦合</td>
+</tr>
+<tr>
+<td><strong>参照物</strong></td>
+<td>无条件预测</td>
+<td>跳层后的自己</td>
+<td>另一模态的表示 &#x2F; 各模态分支</td>
+</tr>
+<tr>
+<td><strong>主要用在</strong></td>
+<td>文生图（几乎必开）</td>
+<td><strong>视频</strong>生成</td>
+<td>图生视频、多控制、参考图、跨模态生成</td>
+</tr>
+<tr>
+<td><strong>每步前向次数</strong></td>
+<td>×2</td>
+<td>×3（与 CFG 叠加）</td>
+<td>×（1 + 模态数）或 +1 次梯度反传</td>
+</tr>
+<tr>
+<td><strong>调过头会怎样</strong></td>
+<td>过饱和、多样性崩</td>
+<td>过冲出流形、画面失真</td>
+<td>模态坍缩、伪影、被参考图吸死</td>
+</tr>
+<tr>
+<td><strong>能一起用吗</strong></td>
+<td>—</td>
+<td><strong>是</strong>，STG 通常叠加在 CFG 上</td>
+<td><strong>是</strong>，可叠加在 CFG&#x2F;STG 之上</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话（一句话选型）</strong>：<br>想让图更贴提示词 → 调 <strong>CFG</strong>；<br>想让视频更清晰又不想变卡 → 加 <strong>STG</strong>；<br>想让两个模态对齐（像参考图 &#x2F; 跟着控制信号走）→ 调 <strong>Modality Guidance</strong>。<br>三者<strong>可以同时开</strong>，它们作用的维度不同，互不冲突。</p>
+</blockquote>
+<hr>
+<h2 id="8-潜空间：Stable-Diffusion-的完整链路"><a href="#8-潜空间：Stable-Diffusion-的完整链路" class="headerlink" title="8. 潜空间：Stable Diffusion 的完整链路"></a>8. 潜空间：Stable Diffusion 的完整链路</h2><p>在像素空间做扩散，一张 512×512×3 的图有 78 万个数，跑一千次网络太贵。Stable Diffusion 的做法是<strong>先把图压缩再扩散</strong>。</p>
+<p>完整链路长这样：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">提示词 ──→ 文本编码器 ──→ 条件向量 c</span><br><span class="line">                                    ↓</span><br><span class="line">随机噪声 z_T (64×64×4) ──→ [ 潜空间扩散：T 步去噪 ] ──→ z_0</span><br><span class="line">                                    ↓</span><br><span class="line">                              VAE 解码器 ──→ 512×512×3 图片</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>环节</th>
+<th>尺寸</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>像素空间图片</td>
+<td>$512 \times 512 \times 3$</td>
+<td>78 万维</td>
+</tr>
+<tr>
+<td>VAE 编码后（潜变量）</td>
+<td>$64 \times 64 \times 4$</td>
+<td>1.6 万维，<strong>缩小 48 倍</strong></td>
+</tr>
+<tr>
+<td>扩散过程</td>
+<td>全在 $64\times64\times4$ 上做</td>
+<td>计算量降一个量级</td>
+</tr>
+<tr>
+<td>VAE 解码后</td>
+<td>$512 \times 512 \times 3$</td>
+<td>只在<strong>最后做一次</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：扩散过程全程在”压缩包”里进行，只有开头不需要编码（因为起点直接采噪声），只有结尾解码一次。这就是 SD 能在消费级显卡上跑起来的原因。</p>
+</blockquote>
+<p><strong>为什么起点不用编码？</strong> 因为起点是纯噪声，直接在潜空间采一个 $64\times64\times4$ 的标准高斯就行——它解码出来在像素空间也是一团”结构化的噪声”，正好对应。</p>
+<hr>
+<h2 id="9-为什么能加速：从-1000-步到-4-步"><a href="#9-为什么能加速：从-1000-步到-4-步" class="headerlink" title="9. 为什么能加速：从 1000 步到 4 步"></a>9. 为什么能加速：从 1000 步到 4 步</h2><p>既然每步都要跑一次网络，减少步数就是最直接的加速手段。但<strong>随便跳步是不行的</strong>——每一步的公式都假设”这一步很小”。</p>
+<h3 id="9-1-DDIM：去掉随机项，变成确定性-ODE"><a href="#9-1-DDIM：去掉随机项，变成确定性-ODE" class="headerlink" title="9.1 DDIM：去掉随机项，变成确定性 ODE"></a>9.1 DDIM：去掉随机项，变成确定性 ODE</h3><p>DDIM 的关键洞察：<strong>把 $\sigma_t$ 设成 0</strong>，采样就变成确定性的：</p>
+<p>$$x_{t-1} &#x3D; \sqrt{\bar\alpha_{t-1}},\hat x_0 + \sqrt{1 - \bar\alpha_{t-1}};\epsilon_\theta(x_t, t)$$</p>
+<blockquote>
+<p><strong>说人话</strong>：直接把”我猜的原图 $\hat x_0$”和”我猜的噪声 $\epsilon_\theta$”按比例调一杯鸡尾酒，就得到上一步。<strong>没有随机项，同样的起点永远得到同样的图。</strong></p>
+</blockquote>
+<p>好处是：确定性路径可以用更大的步子走，50 步甚至 20 步就能有相当好的效果。</p>
+<h3 id="9-2-更高阶的求解器"><a href="#9-2-更高阶的求解器" class="headerlink" title="9.2 更高阶的求解器"></a>9.2 更高阶的求解器</h3><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>步数</th>
+<th>思路</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DDPM</td>
+<td>1000</td>
+<td>原始随机采样，每步很小</td>
+</tr>
+<tr>
+<td>DDIM</td>
+<td>20–50</td>
+<td>确定性 ODE，允许大步长</td>
+</tr>
+<tr>
+<td>DPM-Solver</td>
+<td>15–25</td>
+<td>高阶数值求解器，一步顶多步</td>
+</tr>
+<tr>
+<td>LCM &#x2F; 一致性模型</td>
+<td>1–4</td>
+<td>直接学”从任意点跳到终点”的映射</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：前三种都是”把同一条路径走快一点”，最后一种是”<strong>直接训练一个会抄近路的模型</strong>“——它学的是一步到位，所以 4 步就能出图。</p>
+</blockquote>
+<p><strong>注意一个常见误解</strong>：加速采样器<strong>不需要重新训练扩散模型</strong>（LCM 除外）。它们只是用更聪明的数值方法走同一条路，所以同一个 checkpoint 换个 scheduler，出图速度和风格就会变。</p>
+<hr>
+<h2 id="10-常见问题（FAQ）"><a href="#10-常见问题（FAQ）" class="headerlink" title="10. 常见问题（FAQ）"></a>10. 常见问题（FAQ）</h2><p><strong>Q1：为什么同一个提示词，每次生成的图都不一样？</strong><br>因为起点 $x_T$ 是随机采的。固定随机种子（seed）就能复现。</p>
+<p><strong>Q2：能不能中途停下来看看？</strong><br>能。取出任意一步的 $x_t$，用 $\hat x_0 &#x3D; (x_t - \sqrt{1-\bar\alpha_t}\epsilon_\theta)&#x2F;\sqrt{\bar\alpha_t}$ 就能”预测”出当前的成品大概长什么样（这叫 <strong>latent preview</strong>）。前几步的预测非常模糊，越往后越准。</p>
+<p><strong>Q3：网络一次都没见过清晰图，怎么知道”猫”长什么样？</strong><br>训练时它见过海量真实图，并且<strong>在每一个噪声水平上都练过</strong>。它学到的不是”猫的图片”，而是**”在任意噪声水平下，哪些分量是噪声”**。把噪声一次次剥掉，剩下的自然就是符合数据分布的东西。</p>
+<p><strong>Q4：生成的图是不是把训练集的图背下来了？</strong><br>不是逐像素复制。模型学到的是数据分布的统计规律。极端情况（训练样本极少、重复很多次、提示词很特殊）确实可能发生过拟合式的”复现”，但正常训练下它生成的是<strong>新的样本</strong>。</p>
+<p><strong>Q5：步数越多越好吗？</strong><br>不一定。步数太少 → 还没走完路径，图不完整；步数太多 → 对好的求解器来说是浪费时间，且某些 scheduler 在极多步数下反而会过冲。一般 20–50 步就饱和了。</p>
+<p><strong>Q6：为什么最后几步看起来”没什么变化”？</strong><br>因为 $\bar\alpha_t \to 1$，图已经基本干净了，最后几步只是在做细微的纹理修正。肉眼看不出，但对最终画质有贡献。</p>
+<p><strong>Q7：推理时能改 $\beta_t$ 调度吗？</strong><br>不能随便改。调度是训练时就定死的，$\epsilon_\theta$ 是在那条调度下训练的。换调度等于让网络面对陌生的噪声水平。</p>
+<p><strong>Q8：为什么要有”负提示词”（negative prompt）？</strong><br>它就是 CFG 公式里的 $\epsilon_{\text{uncond}}$ 那一路——只不过把”空”换成”我不想要的东西”。这样 $w$ 放大的方向就变成”远离负提示词描述的内容”。</p>
+<p><strong>Q9：一张图要跑多少次网络？</strong><br>不带 CFG：$T$ 次。带 CFG：$2T$ 次（每步跑两遍）。SDXL 这类大模型，一次 1024×1024 出图（30 步 + CFG）就是 60 次大模型前向。</p>
+<p><strong>Q10：为什么不用一步生成？</strong><br>一步 &#x3D; 要求网络直接从纯噪声映射到清晰图，这个映射极其复杂、多值（一团噪声可以对应无数张合理的图），学不动。拆成一千个小步，每一步都是简单的”擦掉一点点”，才变得可学。</p>
+<p><strong>Q11：STG 只用在视频上吗？能用在图片上吗？</strong><br>STG 是针对<strong>视频</strong>提出的，因为它专门挑”时空层”来跳——图没有时间维度，也就没有时间层可跳。但”跳层造弱模型”这个思路本身是通用的，任何基于 Transformer 的残差结构都能试。只是它的核心卖点（保住动态性）在图片上无从体现。</p>
+<p><strong>Q12：STG 和 CFG 一起开，参数怎么调？</strong><br>一般<strong>先固定 CFG 在常用值</strong>（视频模型常取 3–7，比文生图的 7.5 保守），再加 STG。$w_{\text{stg}}$ 从 0.5–1.0 起试，逐步加；跳层位置优先用该模型的官方默认值，不要乱改。$w_{\text{stg}}$ 过大时先开 rescaling，看是否有改善。</p>
+<p><strong>Q13：为什么参考图&#x2F;控制信号的权重一开大，画面就”死”了？</strong><br>这就是 7.3.3 说的<strong>模态坍缩</strong>。耦合强度太大时，采样轨迹被牢牢锁在参考模态上，网络没有余地去做自由发挥，结果是过饱和、边缘硬、细节假，看起来像”贴”上去的。解决办法有两个：一是把权重降回适中区间；二是用 7.3.2 的 <strong>stop guidance</strong>——只在语义期（$t$ 较大时）施加引导，进入细化期就松手。</p>
+<p><strong>Q14：多个控制信号打架怎么办？</strong><br>调权重解决不了真正的<strong>语义冲突</strong>（比如一个要白天、一个要黑夜）。先改条件本身让它们不矛盾，再谈权重分配。权重只决定”平票时听谁的”，不能凭空造出一个同时满足矛盾条件的结果。</p>
+<p><strong>Q15：视频扩散模型和图片扩散模型是两套原理吗？</strong><br>不是，是<strong>同一套</strong>。视频只是把数据从 $C\times H\times W$ 变成 $F\times C\times H\times W$，加噪公式、损失函数、采样循环一个字都没改；图片模型就是它在 $F&#x3D;1$ 时的特例。真正的差别有两处：一是<strong>整段视频共用一个时间步 $t$<strong>（否则帧间无关联，生成会闪烁），二是网络里多了</strong>时间层</strong>来建模帧与帧的关系。详见 6.5 节。</p>
+<hr>
+<h2 id="11-公式速查表"><a href="#11-公式速查表" class="headerlink" title="11. 公式速查表"></a>11. 公式速查表</h2><table>
+<thead>
+<tr>
+<th>环节</th>
+<th>公式</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>起点</td>
+<td>$x_T \sim \mathcal N(0, I)$</td>
+<td>无需输入，随机性来源</td>
+</tr>
+<tr>
+<td>预测噪声</td>
+<td>$\epsilon_\theta &#x3D; \epsilon_\theta(x_t, t, c)$</td>
+<td>网络唯一会做的事</td>
+</tr>
+<tr>
+<td>反推原图</td>
+<td>$\hat x_0 &#x3D; \dfrac{x_t - \sqrt{1-\bar\alpha_t},\epsilon_\theta}{\sqrt{\bar\alpha_t}}$</td>
+<td>从噪声语言翻译回图像语言</td>
+</tr>
+<tr>
+<td>单步均值</td>
+<td>$\mu_\theta &#x3D; \dfrac{\sqrt{\bar\alpha_{t-1}}\beta_t}{1-\bar\alpha_t}\hat x_0 + \dfrac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})}{1-\bar\alpha_t}x_t$</td>
+<td>两个系数是训练时算好的常数</td>
+</tr>
+<tr>
+<td>DDPM 采样</td>
+<td>$x_{t-1} &#x3D; \dfrac{1}{\sqrt{\alpha_t}}\Big(x_t - \dfrac{1-\alpha_t}{\sqrt{1-\bar\alpha_t}}\epsilon_\theta\Big) + \sigma_t z$</td>
+<td>四个动作合并成一行</td>
+</tr>
+<tr>
+<td>DDIM 采样</td>
+<td>$x_{t-1} &#x3D; \sqrt{\bar\alpha_{t-1}},\hat x_0 + \sqrt{1-\bar\alpha_{t-1}},\epsilon_\theta$</td>
+<td>无随机项，确定性</td>
+</tr>
+<tr>
+<td>CFG 外推</td>
+<td>$\epsilon &#x3D; \epsilon_{\text{uncond}} + w(\epsilon_{\text{cond}} - \epsilon_{\text{uncond}})$</td>
+<td>$w$ 越大越贴合提示词；放大的是<strong>差值</strong></td>
+</tr>
+<tr>
+<td>CFG 重标定</td>
+<td>$\epsilon_{\text{rescaled}} &#x3D; \epsilon_{\text{cfg}}\cdot \text{std}(\epsilon_{\text{cond}})&#x2F;\text{std}(\epsilon_{\text{cfg}})$</td>
+<td>修正外推带来的尺度漂移，按 $r$ 混合</td>
+</tr>
+<tr>
+<td>STG 外推</td>
+<td>$\tilde\epsilon_w &#x3D; \epsilon_\theta + w(\epsilon_\theta - \epsilon_\theta^b)$</td>
+<td>$\epsilon_\theta^b$ &#x3D; 跳层后的”弱模型”预测</td>
+</tr>
+<tr>
+<td>STG + CFG</td>
+<td>$\epsilon &#x3D; \epsilon_{\text{uncond}} + w_{\text{cfg}}(\epsilon_{\text{cond}} - \epsilon_{\text{uncond}}) + w_{\text{stg}}(\epsilon_{\text{cond}} - \epsilon_{\text{ptb}})$</td>
+<td>三路前向，视频常用</td>
+</tr>
+<tr>
+<td>多模态外推</td>
+<td>$\hat\epsilon &#x3D; \epsilon_{\text{uncond}} + \sum_k \lambda_k(\epsilon_{c_k} - \epsilon_{\text{uncond}})$</td>
+<td>每个模态一个权重，单模态时退化为 CFG</td>
+</tr>
+<tr>
+<td>跨模态梯度</td>
+<td>$\hat\epsilon &#x3D; \epsilon_\theta + \lambda_t \nabla_{x_t}\mathcal S\big(f_{\text{img}}(\hat x_0), f_{\text{mod}}(c_m)\big)$</td>
+<td>用相似度梯度做对齐，$t \le t_{\text{stop}}$ 时置 0</td>
+</tr>
+<tr>
+<td>潜空间解码</td>
+<td>$\text{图} &#x3D; \text{VAE}_{\text{decode}}(z_0)$</td>
+<td>只在最后做一次</td>
+</tr>
+<tr>
+<td>视频加噪</td>
+<td>$x_t &#x3D; \sqrt{\bar\alpha_t}x_0 + \sqrt{1-\bar\alpha_t}\epsilon,\ \epsilon \in \mathbb{R}^{F\times C\times H\times W}$</td>
+<td>与图片同式，整段共用一个 $t$</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="12-五句话记住推理"><a href="#12-五句话记住推理" class="headerlink" title="12. 五句话记住推理"></a>12. 五句话记住推理</h2><ol>
+<li><strong>起点是随机的</strong>：从标准高斯噪声出发，这是”每次生成都不一样”的根源。</li>
+<li><strong>网络只会一件事</strong>：给它带噪图和时间步，它猜噪声；$\hat x_0$、$\mu_\theta$ 都是从噪声反推出来的，不是网络直接输出的。</li>
+<li><strong>慢 vs 快的取舍</strong>：步数越多越稳但越慢；DDIM &#x2F; DPM-Solver 用更聪明的走法压缩到 20 步，LCM 直接学抄近路压到 4 步。</li>
+<li><strong>引导是三个不同的旋钮</strong>：CFG 管”贴不贴提示词”，STG 管”清不清晰”（不伤动态），Modality Guidance 管”多模态绑多紧”——它们可以同时开。</li>
+<li><strong>换成视频不是换一套原理</strong>：只是数据多一个轴 $F$，整段共用一个 $t$，网络多出时间层；图片模型就是 $F &#x3D; 1$ 的特例。</li>
+</ol>
+<hr>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li>Ho, Jain, Abbeel. <em>Denoising Diffusion Probabilistic Models</em>, NeurIPS 2020（arXiv:2006.11239）——采样算法 Algorithm 2</li>
+<li>Song, Meng, Ermon. <em>Denoising Diffusion Implicit Models</em>, ICLR 2021（arXiv:2010.02502）——DDIM 与确定性采样</li>
+<li>Ho, Salimans. <em>Classifier-Free Diffusion Guidance</em>, NeurIPS 2021 Workshop（arXiv:2207.12598）——CFG</li>
+<li>Rombach et al. <em>High-Resolution Image Synthesis with Latent Diffusion Models</em>, CVPR 2022（arXiv:2112.10752）——潜空间扩散 &#x2F; Stable Diffusion</li>
+<li>Lu et al. <em>DPM-Solver</em>, NeurIPS 2022（arXiv:2206.00927）——高阶求解器</li>
+<li>Hyung et al. <em>Spatiotemporal Skip Guidance for Enhanced Video Diffusion Sampling</em>, CVPR 2025（arXiv:2411.18664）——STG，代码 github.com&#x2F;junhahyung&#x2F;STGuidance</li>
+<li>Karras et al. <em>Guiding a Diffusion Model with a Bad Version of Itself</em>, NeurIPS 2024（arXiv:2406.02507）——Autoguidance，STG 的思想来源</li>
+<li>Dhariwal, Nichol. <em>Diffusion Models Beat GANs on Image Synthesis</em>, NeurIPS 2021（arXiv:2105.05233）——classifier guidance</li>
+<li>Nichol et al. <em>GLIDE</em>, ICML 2022（arXiv:2112.10741）——CLIP guidance &#x2F; 跨模态对齐引导</li>
+<li>NVIDIA Cosmos Transfer 2.5 文档——多控制模态（Edge &#x2F; Depth &#x2F; Seg &#x2F; Vis）的权重与归一化规则</li>
+<li>Lin et al. <em>Common Diffusion Noise Schedules and Sample Steps are Flawed</em>, WACV 2024（arXiv:2305.08891）——CFG 的 rescaling &#x2F; guidance rescale</li>
+</ul>
+</div><div class="article-licensing box"><div class="licensing-title"><p>扩散模型推理（采样）完整过程讲解</p><p><a href="https://xyz.desirer233.fun/2026/10/07/AI/扩散模型推理过程讲解/">https://xyz.desirer233.fun/2026/10/07/AI/扩散模型推理过程讲解/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2026-10-07</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-10-07</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/AI%E7%94%9F%E6%88%90/">AI生成</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/"><span class="level-item">DDPM 基本原理讲解</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#扩散模型推理（采样）完整过程讲解"><span class="level-left"><span class="level-item">1</span><span class="level-item">扩散模型推理（采样）完整过程讲解</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#0-一个比喻：大理石里本来就有一尊雕像"><span class="level-left"><span class="level-item">1.1</span><span class="level-item">0. 一个比喻：大理石里本来就有一尊雕像</span></span></a></li><li><a class="level is-mobile" href="#1-一句话版本"><span class="level-left"><span class="level-item">1.2</span><span class="level-item">1. 一句话版本</span></span></a></li><li><a class="level is-mobile" href="#2-推理-vs-训练：谁干什么"><span class="level-left"><span class="level-item">1.3</span><span class="level-item">2. 推理 vs 训练：谁干什么</span></span></a></li><li><a class="level is-mobile" href="#3-出发前要备好的四样东西"><span class="level-left"><span class="level-item">1.4</span><span class="level-item">3. 出发前要备好的四样东西</span></span></a></li><li><a class="level is-mobile" href="#4-第-0-步：起点是一团纯噪声"><span class="level-left"><span class="level-item">1.5</span><span class="level-item">4. 第 0 步：起点是一团纯噪声</span></span></a></li><li><a class="level is-mobile" href="#5-单步去噪到底在做什么"><span class="level-left"><span class="level-item">1.6</span><span class="level-item">5. 单步去噪到底在做什么</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#5-1-动作①：网络预测噪声"><span class="level-left"><span class="level-item">1.6.1</span><span class="level-item">5.1 动作①：网络预测噪声</span></span></a></li><li><a class="level is-mobile" href="#5-2-动作②：反推”原图大概长什么样”"><span class="level-left"><span class="level-item">1.6.2</span><span class="level-item">5.2 动作②：反推”原图大概长什么样”</span></span></a></li><li><a class="level is-mobile" href="#5-3-动作③：求上一步的均值-mu-theta"><span class="level-left"><span class="level-item">1.6.3</span><span class="level-item">5.3 动作③：求上一步的均值 $\mu_\theta$</span></span></a></li><li><a class="level is-mobile" href="#5-4-动作④：加一点随机抖动"><span class="level-left"><span class="level-item">1.6.4</span><span class="level-item">5.4 动作④：加一点随机抖动</span></span></a></li><li><a class="level is-mobile" href="#5-5-完整公式与一个数值例子"><span class="level-left"><span class="level-item">1.6.5</span><span class="level-item">5.5 完整公式与一个数值例子</span></span></a></li></ul></li><li><a class="level is-mobile" href="#6-整个循环：从-T-到-0"><span class="level-left"><span class="level-item">1.7</span><span class="level-item">6. 整个循环：从 $T$ 到 $0$</span></span></a></li><li><a class="level is-mobile" href="#6-5-番外：视频扩散模型-vs-图片扩散模型，原理差在哪"><span class="level-left"><span class="level-item">1.8</span><span class="level-item">6.5 番外：视频扩散模型 vs 图片扩散模型，原理差在哪</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#6-5-1-最本质的区别：噪声加在「整段视频」上，不是逐帧加"><span class="level-left"><span class="level-item">1.8.1</span><span class="level-item">6.5.1 最本质的区别：噪声加在「整段视频」上，不是逐帧加</span></span></a></li><li><a class="level is-mobile" href="#6-5-2-逐项对照"><span class="level-left"><span class="level-item">1.8.2</span><span class="level-item">6.5.2 逐项对照</span></span></a></li><li><a class="level is-mobile" href="#6-5-3-视频独有的三个麻烦"><span class="level-left"><span class="level-item">1.8.3</span><span class="level-item">6.5.3 视频独有的三个麻烦</span></span></a></li><li><a class="level is-mobile" href="#6-5-4-对推理流程的实际影响"><span class="level-left"><span class="level-item">1.8.4</span><span class="level-item">6.5.4 对推理流程的实际影响</span></span></a></li></ul></li><li><a class="level is-mobile" href="#7-引导（Guidance）：三种让生成更听话的技术"><span class="level-left"><span class="level-item">1.9</span><span class="level-item">7. 引导（Guidance）：三种让生成更听话的技术</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#7-1-Classifier-Free-Guidance（CFG）"><span class="level-left"><span class="level-item">1.9.1</span><span class="level-item">7.1 Classifier-Free Guidance（CFG）</span></span></a></li><li><a class="level is-mobile" href="#7-2-Spatiotemporal-Skip-Guidance（STG）"><span class="level-left"><span class="level-item">1.9.2</span><span class="level-item">7.2 Spatiotemporal Skip Guidance（STG）</span></span></a></li><li><a class="level is-mobile" href="#7-3-Modality-Guidance（模态引导：跨模态对齐与耦合强度）"><span class="level-left"><span class="level-item">1.9.3</span><span class="level-item">7.3 Modality Guidance（模态引导：跨模态对齐与耦合强度）</span></span></a></li><li><a class="level is-mobile" href="#7-4-三种引导怎么选"><span class="level-left"><span class="level-item">1.9.4</span><span class="level-item">7.4 三种引导怎么选</span></span></a></li></ul></li><li><a class="level is-mobile" href="#8-潜空间：Stable-Diffusion-的完整链路"><span class="level-left"><span class="level-item">1.10</span><span class="level-item">8. 潜空间：Stable Diffusion 的完整链路</span></span></a></li><li><a class="level is-mobile" href="#9-为什么能加速：从-1000-步到-4-步"><span class="level-left"><span class="level-item">1.11</span><span class="level-item">9. 为什么能加速：从 1000 步到 4 步</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#9-1-DDIM：去掉随机项，变成确定性-ODE"><span class="level-left"><span class="level-item">1.11.1</span><span class="level-item">9.1 DDIM：去掉随机项，变成确定性 ODE</span></span></a></li><li><a class="level is-mobile" href="#9-2-更高阶的求解器"><span class="level-left"><span class="level-item">1.11.2</span><span class="level-item">9.2 更高阶的求解器</span></span></a></li></ul></li><li><a class="level is-mobile" href="#10-常见问题（FAQ）"><span class="level-left"><span class="level-item">1.12</span><span class="level-item">10. 常见问题（FAQ）</span></span></a></li><li><a class="level is-mobile" href="#11-公式速查表"><span class="level-left"><span class="level-item">1.13</span><span class="level-item">11. 公式速查表</span></span></a></li><li><a class="level is-mobile" href="#12-五句话记住推理"><span class="level-left"><span class="level-item">1.14</span><span class="level-item">12. 五句话记住推理</span></span></a></li><li><a class="level is-mobile" href="#参考"><span class="level-left"><span class="level-item">1.15</span><span class="level-item">参考</span></span></a></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/AI/"><span class="level-start"><span class="level-item">AI</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">15</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>

@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>DDPM 基本原理讲解 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="DDPM 基本原理讲解（通俗版） 参考论文：Ho, Jain, Abbeel. Denoising Diffusion Probabilistic Models, NeurIPS 2020（arXiv:2006.11239）本文只讲原理与公式，不涉及代码。公式块在 Typora &amp;#x2F; VS Code &amp;#x2F; Obsidian 等支持 LaTeX 的阅读器中可直接渲染。写法约定：每个公"><meta property="og:type" content="blog"><meta property="og:title" content="DDPM 基本原理讲解"><meta property="og:url" content="https://xyz.desirer233.fun/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="DDPM 基本原理讲解（通俗版） 参考论文：Ho, Jain, Abbeel. Denoising Diffusion Probabilistic Models, NeurIPS 2020（arXiv:2006.11239）本文只讲原理与公式，不涉及代码。公式块在 Typora &amp;#x2F; VS Code &amp;#x2F; Obsidian 等支持 LaTeX 的阅读器中可直接渲染。写法约定：每个公"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://xyz.desirer233.fun/img/og_image.png"><meta property="article:published_time" content="2026-10-06T06:00:00.000Z"><meta property="article:modified_time" content="2026-10-07T12:29:41.901Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="AI生成"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://xyz.desirer233.fun/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/"},"headline":"DDPM 基本原理讲解","image":["https://xyz.desirer233.fun/img/og_image.png"],"datePublished":"2026-10-06T06:00:00.000Z","dateModified":"2026-10-07T12:29:41.901Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"DDPM 基本原理讲解（通俗版） 参考论文：Ho, Jain, Abbeel. Denoising Diffusion Probabilistic Models, NeurIPS 2020（arXiv:2006.11239）本文只讲原理与公式，不涉及代码。公式块在 Typora &#x2F; VS Code &#x2F; Obsidian 等支持 LaTeX 的阅读器中可直接渲染。写法约定：每个公"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><script>
+  (function () {
+      function switchTab() {
+          if (!location.hash) {
+            return;
+          }
+
+          const id = '#' + CSS.escape(location.hash.substring(1));
+          const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
+          if (!$tabMenu) {
+            return;
+          }
+
+          const $tabMenuContainer = $tabMenu.parentElement.parentElement;
+          Array.from($tabMenuContainer.children).forEach($menu => $menu.classList.remove('is-active'));
+          Array.from($tabMenuContainer.querySelectorAll('a'))
+              .map($menu => document.getElementById($menu.getAttribute("href").substring(1)))
+              .forEach($content => $content.classList.add('is-hidden'));
+
+          if ($tabMenu) {
+              $tabMenu.parentElement.classList.add('is-active');
+          }
+          const $activeTab = document.querySelector(id);
+          if ($activeTab) {
+              $activeTab.classList.remove('is-hidden');
+          }
+      }
+      switchTab();
+      window.addEventListener('hashchange', switchTab, false);
+  })();
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2026-10-06T06:00:00.000Z" title="2026/10/6 14:00:00">2026-10-06</time>发表</span><span class="level-item"><time dateTime="2026-10-07T12:29:41.901Z" title="2026/10/7 20:29:41">2026-10-07</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/AI/">AI</a></span><span class="level-item">1 小时读完 (大约10178个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">DDPM 基本原理讲解</h1><div class="content"><h1 id="DDPM-基本原理讲解（通俗版）"><a href="#DDPM-基本原理讲解（通俗版）" class="headerlink" title="DDPM 基本原理讲解（通俗版）"></a>DDPM 基本原理讲解（通俗版）</h1><blockquote>
+<p>参考论文：Ho, Jain, Abbeel. <em>Denoising Diffusion Probabilistic Models</em>, NeurIPS 2020（arXiv:2006.11239）<br>本文只讲原理与公式，不涉及代码。公式块在 Typora &#x2F; VS Code &#x2F; Obsidian 等支持 LaTeX 的阅读器中可直接渲染。<br><strong>写法约定</strong>：每个公式后面都跟一段”说人话”，如果只想搞懂思路，只读”说人话”部分也能通。</p>
+</blockquote>
+<p>本文由AI生成。</p>
+<span id="more"></span>
+
+<h2 id="0-一个比喻：墨水滴进清水"><a href="#0-一个比喻：墨水滴进清水" class="headerlink" title="0. 一个比喻：墨水滴进清水"></a>0. 一个比喻：墨水滴进清水</h2><p>想象一杯清水里滴了一滴墨水。</p>
+<ul>
+<li><strong>墨水扩散开</strong>（前向过程）：墨滴逐渐散开、变淡，最后整杯水变成均匀的浅灰色——你再也看不出原来那滴墨水在哪。这个过程<strong>不需要学习</strong>，物理规律自己就会发生。</li>
+<li><strong>现在倒放这段录像</strong>（反向过程）：浅灰色的水要重新聚成一滴墨水。这在现实里不可能，但如果有一个”聪明的东西”看过成千上万次扩散过程，它就能<strong>猜出</strong>墨水刚才在哪、该往哪个方向收拢。</li>
+</ul>
+<p>DDPM 干的就是这件事，只不过：</p>
+<table>
+<thead>
+<tr>
+<th>比喻</th>
+<th>DDPM 里对应</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一滴墨水</td>
+<td>一张真实照片 $x_0$</td>
+</tr>
+<tr>
+<td>墨水散开</td>
+<td>一步步往照片里掺噪声</td>
+</tr>
+<tr>
+<td>均匀的浅灰色水</td>
+<td>纯随机噪声（一张雪花屏）</td>
+</tr>
+<tr>
+<td>倒放录像</td>
+<td>神经网络一步步把噪声去掉</td>
+</tr>
+</tbody></table>
+<p>关键区别是：<strong>扩散模型不是真的”倒放”某一次扩散</strong>，而是学会了”从任意一杯浅灰色的水里，还原出一张说得通的图”。所以它能画出训练集中从没出现过的全新图片。</p>
+<hr>
+<h2 id="1-读前只需知道四件事"><a href="#1-读前只需知道四件事" class="headerlink" title="1. 读前只需知道四件事"></a>1. 读前只需知道四件事</h2><p>如果你能看懂下面四条，全文就没有障碍了。</p>
+<p><strong>① 高斯分布 $\mathcal N(\mu, \Sigma)$</strong></p>
+<p>就是”钟形曲线”。$\mu$（均值）是钟的<strong>中心位置</strong>，$\Sigma$（协方差）决定钟的<strong>胖瘦</strong>——越胖表示越不确定。</p>
+<p>写成 $\mathcal N(x;\ \mu,\ \Sigma)$ 时，分号前面 $x$ 是<strong>自变量</strong>（喂进去一个位置，吐出一个”可能性大小”），分号后面是<strong>固定参数</strong>。</p>
+<p>一维时 $\Sigma$ 就是方差 $\sigma^2$，记 $\mathcal N(\mu, \sigma^2)$。标准差 $\sigma$ 才是噪声的实际抖动幅度。</p>
+<p><strong>② 竖线 $\mid$ 表示”在已知……的条件下”</strong></p>
+<p>$q(x_t \mid x_{t-1})$ 读作”已知 $x_{t-1}$ 时，$x_t$ 的分布”。</p>
+<p><strong>③ 两个会反复用到的性质</strong></p>
+<ul>
+<li><strong>可加性</strong>：两个独立的零均值高斯相加，还是零均值高斯，<strong>方差直接相加</strong>。<br>$$\mathcal N(0, \sigma_1^2) + \mathcal N(0, \sigma_2^2) &#x3D; \mathcal N(0, \sigma_1^2 + \sigma_2^2)$$<br>这是后面”一步跳到第 $t$ 步”的根据。</li>
+<li>**KL 散度 $D_{\text{KL}}$**：衡量两个分布”差多远”，恒 $\ge 0$，两个分布完全相同时等于 0。</li>
+</ul>
+<p><strong>④ 三种概率写法：$P(B)$、$P(B, C)$、$P(B \mid C)$</strong></p>
+<p>这三兄弟看着像，<strong>唯一区别在分母是谁</strong>。用 100 天的例子（$C$ &#x3D; 下雨共 30 天，$B$ &#x3D; 地湿共 40 天，两者都发生共 27 天）：</p>
+<table>
+<thead>
+<tr>
+<th>写法</th>
+<th>名字</th>
+<th>怎么算</th>
+<th>例子</th>
+<th>分母是谁</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$P(B)$</td>
+<td>边缘概率</td>
+<td>忽略 $C$，在<strong>全世界</strong>里数 $B$</td>
+<td>$40&#x2F;100 &#x3D; 0.40$</td>
+<td>整个世界（100）</td>
+</tr>
+<tr>
+<td>$P(B, C)$</td>
+<td>联合概率</td>
+<td>$B$ 和 $C$ <strong>同时</strong>成立</td>
+<td>$27&#x2F;100 &#x3D; 0.27$</td>
+<td>整个世界（100）</td>
+</tr>
+<tr>
+<td>$P(B \mid C)$</td>
+<td>条件概率</td>
+<td><strong>世界缩小到 $C$ 里</strong>，再数 $B$</td>
+<td>$27&#x2F;30 &#x3D; 0.90$</td>
+<td>只有 $C$ 那部分（30）</td>
+</tr>
+</tbody></table>
+<p>三者的关系：</p>
+<p>$$P(B \mid C) &#x3D; \frac{P(B, C)}{P(C)}, \qquad P(B, C) &#x3D; P(B \mid C),P(C)$$</p>
+<blockquote>
+<p><strong>说人话</strong>：分子都是同一个”交集” $P(B, C)$，只是<strong>除的分母不同</strong>，值就从 0.27 变成 0.90。</p>
+</blockquote>
+<p>两个自检（能帮你判断有没有搞反）：</p>
+<ul>
+<li>$P(B, C)$ 一定 $\le P(B)$ 且 $\le P(C)$：<strong>交集不可能比任何一方还大</strong>；</li>
+<li>$P(B \mid C) &#x3D; 0.90 &gt; P(B) &#x3D; 0.40$：说明 $B$ 和 $C$ <strong>正相关</strong>——知道下雨了，地湿的可能性大幅上升。</li>
+</ul>
+<p>另外，把 $C$ 的两种情况加一遍，”加总掉” $C$ 就得到边缘概率，这叫<strong>全概率公式</strong>：</p>
+<p>$$P(B) &#x3D; P(B, C) + P(B, \text{非}C) &#x3D; 0.27 + 0.13 &#x3D; 0.40$$</p>
+<p><strong>为什么这条重要</strong>：DDPM 的贝叶斯公式里每一项都属于这三种之一，分清它属于哪一种，就知道它<strong>算不算得动</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>写法</th>
+<th>DDPM 里是谁</th>
+<th>算得出来吗</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$P(B)$</td>
+<td>$q(x_t)$ 边缘分布</td>
+<td><strong>算不动</strong>，要遍历所有可能的图</td>
+</tr>
+<tr>
+<td>$P(B, C)$</td>
+<td>$q(x_t, x_0)$ 联合分布</td>
+<td><strong>算不动</strong></td>
+</tr>
+<tr>
+<td>$P(B \mid C)$</td>
+<td>$q(x_t \mid x_0)$ 条件分布</td>
+<td><strong>闭式解，一步算出来</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：在连续情形（图像）下，”数格子”要换成”积分”（或概率密度），但<strong>规则一模一样</strong>，符号不用重新学。</p>
+</blockquote>
+<hr>
+<h2 id="2-一句话版本"><a href="#2-一句话版本" class="headerlink" title="2. 一句话版本"></a>2. 一句话版本</h2><p>扩散模型做两件事：</p>
+<ol>
+<li><strong>前向（加噪）</strong>：拿一张真实图，用<strong>固定的、不用学的</strong>规则一步步掺噪声，$T$ 步后变成纯噪声。</li>
+<li><strong>反向（去噪）</strong>：训练一个网络学会倒着走——给它一张带噪图，它猜出”噪声在哪”，减掉就干净一点。从纯噪声出发重复 $T$ 次，得到一张新图。</li>
+</ol>
+<p>让它真正可行的两个数学事实：</p>
+<ul>
+<li>前向虽然有 $T$ 步，但<strong>能一步算出来</strong>（有闭式解），训练时不用循环；</li>
+<li>训练目标最后<strong>退化成一个均方误差</strong>：让网络预测”我掺进去的噪声是什么”。</li>
+</ul>
+<hr>
+<h2 id="3-符号表"><a href="#3-符号表" class="headerlink" title="3. 符号表"></a>3. 符号表</h2><p>第一次看会觉得符号很多，其实只有 4 个是主角：$x_t$、$\beta_t$、$\bar\alpha_t$、$\epsilon_\theta$。</p>
+<table>
+<thead>
+<tr>
+<th>符号</th>
+<th>人话解释</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$x_0$</td>
+<td>原始的真实图片（像素值被缩放到 $[-1, 1]$）</td>
+</tr>
+<tr>
+<td>$x_t$</td>
+<td>掺了 $t$ 步噪声之后的图，$t &#x3D; 1, \dots, T$</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>总共掺多少步，论文取 $T &#x3D; 1000$</td>
+</tr>
+<tr>
+<td>$\beta_t$</td>
+<td>第 $t$ 步掺多强的噪声。<strong>人为设定的常数，不学习</strong></td>
+</tr>
+<tr>
+<td>$\alpha_t$</td>
+<td>偷懒写法，$\alpha_t &#x3D; 1 - \beta_t$</td>
+</tr>
+<tr>
+<td>$\bar\alpha_t$</td>
+<td>偷懒写法，$\bar\alpha_t &#x3D; \alpha_1\alpha_2\cdots\alpha_t$。<strong>到第 $t$ 步还剩多少原图</strong></td>
+</tr>
+<tr>
+<td>$q$</td>
+<td>前向（加噪）分布，<strong>固定的，没有参数</strong></td>
+</tr>
+<tr>
+<td>$p_\theta$</td>
+<td>反向（去噪）分布，$\theta$ 是神经网络的参数，<strong>要学的</strong></td>
+</tr>
+<tr>
+<td>$\epsilon$</td>
+<td>随机噪声，$\epsilon \sim \mathcal N(0, I)$，就是一张雪花屏</td>
+</tr>
+<tr>
+<td>$\epsilon_\theta$</td>
+<td>网络本体：输入 $(x_t, t)$，输出”我猜噪声长这样”</td>
+</tr>
+</tbody></table>
+<p><strong>记住 $\bar\alpha_t$ 就够了</strong>：它是”剩余图像比例”。$\bar\alpha_0 &#x3D; 1$（全是图），$\bar\alpha_T \approx 0$（全是噪声）。</p>
+<hr>
+<h2 id="4-前向过程：怎么把一张图毁掉"><a href="#4-前向过程：怎么把一张图毁掉" class="headerlink" title="4. 前向过程：怎么把一张图毁掉"></a>4. 前向过程：怎么把一张图毁掉</h2><h3 id="4-1-每一步具体做了什么"><a href="#4-1-每一步具体做了什么" class="headerlink" title="4.1 每一步具体做了什么"></a>4.1 每一步具体做了什么</h3><p>每一步只做一件事：<strong>把上一步的图缩小一点点，再掺一点噪声</strong>。</p>
+<p>$$q(x_t \mid x_{t-1}) &#x3D; \mathcal N\big(x_t;\ \sqrt{1 - \beta_t}, x_{t-1},\ \beta_t I\big)$$</p>
+<p>等价的”采样写法”（把随机性单独拎出来，更好算）：</p>
+<p>$$x_t &#x3D; \sqrt{1-\beta_t}, x_{t-1} + \sqrt{\beta_t}, \epsilon_{t-1}, \quad \epsilon_{t-1} \sim \mathcal N(0, I)$$</p>
+<blockquote>
+<p><strong>说人话</strong>：新图 &#x3D; 旧图 × 一个略小于 1 的系数 + 一点点雪花。<br>比如 $\beta_t &#x3D; 0.02$ 时，系数是 $\sqrt{0.98} \approx 0.99$，也就是旧图保留 99%，再叠加强度 $\sqrt{0.02} \approx 0.14$ 的噪声。</p>
+</blockquote>
+<p><strong>注意</strong>：$\beta_t$ 是<strong>方差</strong>，不是标准差。噪声实际抖动的幅度是 $\sqrt{\beta_t}$。</p>
+<h3 id="4-2-那个根号-sqrt-1-beta-t-是干嘛的？"><a href="#4-2-那个根号-sqrt-1-beta-t-是干嘛的？" class="headerlink" title="4.2 那个根号 $\sqrt{1-\beta_t}$ 是干嘛的？"></a>4.2 那个根号 $\sqrt{1-\beta_t}$ 是干嘛的？</h3><p>你可能觉得”直接加噪声不就行了，乘这个系数干嘛”。答案是<strong>为了保方差</strong>。</p>
+<p>假设图的数值方差是 1（归一化后），那么：</p>
+<p>$$\text{Var}(x_t) &#x3D; \underbrace{(1-\beta_t)}<em>{\text{缩放后剩下}} \cdot 1 + \underbrace{\beta_t}</em>{\text{新加进去}} &#x3D; 1$$</p>
+<blockquote>
+<p><strong>说人话</strong>：”往 0 收缩”和”往外扩散”两股力量精确配平，所以图的数值尺度<strong>永远稳定</strong>，不会因为掺了 1000 次噪声就变得巨大无比。</p>
+</blockquote>
+<p>这个设计叫<strong>方差保持</strong>（variance preserving）。它带来三个好处：数值稳定、不用反复归一化、而且 $T$ 步之后 $x_T$ 会<strong>自动</strong>变成标准高斯 $\mathcal N(0, I)$——正好可以当生成时的起点。</p>
+<blockquote>
+<p>另一种常见写法是 $x_t &#x3D; x_{t-1} + \sigma_t \epsilon$（不做收缩，叫”方差爆炸”，Song &amp; Ermon 的 score-based 模型用这种）。DDPM 选了带根号的这种，纯粹是因为闭式解更干净。</p>
+</blockquote>
+<h3 id="4-3-走后门：不用真的走-t-步"><a href="#4-3-走后门：不用真的走-t-步" class="headerlink" title="4.3 走后门：不用真的走 $t$ 步"></a>4.3 走后门：不用真的走 $t$ 步</h3><p>如果要造一个”掺了 500 步”的训练样本，难道要真跑 500 次吗？不用。</p>
+<p><strong>关键技巧</strong>：每一步都是”乘以一个数 + 加一个高斯”，而<strong>高斯的线性组合还是高斯</strong>。所以掺 500 次的结果，等价于<strong>一次</strong>缩放 + <strong>一次</strong>加噪。</p>
+<p>用数学归纳法推一遍（记 $\alpha_t &#x3D; 1 - \beta_t$，$\bar\alpha_t &#x3D; \alpha_1\cdots\alpha_t$）：</p>
+<p><strong>第 1 步</strong>：单步定义</p>
+<p>$$x_t &#x3D; \sqrt{\alpha_t}, x_{t-1} + \sqrt{1-\alpha_t},\epsilon_{t-1}$$</p>
+<p><strong>第 2 步</strong>：假设上一步已经能一步写出（归纳假设）</p>
+<p>$$x_{t-1} &#x3D; \sqrt{\bar\alpha_{t-1}}, x_0 + \sqrt{1-\bar\alpha_{t-1}},\bar\epsilon_{t-1}$$</p>
+<p><strong>第 3 步</strong>：代入，展开</p>
+<p>$$x_t &#x3D; \sqrt{\bar\alpha_t}, x_0 + \underbrace{\sqrt{\alpha_t}\sqrt{1-\bar\alpha_{t-1}},\bar\epsilon_{t-1}}<em>{\text{噪声 A}} + \underbrace{\sqrt{1-\alpha_t},\epsilon</em>{t-1}}_{\text{噪声 B}}$$</p>
+<p><strong>第 4 步</strong>：噪声 A 和 B 是<strong>两个独立的零均值高斯</strong>，可以合并成一个。方差相加：</p>
+<p>$$\alpha_t(1-\bar\alpha_{t-1}) + (1-\alpha_t) &#x3D; \alpha_t - \bar\alpha_t + 1 - \alpha_t &#x3D; 1 - \bar\alpha_t$$</p>
+<p><strong>（因为 $\alpha_t \bar\alpha_{t-1} &#x3D; \bar\alpha_t$。）</strong></p>
+<p><strong>第 5 步</strong>：于是</p>
+<p>$$\boxed{x_t &#x3D; \sqrt{\bar\alpha_t}, x_0 + \sqrt{1 - \bar\alpha_t},\epsilon, \quad \epsilon \sim \mathcal N(0, I)}$$</p>
+<blockquote>
+<p><strong>说人话</strong>：不管你要第几步的图，都可以用原图和一张雪花屏<strong>直接按比例混合</strong>出来，一步搞定。这就是”闭式解”。</p>
+</blockquote>
+<p><strong>自检</strong>（确认没推错）：</p>
+<ul>
+<li>若 $\text{Var}(x_0) &#x3D; 1$，则 $\bar\alpha_t + (1 - \bar\alpha_t) &#x3D; 1$，方差守恒 ✓</li>
+<li>$t &#x3D; T$ 时 $\bar\alpha_T \approx 0$，于是 $x_T \approx \epsilon$，整张图就是纯噪声 ✓</li>
+</ul>
+<blockquote>
+<p>⚠️ <strong>两个常见误解</strong>：</p>
+<ol>
+<li>这里的 $\epsilon$ <strong>不是</strong>任何一步的 $\epsilon_{t-1}$，它是所有中间步噪声”合并等效”出来的新噪声，只是<strong>分布相同</strong>。</li>
+<li>这是<strong>分布等价</strong>，不是”逐样本相等”。逐步迭代 500 次得到的图，和用闭式一步采出的图，是<strong>同分布的两个不同样本</strong>。训练时我们只关心分布，够用了。</li>
+</ol>
+</blockquote>
+<h3 id="4-4-bar-alpha-t-到底意味着什么"><a href="#4-4-bar-alpha-t-到底意味着什么" class="headerlink" title="4.4 $\bar\alpha_t$ 到底意味着什么"></a>4.4 $\bar\alpha_t$ 到底意味着什么</h3><p>再看一眼这条核心公式：</p>
+<p>$$x_t &#x3D; \underbrace{\sqrt{\bar\alpha_t}}<em>{\text{图的权重}}, x_0 + \underbrace{\sqrt{1 - \bar\alpha_t}}</em>{\text{噪声的权重}}, \epsilon$$</p>
+<table>
+<thead>
+<tr>
+<th>时刻</th>
+<th>$\bar\alpha_t$</th>
+<th>图的样子</th>
+<th>网络要干的事</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$t$ 小</td>
+<td>接近 1</td>
+<td>几乎还是原图</td>
+<td>预测一点点残余噪声（很简单）</td>
+</tr>
+<tr>
+<td>$t$ 中等</td>
+<td>0.5 左右</td>
+<td>图噪声各半</td>
+<td>预测中等强度的噪声</td>
+</tr>
+<tr>
+<td>$t$ 大</td>
+<td>接近 0</td>
+<td>几乎全是雪花</td>
+<td>预测的东西几乎就是整张图（很难）</td>
+</tr>
+</tbody></table>
+<p><strong>所以不同 $t$ 是完全不同难度的任务。</strong> 网络必须知道”现在进行到第几步”，否则它不知道该猜多大强度的噪声——这就是<strong>时间步 $t$ 要作为输入喂给网络</strong>的原因。</p>
+<h3 id="4-5-噪声的节奏：-beta-t-的具体公式"><a href="#4-5-噪声的节奏：-beta-t-的具体公式" class="headerlink" title="4.5 噪声的节奏：$\beta_t$ 的具体公式"></a>4.5 噪声的节奏：$\beta_t$ 的具体公式</h3><p>先说清楚：$\beta_t$ 是<strong>人设计的常数</strong>，不是学出来的。而且<strong>只要给出 $\beta_t$，其余所有量都能推出来</strong>：</p>
+<p>$$\alpha_t &#x3D; 1 - \beta_t, \qquad \bar\alpha_t &#x3D; \prod_{s&#x3D;1}^{t} \alpha_s$$</p>
+<p>下面给出几种常见调度的<strong>具体公式</strong>。</p>
+<p><strong>① 线性调度（DDPM 论文默认）</strong></p>
+<p>$$\beta_t &#x3D; \beta_1 + (\beta_T - \beta_1),\frac{t-1}{T-1}, \qquad t &#x3D; 1, 2, \dots, T$$</p>
+<p>$$\beta_1 &#x3D; 1\times10^{-4}, \qquad \beta_T &#x3D; 2\times10^{-2}, \qquad T &#x3D; 1000$$</p>
+<p>代入数字就是：</p>
+<p>$$\boxed{\beta_t &#x3D; 10^{-4} + 1.99\times10^{-2}\cdot \frac{t-1}{999}}$$</p>
+<p>举例：$\beta_1 &#x3D; 0.0001$，$\beta_{500} \approx 0.0100$，$\beta_{1000} &#x3D; 0.02$。</p>
+<blockquote>
+<p>⚠️ <strong>下标约定要注意</strong>：论文用 $t &#x3D; 1 \dots T$，代码（如 diffusers）通常用 $t &#x3D; 0 \dots T-1$，此时<br>$$\beta_t &#x3D; \beta_{\text{start}} + (\beta_{\text{end}} - \beta_{\text{start}}),\frac{t}{T-1}$$<br>等价于直接 <code>torch.linspace(1e-4, 2e-2, 1000)</code>。两者只是编号差 1，数值序列完全相同。</p>
+</blockquote>
+<p><strong>② scaled linear（Stable Diffusion 用）</strong></p>
+<p>不在线性空间插值，而是在<strong>平方根空间</strong>插值后再平方：</p>
+<p>$$\boxed{\beta_t &#x3D; \left(\sqrt{\beta_{\text{start}}} + \big(\sqrt{\beta_{\text{end}}} - \sqrt{\beta_{\text{start}}}\big),\frac{t}{T-1}\right)^2}$$</p>
+<p>Stable Diffusion 1.x 取 $\beta_{\text{start}} &#x3D; 0.00085$，$\beta_{\text{end}} &#x3D; 0.012$，$T &#x3D; 1000$。末端 $\beta$ 更小，是因为它工作在 VAE 压缩后的潜空间里，噪声强度需要相应调小。</p>
+<p><strong>③ cosine（Improved DDPM，Nichol &amp; Dhariwal 2021）</strong></p>
+<p>它**不直接定义 $\beta_t$**，而是先定好 $\bar\alpha_t$，再反推每一步的 $\beta_t$：</p>
+<p>$$\bar\alpha_t &#x3D; \frac{f(t&#x2F;T)}{f(0)}, \qquad f(u) &#x3D; \cos^2!\left(\frac{u + s}{1 + s}\cdot\frac{\pi}{2}\right), \quad s &#x3D; 0.008$$</p>
+<p>$$\beta_t &#x3D; 1 - \frac{\bar\alpha_t}{\bar\alpha_{t-1}}, \qquad \text{并裁剪 } \beta_t \le 0.999$$</p>
+<blockquote>
+<p>裁剪是为了防止最后几步 $\beta_t \to 1$ 引发数值爆炸。偏移量 $s &#x3D; 0.008$ 是为了让 $t$ 很小时 $\beta_t$ 不至于太小、避免”开头几乎没加噪”的浪费。</p>
+</blockquote>
+<p><strong>④ sigmoid（GeoDiff 用）</strong></p>
+<p>$$\beta_t &#x3D; \sigma(u_t),(\beta_{\text{end}} - \beta_{\text{start}}) + \beta_{\text{start}}, \qquad u_t \text{ 在 } [-6,,6] \text{ 上均匀取值}$$</p>
+<p>其中 $\sigma$ 是 sigmoid 函数，所以曲线呈 S 形：两头慢、中间快。</p>
+<p><strong>几种调度下 $\bar\alpha_t$ 的实际数值（近似）</strong></p>
+<table>
+<thead>
+<tr>
+<th>$t&#x2F;T$</th>
+<th>线性 $\bar\alpha_t$</th>
+<th>cosine $\bar\alpha_t$</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr>
+<td>0.25</td>
+<td>0.52</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td>0.5</td>
+<td>0.078</td>
+<td>0.49</td>
+</tr>
+<tr>
+<td>0.75</td>
+<td>0.0034</td>
+<td>0.14</td>
+</tr>
+<tr>
+<td>1</td>
+<td>0.00004</td>
+<td>0</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>说人话</strong>：线性调度在<strong>中段掉得太快</strong>——走到一半时原图只剩 7.8%，后面几百步几乎都在对着纯噪声做无用功，浪费了步数。cosine 让”还剩多少图”下降得更均匀，每一步都更有信息量，所以在步数较少（比如只采 50 步）时优势明显。</p>
+</blockquote>
+<p>无论用哪种，唯一的要求只有一条：**掺到最后 $\bar\alpha_T \approx 0$**，让 $x_T$ 足够接近标准高斯，反向才能直接从 $\mathcal N(0, I)$ 起步。</p>
+<hr>
+<h2 id="5-反向过程：怎么把图救回来"><a href="#5-反向过程：怎么把图救回来" class="headerlink" title="5. 反向过程：怎么把图救回来"></a>5. 反向过程：怎么把图救回来</h2><h3 id="5-1-想要什么，能算什么"><a href="#5-1-想要什么，能算什么" class="headerlink" title="5.1 想要什么，能算什么"></a>5.1 想要什么，能算什么</h3><p>我们<strong>想要</strong>的是：给定一团噪声 $x_t$，还原出上一步 $x_{t-1}$，也就是 $q(x_{t-1} \mid x_t)$。</p>
+<p>问题是：这个分布要”知道全世界的图片长什么样”才算得出来，<strong>算不动</strong>。</p>
+<p>所以做法是：<strong>用一个神经网络去逼近它</strong>。</p>
+<p>$$p_\theta(x_{t-1} \mid x_t) &#x3D; \mathcal N\big(x_{t-1};\ \mu_\theta(x_t, t),\ \Sigma_\theta(x_t, t)\big)$$</p>
+<p>整条反向链从纯噪声出发：</p>
+<p>$$p_\theta(x_{0:T}) &#x3D; p(x_T) \prod_{t&#x3D;1}^{T} p_\theta(x_{t-1} \mid x_t), \qquad p(x_T) &#x3D; \mathcal N(0, I)$$</p>
+<blockquote>
+<p><strong>说人话</strong>：起点 $p(x_T)$ <strong>没有参数</strong>，就是标准高斯。所以生成时<strong>不需要任何输入</strong>，随便采一团雪花屏就能开始。这是扩散模型”从噪声凭空画图”的来源。</p>
+</blockquote>
+<h3 id="5-2-为什么敢用高斯去拟合？"><a href="#5-2-为什么敢用高斯去拟合？" class="headerlink" title="5.2 为什么敢用高斯去拟合？"></a>5.2 为什么敢用高斯去拟合？</h3><p>真实的 $q(x_{t-1} \mid x_t)$ 是个复杂得多峰的分布，严格来说不是高斯。</p>
+<p>但有个经典结论：<strong>当每步的扰动 $\beta_t$ 足够小时，扩散过程的逆过程也（近似）是高斯的</strong>。$T &#x3D; 1000$ 步、每步只动一点点，这个近似非常够用。</p>
+<blockquote>
+<p><strong>说人话</strong>：每一步只做极小的修正，那么”从上一步到这一步”这件事的形状就很简单，简单到用一条钟形曲线就能描出来。<br>这也解释了为什么扩散模型需要很多步：<strong>步数越多，每步的修正越小，高斯近似越准</strong>。</p>
+</blockquote>
+<h3 id="5-3-训练时的”标准答案”：后验"><a href="#5-3-训练时的”标准答案”：后验" class="headerlink" title="5.3 训练时的”标准答案”：后验"></a>5.3 训练时的”标准答案”：后验</h3><p>训练时我们有个作弊器——**$x_0$ 是已知的**（就是训练样本本身）。</p>
+<p>一旦把 $x_0$ 也给定，$q(x_{t-1} \mid x_t)$ 就变成<strong>可以精确算出来的高斯</strong>了：</p>
+<p>$$\boxed{q(x_{t-1} \mid x_t, x_0) &#x3D; \mathcal N\big(x_{t-1};\ \tilde\mu_t(x_t, x_0),\ \tilde\beta_t I\big)}$$</p>
+<p>$$\tilde\mu_t(x_t, x_0) &#x3D; \frac{\sqrt{\bar\alpha_{t-1}},\beta_t}{1 - \bar\alpha_t}, x_0 ;+; \frac{\sqrt{\alpha_t},(1 - \bar\alpha_{t-1})}{1 - \bar\alpha_t}, x_t$$</p>
+<p>$$\tilde\beta_t &#x3D; \frac{1 - \bar\alpha_{t-1}}{1 - \bar\alpha_t},\beta_t$$</p>
+<h3 id="5-3-1-这两条公式是怎么算出来的"><a href="#5-3-1-这两条公式是怎么算出来的" class="headerlink" title="5.3.1 这两条公式是怎么算出来的"></a>5.3.1 这两条公式是怎么算出来的</h3><p>方法就一句：<strong>贝叶斯公式 + 两个高斯相乘 + 配方</strong>。最容易被跳过去、也最容易卡住的是第一步，这里拆成四小步慢慢来。</p>
+<p><strong>第 0 步：先想清楚为什么要搬出贝叶斯公式。</strong></p>
+<p>我们<strong>手上有的</strong>是加噪规则 $q(x_t \mid x_{t-1})$——这是我们自己定的，闭着眼都能算。<br>我们<strong>想要的</strong>是去噪分布 $q(x_{t-1} \mid x_t)$——箭头是<strong>反的</strong>，直接算不出来。</p>
+<p>贝叶斯公式唯一的作用就是<strong>把反着的箭头翻成正着的</strong>：</p>
+<p>$$P(A \mid B) &#x3D; \frac{P(B \mid A),P(A)}{P(B)}$$</p>
+<blockquote>
+<p><strong>说人话</strong>：反着问 &#x3D; 正着推 × 先验 ÷ 归一化常数。</p>
+</blockquote>
+<p>一个结构完全相同的日常例子：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>下雨 &#x2F; 地湿</th>
+<th>DDPM 对应</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>正着推（已知）</td>
+<td>$P(\text{地湿} \mid \text{下雨}) &#x3D; 0.9$</td>
+<td>$q(x_t \mid x_{t-1})$</td>
+</tr>
+<tr>
+<td>反着推（想求）</td>
+<td>$P(\text{下雨} \mid \text{地湿}) &#x3D; ?$</td>
+<td>$q(x_{t-1} \mid x_t)$</td>
+</tr>
+<tr>
+<td>先验（已知）</td>
+<td>$P(\text{下雨}) &#x3D; 0.3$</td>
+<td>$q(x_{t-1} \mid x_0)$，4.3 节闭式解</td>
+</tr>
+<tr>
+<td>归一化（可扔）</td>
+<td>$P(\text{地湿}) &#x3D; 0.4$</td>
+<td>$q(x_t \mid x_0)$，不含 $x_{t-1}$</td>
+</tr>
+</tbody></table>
+<p>代入：$P(\text{下雨} \mid \text{地湿}) &#x3D; 0.9 \times 0.3 ,&#x2F;, 0.4 &#x3D; 0.675$。</p>
+<p><strong>第 1 步：写成”带条件”的贝叶斯公式。</strong></p>
+<p>直接套 $P(A \mid B)$ 还不够，因为 DDPM 这里**多了一个条件 $x_0$**（训练时原图摆在眼前）。所以要用条件版：</p>
+<p>$$P(A \mid B, C) &#x3D; \frac{P(B \mid A, C),P(A \mid C)}{P(B \mid C)}$$</p>
+<blockquote>
+<p><strong>说人话</strong>：$C$ 是”额外已知的背景信息”，全程不动。<strong>左边条件里挂着 $C$，右边每一项就都得跟着挂上 $C$</strong> ——就这么简单，没有别的花样。</p>
+</blockquote>
+<p>它怎么来的？把联合概率沿链条拆开再相除，$P(C)$ 上下约掉：</p>
+<p>$$P(A \mid B, C) &#x3D; \frac{P(A, B, C)}{P(B, C)} &#x3D; \frac{P(B \mid A, C),P(A \mid C),\cancel{P(C)}}{P(B \mid C),\cancel{P(C)}} &#x3D; \frac{P(B \mid A, C),P(A \mid C)}{P(B \mid C)}$$</p>
+<p>三个槽位代入：</p>
+<table>
+<thead>
+<tr>
+<th>槽位</th>
+<th>DDPM 里代入</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>$A$</td>
+<td>$x_{t-1}$（上一步的图）</td>
+<td><strong>未知</strong>，正是要求它的分布</td>
+</tr>
+<tr>
+<td>$B$</td>
+<td>$x_t$（当前带噪图）</td>
+<td>已知，手上就拿着</td>
+</tr>
+<tr>
+<td>$C$</td>
+<td>$x_0$（原始清晰图）</td>
+<td>训练时已知，是”作弊信息”</td>
+</tr>
+</tbody></table>
+<p>$$q(x_{t-1} \mid x_t, x_0) &#x3D; \frac{q(x_t \mid x_{t-1}, x_0),q(x_{t-1} \mid x_0)}{q(x_t \mid x_0)}$$</p>
+<blockquote>
+<p><strong>为什么非挂 $x_0$ 不可？这是全篇最关键的一处动机。</strong></p>
+<p>不挂的话，公式长这样：<br>$$q(x_{t-1} \mid x_t) &#x3D; \frac{q(x_t \mid x_{t-1}),q(x_{t-1})}{q(x_t)}$$<br>其中的 $q(x_{t-1})$ 和 $q(x_t)$ 是<strong>边缘分布</strong>——“不管原图是哪张，第 $t$ 步的图长什么样”，要遍历所有可能的图才能算，<strong>算不动</strong>（见 1 节 ④）。</p>
+<p>一旦挂上 $x_0$，先验和分母就都变成了<strong>条件分布</strong>，而条件分布全都有 4.3 节的闭式解。<br><strong>挂 $x_0$ 的真正作用，是把算不动的量换成算得动的量</strong>——不是把问题变复杂，恰恰是让它变得能算。<br>代价是：我们求出来的分布多了一个条件 $x_0$，只在<strong>训练时</strong>（原图摆在眼前）才成立。生成时怎么办，见第 6 节。</p>
+</blockquote>
+<p><strong>第 2 步：用马尔可夫性擦掉一个条件。</strong></p>
+<p>分子第一项条件里同时有 $x_{t-1}$ 和 $x_0$，但既然 $x_{t-1}$ 已经给定，$x_0$ 就是<strong>多余信息</strong>——这一步掺多少噪声只取决于现在这张图，跟最初那张图无关。这就是马尔可夫性的定义：</p>
+<p>$$q(x_t \mid x_{t-1}, x_0) &#x3D; q(x_t \mid x_{t-1})$$</p>
+<blockquote>
+<p><strong>说人话</strong>：已经知道”下雨了”，再告诉你”昨天也下过雨”，也改变不了”今天地湿不湿”。</p>
+</blockquote>
+<p><strong>第 3 步：把分母扔掉。</strong></p>
+<p>分母 $q(x_t \mid x_0)$ 里<strong>根本没有 $x_{t-1}$<strong>。而我们求的是”关于 $x_{t-1}$ 的分布”，关心的是曲线</strong>峰在哪、有多胖</strong>；分母对每一个 $x_{t-1}$ 都乘上同一个数，只改变整体高度、<strong>不改变形状</strong>，而分布最后反正要归一化到积分为 1，高度会自动补回来。所以先写成正比号，力气全花在分子上：</p>
+<p>$$q(x_{t-1} \mid x_t, x_0) ;\propto; \underbrace{q(x_t \mid x_{t-1})}<em>{\mathcal N(\sqrt{\alpha_t},x</em>{t-1},\ \beta_t I)} ;\cdot; \underbrace{q(x_{t-1} \mid x_0)}<em>{\mathcal N(\sqrt{\bar\alpha</em>{t-1}},x_0,\ (1-\bar\alpha_{t-1}) I)}$$</p>
+<p>右边两项<strong>都是前面已经算出来过的高斯</strong>：一个是 4.1 节的单步定义，一个是 4.3 节的闭式解。至此”未知”的东西全部消掉了。</p>
+<p><strong>常见疑问：为什么左边是 $q$ 而不是 $p_\theta$？</strong><br>因为这一步描述的是”训练数据是怎么被破坏的”（前向），完全由我们设定的 $\beta_t$ 决定，<strong>没有任何可学习参数</strong>，所以是 $q$。真正的网络 $p_\theta(x_{t-1} \mid x_t)$ 要到第 6 节才登场，登场方式就是”去拟合这个 $q$”。</p>
+<p><strong>第 4 步：用上”两个高斯相乘”这个小工具。</strong></p>
+<p>$$\mathcal N(x; a, A)\cdot \mathcal N(x; b, B) \propto \mathcal N!\left(x;\ \frac{a&#x2F;A + b&#x2F;B}{1&#x2F;A + 1&#x2F;B},\ \frac{1}{1&#x2F;A + 1&#x2F;B}\right)$$</p>
+<blockquote>
+<p><strong>说人话</strong>：两个高斯相乘还是高斯。新的<strong>精度</strong>（方差的倒数）等于两个精度<strong>相加</strong>；新的均值是两个均值的<strong>精度加权平均</strong>。信息越多 → 精度越高 → 方差越小，完全符合直觉。</p>
+</blockquote>
+<p><strong>第 5 步：对指数部分按 $x_{t-1}$ 配方。</strong></p>
+<p>分子的指数部分（去掉 $-1&#x2F;2$）是：</p>
+<p>$$\frac{|x_t - \sqrt{\alpha_t}x_{t-1}|^2}{\beta_t} + \frac{|x_{t-1} - \sqrt{\bar\alpha_{t-1}}x_0|^2}{1-\bar\alpha_{t-1}}$$</p>
+<p>按 $x_{t-1}$ 展开并收集同类项：</p>
+<ul>
+<li>$x_{t-1}^2$ 的系数：$\dfrac{\alpha_t}{\beta_t} + \dfrac{1}{1-\bar\alpha_{t-1}} &#x3D; \dfrac{1}{\tilde\beta_t}$（<strong>精度相加</strong>）</li>
+<li>$x_{t-1}$ 的系数：$-2\left(\dfrac{\sqrt{\alpha_t}x_t}{\beta_t} + \dfrac{\sqrt{\bar\alpha_{t-1}}x_0}{1-\bar\alpha_{t-1}}\right) &#x3D; -\dfrac{2\tilde\mu_t}{\tilde\beta_t}$</li>
+</ul>
+<p><strong>第 6 步：解出来。</strong></p>
+<p>$$\frac{1}{\tilde\beta_t} &#x3D; \frac{\alpha_t}{\beta_t} + \frac{1}{1-\bar\alpha_{t-1}} ;\Longrightarrow; \tilde\beta_t &#x3D; \frac{\beta_t(1-\bar\alpha_{t-1})}{\alpha_t(1-\bar\alpha_{t-1}) + \beta_t} &#x3D; \frac{1-\bar\alpha_{t-1}}{1-\bar\alpha_t}\beta_t$$</p>
+<p>$$\tilde\mu_t &#x3D; \tilde\beta_t\left(\frac{\sqrt{\alpha_t},x_t}{\beta_t} + \frac{\sqrt{\bar\alpha_{t-1}},x_0}{1-\bar\alpha_{t-1}}\right) &#x3D; \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1}),x_t + \sqrt{\bar\alpha_{t-1}},\beta_t,x_0}{1-\bar\alpha_t}$$</p>
+<p>（化简用到 $\alpha_t(1-\bar\alpha_{t-1}) + \beta_t &#x3D; \alpha_t - \bar\alpha_t + 1 - \alpha_t &#x3D; 1 - \bar\alpha_t$。）</p>
+<p><strong>代入一组数字看效果</strong>（$\bar\alpha_{t-1} &#x3D; 0.8$，$\alpha_t &#x3D; 0.9$，$\beta_t &#x3D; 0.1$，$x_t &#x3D; 0.5$，$x_0 &#x3D; 0.3$）：</p>
+<p>$$\tilde\mu_t &#x3D; 0.678 \times 0.5 ;+; 0.319 \times 0.3 &#x3D; 0.435, \qquad \tilde\beta_t &#x3D; \frac{0.1 \times 0.2}{0.28} &#x3D; 0.071$$</p>
+<blockquote>
+<p><strong>说人话</strong>：</p>
+<ol>
+<li>$\tilde\mu_t$ 落在 $x_t$ 和 $x_0$ <strong>之间</strong>（0.435 介于 0.5 和 0.3 之间），是两个信息的加权折中；</li>
+<li>两个权重之和 $\approx 1$，且<strong>通常 $x_t$ 那一项占大头</strong>——因为单步噪声 $\beta_t$ 很小，$x_t$ 对 $x_{t-1}$ 的信息相当精确；</li>
+<li>$\tilde\beta_t &#x3D; 0.071 &lt; \beta_t &#x3D; 0.1$：<strong>多知道一个 $x_0$，不确定性就下降</strong>，这符合”信息越多越确定”。</li>
+</ol>
+</blockquote>
+<p>两个边界情形可以验证公式没错：</p>
+<ul>
+<li>$t &#x3D; 1$ 时：$\bar\alpha_0 &#x3D; 1$，于是 $\tilde\beta_1 &#x3D; 0$、$\tilde\mu_1 &#x3D; x_0$——知道 $x_0$ 就等于知道 $x_0$，方差为 0，完全确定；</li>
+<li>$t$ 很大时：$\bar\alpha_{t-1} \to 0$，$\tilde\mu_t \to \sqrt{\alpha_t},x_t$，$x_0$ 的权重趋于 0——此时 $x_0$ 已经帮不上什么忙了。</li>
+</ul>
+<blockquote>
+<p><strong>说人话</strong>：训练时 $x_0$ 摆在眼前，所以”上一步应该长什么样”有个<strong>精确答案</strong> $\tilde\mu_t$。学习问题因此变得非常朴素：<strong>让网络的输出去拟合这个答案</strong>。<br>生成时 $x_0$ 当然不知道——那正是网络要替我们猜的东西。</p>
+</blockquote>
+<hr>
+<h2 id="6-训练目标：为什么最后只是”猜噪声”"><a href="#6-训练目标：为什么最后只是”猜噪声”" class="headerlink" title="6. 训练目标：为什么最后只是”猜噪声”"></a>6. 训练目标：为什么最后只是”猜噪声”</h2><p>这一节是全篇最难的地方。我们慢慢来。</p>
+<h3 id="6-1-我们真正想要的是什么"><a href="#6-1-我们真正想要的是什么" class="headerlink" title="6.1 我们真正想要的是什么"></a>6.1 我们真正想要的是什么</h3><p>训练生成模型，最正统的目标是<strong>最大似然</strong>：让模型给真实图片打高分，也就是最大化 $\log p_\theta(x_0)$。</p>
+<p>$$\text{想算：}\quad p_\theta(x_0) &#x3D; \int p_\theta(x_0, x_{1:T}),dx_{1:T}$$</p>
+<p>问题来了：这个积分要对 $x_1, \dots, x_T$ 全都积掉。在 DDPM 里是 $1000$ 步 × 每步几千维——<strong>天文数字，根本算不动</strong>。</p>
+<h3 id="6-2-算不出来怎么办-→-ELBO"><a href="#6-2-算不出来怎么办-→-ELBO" class="headerlink" title="6.2 算不出来怎么办 → ELBO"></a>6.2 算不出来怎么办 → ELBO</h3><p>算不出精确值，就退而求其次：**算一个”保底值”**。这就是 ELBO。</p>
+<blockquote>
+<p><strong>ELBO &#x3D; Evidence Lower BOund &#x3D; 证据下界</strong>（论文里也叫 VLB，变分下界）。<br>“证据”指的是边际似然 $p_\theta(x_0)$；”下界”是说 ELBO 永远 $\le \log p_\theta(x_0)$，够不着，只能从下面往上顶。</p>
+</blockquote>
+<p>它们之间只差一个非负的间隙：</p>
+<p>$$\log p_\theta(x_0) &#x3D; \text{ELBO} + \underbrace{D_{\text{KL}}\big(q ,\Vert, p_\theta\big)}_{\text{间隙，恒} \ge 0} \quad\Longrightarrow\quad \text{ELBO} \le \log p_\theta(x_0)$$</p>
+<blockquote>
+<p><strong>说人话</strong>：真实值 &#x3D; 保底值 + 一个永远为正的误差。所以<strong>把保底值往上推，真实值必然也被往上推</strong>（至少不会更低）。这就是”优化下界”的合法性来源。<br>顺带一提：这个间隙<strong>恰好</strong>是”我们假设的 $q$”和”真实后验”之间的差距。当 $q$ 正好等于真实后验时，间隙为 0，下界贴合。</p>
+</blockquote>
+<h3 id="6-3-ELBO-是怎么来的"><a href="#6-3-ELBO-是怎么来的" class="headerlink" title="6.3 ELBO 是怎么来的"></a>6.3 ELBO 是怎么来的</h3><p>只用一步 <strong>Jensen 不等式</strong>：因为 $\log$ 是凹函数，所以 $\log \mathbb E[Y] \ge \mathbb E[\log Y]$。把 $\log$ 从期望外面挪到里面，积分就落在能算的东西上了。</p>
+<p>$$\log p_\theta(x_0) ;\ge; \mathbb E_{q}!\left[\log \frac{p_\theta(x_{0:T})}{q(x_{1:T} \mid x_0)}\right] &#x3D;: \text{ELBO}$$</p>
+<p>等价地，写成”上界形式”（注意是最小化 $-\log p$）：</p>
+<p>$$-\log p_\theta(x_0) \le \mathbb E_{q}!\left[-\log \frac{p_\theta(x_{0:T})}{q(x_{1:T} \mid x_0)}\right] &#x3D;: L_{\text{vlb}}$$</p>
+<p>通用形式（换个符号更好认）：</p>
+<p>$$\text{ELBO} &#x3D; \mathbb E_q\big[\log p_\theta(x \mid z)\big] - D_{\text{KL}}\big(q(z \mid x) ,\Vert, p(z)\big)$$</p>
+<blockquote>
+<p><strong>说人话</strong>：ELBO 有两项在打架——</p>
+<ul>
+<li>第一项”把图还原得好不好”（越大越好）；</li>
+<li>第二项”编码器输出是否贴近先验”（越小越好）。</li>
+</ul>
+<p>如果你学过 VAE，这就是那句”<strong>重构损失 − KL</strong>“，一模一样的东西。</p>
+</blockquote>
+<h3 id="6-4-摊开：ELBO-变成一堆-KL"><a href="#6-4-摊开：ELBO-变成一堆-KL" class="headerlink" title="6.4 摊开：ELBO 变成一堆 KL"></a>6.4 摊开：ELBO 变成一堆 KL</h3><p>把 ELBO 按马尔可夫链展开，并把算不出来的项换成 5.3 节那个”标准答案”后验：</p>
+<p>$$L_{\text{vlb}} &#x3D; \underbrace{D_{\text{KL}}\big(q(x_T \mid x_0) ,\Vert, p(x_T)\big)}<em>{L_T,\ \text{无参数，可忽略}} ;+; \sum</em>{t&#x3D;2}^{T} \underbrace{D_{\text{KL}}\big(q(x_{t-1} \mid x_t, x_0) ,\Vert, p_\theta(x_{t-1} \mid x_t)\big)}<em>{L</em>{t-1}} ;-; \underbrace{\log p_\theta(x_0 \mid x_1)}_{L_0}$$</p>
+<blockquote>
+<p><strong>说人话</strong>：总目标 &#x3D; <strong>每一步</strong>“标准答案的去噪分布”和”模型预测的去噪分布”之间的差距之和。<br>也就是说：<strong>每一步都要去噪去得和理论上一样好</strong>。</p>
+<p>顺带说：这也解释了为什么 DDPM 可以看成 VAE——它是一个有 $T$ 层、<strong>编码器被钉死不动</strong>的层次化 VAE：</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>VAE 术语</th>
+<th>DDPM 中对应</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>输入 $x$</td>
+<td>$x_0$</td>
+</tr>
+<tr>
+<td>编码器 $q(z \mid x)$</td>
+<td>前向加噪，<strong>固定无参数</strong></td>
+</tr>
+<tr>
+<td>隐变量 $z$</td>
+<td>$x_1, \dots, x_T$</td>
+</tr>
+<tr>
+<td>先验 $p(z)$</td>
+<td>$p(x_T) &#x3D; \mathcal N(0, I)$</td>
+</tr>
+<tr>
+<td>解码器 $p_\theta(x \mid z)$</td>
+<td>反向去噪，<strong>要学的</strong></td>
+</tr>
+<tr>
+<td>优化目标</td>
+<td>ELBO</td>
+</tr>
+</tbody></table>
+<h3 id="6-5-再化简：KL-变成”均值的平方误差”"><a href="#6-5-再化简：KL-变成”均值的平方误差”" class="headerlink" title="6.5 再化简：KL 变成”均值的平方误差”"></a>6.5 再化简：KL 变成”均值的平方误差”</h3><p>两个<strong>方差已知</strong>的高斯之间的 KL 有闭式解。论文把模型的方差<strong>直接固定成常数</strong> $\Sigma_\theta &#x3D; \sigma_t^2 I$（取 $\sigma_t^2 &#x3D; \beta_t$ 或 $\tilde\beta_t$ 都行），于是 KL 里只剩下均值在打架：</p>
+<p>$$L_{t-1} &#x3D; \mathbb E_{q}!\left[\frac{1}{2\sigma_t^2},\big\Vert \tilde\mu_t(x_t, x_0) - \mu_\theta(x_t, t) \big\Vert^2\right] + C$$</p>
+<blockquote>
+<p><strong>说人话</strong>：目标已经很干净了——**让网络预测的均值，去贴近那个算得出来的标准答案 $\tilde\mu_t$**。就是个回归问题。</p>
+</blockquote>
+<h3 id="6-6-最后一步转折：别预测均值了，改预测噪声"><a href="#6-6-最后一步转折：别预测均值了，改预测噪声" class="headerlink" title="6.6 最后一步转折：别预测均值了，改预测噪声"></a>6.6 最后一步转折：别预测均值了，改预测噪声</h3><p>直接让网络输出 $\mu_\theta$ 效果一般。论文的巧妙做法是：把 $x_0$ 从标准答案里<strong>消掉</strong>。</p>
+<p>由闭式解反解出 $x_0$：</p>
+<p>$$x_0 &#x3D; \frac{1}{\sqrt{\bar\alpha_t}}\big(x_t - \sqrt{1 - \bar\alpha_t},\epsilon\big)$$</p>
+<p>代进 $\tilde\mu_t$ 整理后，会发现标准答案可以写成”只含 $x_t$ 和 $\epsilon$”的形式——所以<strong>网络只要预测 $\epsilon$ 就够了</strong>：</p>
+<p>$$\mu_\theta(x_t, t) &#x3D; \frac{1}{\sqrt{\alpha_t}}\left(x_t - \frac{\beta_t}{\sqrt{1 - \bar\alpha_t}},\epsilon_\theta(x_t, t)\right)$$</p>
+<p>代回损失，得到：</p>
+<p>$$L_{t-1} - C &#x3D; \frac{\beta_t^2}{2,\sigma_t^2,\alpha_t,(1 - \bar\alpha_t)}\ \mathbb E_{x_0, \epsilon}!\left[\big\Vert \epsilon - \epsilon_\theta(x_t, t) \big\Vert^2\right]$$</p>
+<blockquote>
+<p><strong>说人话</strong>：每一步的损失，本质上就是**”我掺进去的噪声”和”网络猜的噪声”之间的均方误差**，只是前面挂了个只跟 $t$ 有关的权重系数。</p>
+</blockquote>
+<h3 id="6-7-最终用的：把权重丢掉"><a href="#6-7-最终用的：把权重丢掉" class="headerlink" title="6.7 最终用的：把权重丢掉"></a>6.7 最终用的：把权重丢掉</h3><p>论文发现，把这个权重系数<strong>直接扔了</strong>效果反而更好：</p>
+<p>$$\boxed{L_{\text{simple}} &#x3D; \mathbb E_{t,, x_0,, \epsilon}\left[\big\Vert \epsilon - \epsilon_\theta(\underbrace{\sqrt{\bar\alpha_t},x_0 + \sqrt{1 - \bar\alpha_t},\epsilon}_{&#x3D;\ x_t},\ t) \big\Vert^2\right]}$$</p>
+<p>其中 $t \sim \text{Uniform}{1,\dots,T}$，$x_0$ 来自数据集，$\epsilon \sim \mathcal N(0, I)$。</p>
+<p>为什么要扔？那个权重会让<strong>高噪声的步（$t$ 大）</strong>被压得很小，模型就不太重视”从纯噪声开始”这个最难也最关键的阶段。扔掉后所有噪声水平一视同仁，生成的图质量（FID）更好。</p>
+<blockquote>
+<p><strong>说人话</strong>：DDPM 的训练目标，说到底就一句——<br><strong>给网络一张掺了噪声的图，让它猜”掺进去的噪声是什么”，猜错了就按平方误差罚它。</strong><br>一个生成模型，训练竟然只是一个去噪回归问题。这是它最反直觉、也最优雅的地方。</p>
+</blockquote>
+<blockquote>
+<p>严格说，扔掉权重后已经不再是”纯粹的似然下界”了。论文也提供了折中方案 $L_{\text{hybrid}} &#x3D; L_{\text{simple}} + \lambda L_{\text{vlb}}$，供需要精确似然的场景使用。</p>
+</blockquote>
+<hr>
+<h2 id="7-完整流程（就这两张清单）"><a href="#7-完整流程（就这两张清单）" class="headerlink" title="7. 完整流程（就这两张清单）"></a>7. 完整流程（就这两张清单）</h2><h3 id="训练（重复到收敛）"><a href="#训练（重复到收敛）" class="headerlink" title="训练（重复到收敛）"></a>训练（重复到收敛）</h3><ol>
+<li>从数据集取一张真实图 $x_0$；</li>
+<li>随机抽一个时间步 $t \sim \text{Uniform}{1,\dots,T}$；</li>
+<li>随机采一张噪声 $\epsilon \sim \mathcal N(0, I)$；</li>
+<li><strong>一步</strong>造出带噪图：$x_t &#x3D; \sqrt{\bar\alpha_t},x_0 + \sqrt{1-\bar\alpha_t},\epsilon$；</li>
+<li>让网络猜噪声 $\epsilon_\theta(x_t, t)$，按 $|\epsilon - \epsilon_\theta|^2$ 更新参数。</li>
+</ol>
+<blockquote>
+<p>注意：同一个 batch 里每个样本的 $t$ 都是<strong>各自随机</strong>的，网络在所有噪声水平上被反复训练，参数共享。</p>
+</blockquote>
+<h3 id="生成（采样）"><a href="#生成（采样）" class="headerlink" title="生成（采样）"></a>生成（采样）</h3><ol>
+<li>随便采一团噪声 $x_T \sim \mathcal N(0, I)$；</li>
+<li>对 $t &#x3D; T, T-1, \dots, 1$ 反复执行：</li>
+</ol>
+<p>$$x_{t-1} &#x3D; \frac{1}{\sqrt{\alpha_t}}\left(x_t - \frac{\beta_t}{\sqrt{1 - \bar\alpha_t}},\epsilon_\theta(x_t, t)\right) + \sigma_t z, \quad z \sim \mathcal N(0, I)$$</p>
+<p>最后一步（$t &#x3D; 1$）时取 $z &#x3D; 0$；<br>3. 输出 $x_0$。</p>
+<blockquote>
+<p><strong>说人话</strong>：每一步就是”<strong>猜噪声 → 按比例减掉 → 再补一点点随机</strong>“。<br>补的那点随机是为了保持多样性（两次生成不一样）。如果全部去掉随机项，就变成了确定性的 DDIM。</p>
+</blockquote>
+<hr>
+<h2 id="8-三种等价说法（换个马甲你也要认得）"><a href="#8-三种等价说法（换个马甲你也要认得）" class="headerlink" title="8. 三种等价说法（换个马甲你也要认得）"></a>8. 三种等价说法（换个马甲你也要认得）</h2><p>$\epsilon$、$x_0$、score 三者之间只差线性变换，可以互换：</p>
+<table>
+<thead>
+<tr>
+<th>说法</th>
+<th>网络输出什么</th>
+<th>与 $\epsilon_\theta$ 的关系</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>预测噪声</strong>（DDPM 默认）</td>
+<td>$\epsilon_\theta(x_t, t)$</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>预测原图</strong></td>
+<td>$\hat x_0(x_t, t)$</td>
+<td>$\hat x_0 &#x3D; \dfrac{x_t - \sqrt{1-\bar\alpha_t},\epsilon_\theta}{\sqrt{\bar\alpha_t}}$</td>
+</tr>
+<tr>
+<td><strong>预测 score（梯度）</strong></td>
+<td>$s_\theta(x_t, t)$</td>
+<td>$s_\theta &#x3D; -\dfrac{\epsilon_\theta}{\sqrt{1 - \bar\alpha_t}}$</td>
+</tr>
+</tbody></table>
+<p>第三条特别重要：它说明 <strong>DDPM 本质上在学数据分布的梯度场</strong>，从而和 Song &amp; Ermon 的 score-based 模型（NCSN &#x2F; 退火 Langevin 采样）统一到同一框架下。带随机项的采样公式，本质上就是一步 Langevin 动力学。</p>
+<blockquote>
+<p>再往后，SD3、Flux 这一代用的是 <strong>flow matching</strong>：预测对象换成”从噪声走向数据的速度场 $v$”，路径从弯的改成直的。但”加噪 → 预测 → 回退”这套骨架没变。</p>
+</blockquote>
+<hr>
+<h2 id="9-论文里的几个关键设计"><a href="#9-论文里的几个关键设计" class="headerlink" title="9. 论文里的几个关键设计"></a>9. 论文里的几个关键设计</h2><table>
+<thead>
+<tr>
+<th>设计</th>
+<th>做法</th>
+<th>为什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>预测 $\epsilon$ 而不是 $\mu$</td>
+<td>让网络猜噪声</td>
+<td>数值范围稳定，等价于重加权后的 VLB，效果更好</td>
+</tr>
+<tr>
+<td>方差固定不学</td>
+<td>$\Sigma_\theta &#x3D; \beta_t I$ 或 $\tilde\beta_t I$</td>
+<td>学方差收益极小且训练不稳</td>
+</tr>
+<tr>
+<td>丢掉损失权重</td>
+<td>用 $L_{\text{simple}}$</td>
+<td>各噪声水平一视同仁，FID 更好</td>
+</tr>
+<tr>
+<td>把 $t$ 喂给网络</td>
+<td>正弦编码 → MLP → 注入每个残差块</td>
+<td>同一套权重要处理 1000 种不同难度的任务</td>
+</tr>
+<tr>
+<td>主干用 U-Net</td>
+<td>编码器-解码器 + 跳跃连接 + 自注意力</td>
+<td>去噪是像素级任务，要保细节又要顾全局</td>
+</tr>
+<tr>
+<td>超参</td>
+<td>$T &#x3D; 1000$，$\beta$ 从 $10^{-4}$ 线性到 $2\times10^{-2}$，Adam（lr $2\times10^{-4}$）+ EMA（0.9999）</td>
+<td>EMA 对生成质量帮助明显</td>
+</tr>
+</tbody></table>
+<p><strong>成果</strong>：无条件 CIFAR-10 上 FID <strong>3.17</strong>、Inception Score <strong>9.46</strong>，首次让扩散类模型的样本质量超过当时的 GAN，而且训练更稳、覆盖的模式更全。这直接引爆了后来的 Stable Diffusion 等一系列工作。</p>
+<hr>
+<h2 id="10-为什么”学会去噪”就等于”学会生成”？"><a href="#10-为什么”学会去噪”就等于”学会生成”？" class="headerlink" title="10. 为什么”学会去噪”就等于”学会生成”？"></a>10. 为什么”学会去噪”就等于”学会生成”？</h2><p>三层递进的直觉：</p>
+<ol>
+<li><p><strong>去噪逼着你理解数据</strong>。要从一堆雪花里精确把噪声减掉，网络必须知道”真实的图长什么样”。1000 个噪声水平全都做对，等于把数据分布从粗到细学了一遍。</p>
+</li>
+<li><p><strong>把难题拆成简单题</strong>。直接学”噪声 → 图像”的映射极难；但”预测这一步掺了什么噪声”在 $\beta_t$ 很小时，几乎是道线性回归题。$T$ 步串起来，就走完了从噪声到图像的漫长旅程。</p>
+</li>
+<li><p><strong>梯度场视角</strong>。$\epsilon_\theta$ 乘个系数就是数据分布的梯度，采样就是顺着梯度从”高熵的噪声区”走向”高概率的真实图区”。这和能量模型、Langevin 采样是一脉相承的。</p>
+</li>
+</ol>
+<p>跟其他生成模型比：</p>
+<table>
+<thead>
+<tr>
+<th>范式</th>
+<th>思路</th>
+<th>主要短板</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GAN</td>
+<td>生成器与判别器对抗</td>
+<td>训练不稳、模式坍塌</td>
+</tr>
+<tr>
+<td>VAE</td>
+<td>一步编码 + 似然下界</td>
+<td>高斯解码导致图偏模糊</td>
+</tr>
+<tr>
+<td>自回归</td>
+<td>逐像素 &#x2F; 逐 token 生成</td>
+<td>必须串行，高分辨率极慢</td>
+</tr>
+<tr>
+<td><strong>扩散</strong></td>
+<td>拆成 $T$ 步去噪 + 变分下界</td>
+<td>采样要跑几百上千次网络，<strong>慢</strong></td>
+</tr>
+</tbody></table>
+<p>扩散模型的胜利，本质是用<strong>训练的稳定性</strong>换来了<strong>推理的代价</strong>。后来 DDIM、DPM-Solver、LCM、一致性模型、flow matching 这一大批工作，都是在还这笔”推理债”。</p>
+<hr>
+<h2 id="11-常见问题-FAQ"><a href="#11-常见问题-FAQ" class="headerlink" title="11. 常见问题 FAQ"></a>11. 常见问题 FAQ</h2><p><strong>Q1：为什么叫”扩散”模型？</strong><br>借用了物理里墨水在水里扩散的比喻。数学上它确实对应一个随机微分方程描述的扩散过程，但你可以只把它理解成”逐渐加噪”。</p>
+<p><strong>Q2：网络为什么还要把 $t$ 喂进去？</strong><br>因为第 10 步和第 900 步要猜的噪声强度完全不一样。不给 $t$，网络就不知道该猜多大。</p>
+<p><strong>Q3：采样时为什么要加那个随机项 $\sigma_t z$？不加行不行？</strong><br>不加也可以，那就是 DDIM（确定性采样），反而更快、步数更少。加了的话每一步保留随机性，样本多样性通常更好。DDPM 原版是加的。</p>
+<p><strong>Q4：训练用的噪声和闭式解里的噪声是同一个吗？</strong><br>训练时你<strong>亲自采</strong>一个 $\epsilon$，再用闭式解算出 $x_t$，然后把 $\epsilon$ 当标签监督网络——两者必须严格配对。闭式解里的 $\epsilon$ 只是”所有中间步噪声合并后的等效噪声”，它不等于任何单独一步的 $\epsilon_{t-1}$。</p>
+<p><strong>Q5：为什么不直接用闭式解反着算出 $x_0$ 就完事？</strong><br>因为反解 $x_0$ 需要知道 $\epsilon$，而 $\epsilon$ 恰恰是未知的（生成时没人告诉你掺了什么噪声）。网络的作用就是**猜这个 $\epsilon$**。</p>
+<p><strong>Q6：生成的图是不是把训练集的图背下来了？</strong><br>不是。网络学到的是”如何从噪声里还原出一张合理图”的能力，起点是全新的随机噪声，所以每次生成都不一样。当然，如果训练集很小或重复很多次，确实会出现记忆现象，但那是过拟合，不是原理。</p>
+<p><strong>Q7：为什么 $T$ 要 1000 这么大？</strong><br>为了让每一步的改动足够小，这样”逆过程也是高斯”的近似才成立、训练也更容易。代价是采样慢——后来的加速采样器就是来解决这个的。</p>
+<p><strong>Q8：ELBO 是真实似然的近似值吗？</strong><br>不是近似，是<strong>严格下界</strong>：真实值 &#x3D; ELBO + 一个恒为正的 KL 间隙。ELBO 永远只低不高。</p>
+<p><strong>Q9：为什么训练损失里要对 $t$ 随机采样，而不是固定 $t$？</strong><br>因为要覆盖所有噪声水平。随机采样等价于让网络在每个难度上都被训练到，最后才每个 $t$ 都能去噪。</p>
+<p><strong>Q10：前向过程为什么不用学习？</strong><br>因为它是我们自己<strong>定义</strong>的——“训练数据是怎么被破坏的”这件事由我们说了算，$\beta_t$ 是人为设定的常数。所有需要学的东西都在反向过程里。</p>
+<p><strong>Q11：为什么起始分布可以随便用 $\mathcal N(0, I)$？</strong><br>因为精心设计了 $\beta_t$ 使得 $\bar\alpha_T \approx 0$，前向走到最后就是标准高斯。所以反向从标准高斯出发，两边对得上。</p>
+<hr>
+<h2 id="12-公式速查表"><a href="#12-公式速查表" class="headerlink" title="12. 公式速查表"></a>12. 公式速查表</h2><p><strong>前向（固定，无需学习）</strong></p>
+<p>$$q(x_t \mid x_{t-1}) &#x3D; \mathcal N\big(\sqrt{1-\beta_t},x_{t-1},\ \beta_t I\big), \qquad \alpha_t &#x3D; 1-\beta_t,\ \bar\alpha_t &#x3D; \prod_{s&#x3D;1}^t \alpha_s$$</p>
+<p>$$q(x_t \mid x_0) &#x3D; \mathcal N\big(\sqrt{\bar\alpha_t},x_0,\ (1-\bar\alpha_t)I\big)$$</p>
+<p>$$x_t &#x3D; \sqrt{\bar\alpha_t},x_0 + \sqrt{1-\bar\alpha_t},\epsilon$$</p>
+<p><strong>后验（训练时的标准答案）</strong></p>
+<p>$$q(x_{t-1}\mid x_t, x_0) &#x3D; \mathcal N\left(\frac{\sqrt{\bar\alpha_{t-1}}\beta_t}{1-\bar\alpha_t}x_0 + \frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})}{1-\bar\alpha_t}x_t,\ \frac{1-\bar\alpha_{t-1}}{1-\bar\alpha_t}\beta_t, I\right)$$</p>
+<p><strong>反向（要学的）</strong></p>
+<p>$$p_\theta(x_{t-1}\mid x_t) &#x3D; \mathcal N\left(\frac{1}{\sqrt{\alpha_t}}\Big(x_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}}\epsilon_\theta(x_t,t)\Big),\ \sigma_t^2 I\right)$$</p>
+<p><strong>训练目标</strong></p>
+<p>$$L_{\text{simple}} &#x3D; \mathbb E_{t,x_0,\epsilon}\left[\big\Vert \epsilon - \epsilon_\theta\big(\sqrt{\bar\alpha_t}x_0 + \sqrt{1-\bar\alpha_t}\epsilon,\ t\big)\big\Vert^2\right]$$</p>
+<p><strong>采样迭代</strong></p>
+<p>$$x_{t-1} &#x3D; \frac{1}{\sqrt{\alpha_t}}\left(x_t - \frac{\beta_t}{\sqrt{1-\bar\alpha_t}}\epsilon_\theta(x_t,t)\right) + \sigma_t z$$</p>
+<p><strong>等价关系</strong></p>
+<p>$$\hat x_0 &#x3D; \frac{x_t - \sqrt{1-\bar\alpha_t},\epsilon_\theta}{\sqrt{\bar\alpha_t}}, \qquad \nabla_x \log q_t(x) \approx -\frac{\epsilon_\theta(x_t, t)}{\sqrt{1-\bar\alpha_t}}$$</p>
+<hr>
+<h2 id="13-记不住的时候，只留这三句"><a href="#13-记不住的时候，只留这三句" class="headerlink" title="13. 记不住的时候，只留这三句"></a>13. 记不住的时候，只留这三句</h2><ol>
+<li><strong>前向加噪有闭式解</strong> —— $x_t$ 能由 $x_0$ 一步算出，训练不必循环。</li>
+<li><strong>训练只做噪声回归</strong> —— 变分下界一路化简，最后就是 $|\epsilon - \epsilon_\theta|^2$。</li>
+<li><strong>推理靠迭代回退</strong> —— 从纯噪声出发，反复”猜噪声 → 减掉一点 → 补点随机”，直到 $x_0$。</li>
+</ol>
+<hr>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li>Ho, Jain, Abbeel. <em>Denoising Diffusion Probabilistic Models</em>. NeurIPS 2020. arXiv:2006.11239</li>
+<li>Sohl-Dickstein et al. <em>Deep Unsupervised Learning using Nonequilibrium Thermodynamics</em>. ICML 2015.（扩散建模思想的最早来源）</li>
+<li>Song &amp; Ermon. <em>Generative Modeling by Estimating Gradients of the Data Distribution</em>. NeurIPS 2019.（score-based 视角，与 DDPM 等价）</li>
+<li>Song et al. <em>Denoising Diffusion Implicit Models</em>. ICLR 2021.（DDIM，确定性采样、大幅提速）</li>
+</ul>
+</div><div class="article-licensing box"><div class="licensing-title"><p>DDPM 基本原理讲解</p><p><a href="https://xyz.desirer233.fun/2026/10/06/AI/DDPM基本原理讲解/">https://xyz.desirer233.fun/2026/10/06/AI/DDPM基本原理讲解/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2026-10-06</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-10-07</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/AI%E7%94%9F%E6%88%90/">AI生成</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2026/10/07/AI/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86%E8%BF%87%E7%A8%8B%E8%AE%B2%E8%A7%A3/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">扩散模型推理（采样）完整过程讲解</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2026/05/31/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%9B%9B%E6%AD%A5%E6%89%93%E5%8D%B0%E4%BA%8C%E5%8F%89%E6%A0%91/"><span class="level-item">四步打印二叉树</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#DDPM-基本原理讲解（通俗版）"><span class="level-left"><span class="level-item">1</span><span class="level-item">DDPM 基本原理讲解（通俗版）</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#0-一个比喻：墨水滴进清水"><span class="level-left"><span class="level-item">1.1</span><span class="level-item">0. 一个比喻：墨水滴进清水</span></span></a></li><li><a class="level is-mobile" href="#1-读前只需知道四件事"><span class="level-left"><span class="level-item">1.2</span><span class="level-item">1. 读前只需知道四件事</span></span></a></li><li><a class="level is-mobile" href="#2-一句话版本"><span class="level-left"><span class="level-item">1.3</span><span class="level-item">2. 一句话版本</span></span></a></li><li><a class="level is-mobile" href="#3-符号表"><span class="level-left"><span class="level-item">1.4</span><span class="level-item">3. 符号表</span></span></a></li><li><a class="level is-mobile" href="#4-前向过程：怎么把一张图毁掉"><span class="level-left"><span class="level-item">1.5</span><span class="level-item">4. 前向过程：怎么把一张图毁掉</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#4-1-每一步具体做了什么"><span class="level-left"><span class="level-item">1.5.1</span><span class="level-item">4.1 每一步具体做了什么</span></span></a></li><li><a class="level is-mobile" href="#4-2-那个根号-sqrt-1-beta-t-是干嘛的？"><span class="level-left"><span class="level-item">1.5.2</span><span class="level-item">4.2 那个根号 $\sqrt{1-\beta_t}$ 是干嘛的？</span></span></a></li><li><a class="level is-mobile" href="#4-3-走后门：不用真的走-t-步"><span class="level-left"><span class="level-item">1.5.3</span><span class="level-item">4.3 走后门：不用真的走 $t$ 步</span></span></a></li><li><a class="level is-mobile" href="#4-4-bar-alpha-t-到底意味着什么"><span class="level-left"><span class="level-item">1.5.4</span><span class="level-item">4.4 $\bar\alpha_t$ 到底意味着什么</span></span></a></li><li><a class="level is-mobile" href="#4-5-噪声的节奏：-beta-t-的具体公式"><span class="level-left"><span class="level-item">1.5.5</span><span class="level-item">4.5 噪声的节奏：$\beta_t$ 的具体公式</span></span></a></li></ul></li><li><a class="level is-mobile" href="#5-反向过程：怎么把图救回来"><span class="level-left"><span class="level-item">1.6</span><span class="level-item">5. 反向过程：怎么把图救回来</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#5-1-想要什么，能算什么"><span class="level-left"><span class="level-item">1.6.1</span><span class="level-item">5.1 想要什么，能算什么</span></span></a></li><li><a class="level is-mobile" href="#5-2-为什么敢用高斯去拟合？"><span class="level-left"><span class="level-item">1.6.2</span><span class="level-item">5.2 为什么敢用高斯去拟合？</span></span></a></li><li><a class="level is-mobile" href="#5-3-训练时的”标准答案”：后验"><span class="level-left"><span class="level-item">1.6.3</span><span class="level-item">5.3 训练时的”标准答案”：后验</span></span></a></li><li><a class="level is-mobile" href="#5-3-1-这两条公式是怎么算出来的"><span class="level-left"><span class="level-item">1.6.4</span><span class="level-item">5.3.1 这两条公式是怎么算出来的</span></span></a></li></ul></li><li><a class="level is-mobile" href="#6-训练目标：为什么最后只是”猜噪声”"><span class="level-left"><span class="level-item">1.7</span><span class="level-item">6. 训练目标：为什么最后只是”猜噪声”</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#6-1-我们真正想要的是什么"><span class="level-left"><span class="level-item">1.7.1</span><span class="level-item">6.1 我们真正想要的是什么</span></span></a></li><li><a class="level is-mobile" href="#6-2-算不出来怎么办-→-ELBO"><span class="level-left"><span class="level-item">1.7.2</span><span class="level-item">6.2 算不出来怎么办 → ELBO</span></span></a></li><li><a class="level is-mobile" href="#6-3-ELBO-是怎么来的"><span class="level-left"><span class="level-item">1.7.3</span><span class="level-item">6.3 ELBO 是怎么来的</span></span></a></li><li><a class="level is-mobile" href="#6-4-摊开：ELBO-变成一堆-KL"><span class="level-left"><span class="level-item">1.7.4</span><span class="level-item">6.4 摊开：ELBO 变成一堆 KL</span></span></a></li><li><a class="level is-mobile" href="#6-5-再化简：KL-变成”均值的平方误差”"><span class="level-left"><span class="level-item">1.7.5</span><span class="level-item">6.5 再化简：KL 变成”均值的平方误差”</span></span></a></li><li><a class="level is-mobile" href="#6-6-最后一步转折：别预测均值了，改预测噪声"><span class="level-left"><span class="level-item">1.7.6</span><span class="level-item">6.6 最后一步转折：别预测均值了，改预测噪声</span></span></a></li><li><a class="level is-mobile" href="#6-7-最终用的：把权重丢掉"><span class="level-left"><span class="level-item">1.7.7</span><span class="level-item">6.7 最终用的：把权重丢掉</span></span></a></li></ul></li><li><a class="level is-mobile" href="#7-完整流程（就这两张清单）"><span class="level-left"><span class="level-item">1.8</span><span class="level-item">7. 完整流程（就这两张清单）</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#训练（重复到收敛）"><span class="level-left"><span class="level-item">1.8.1</span><span class="level-item">训练（重复到收敛）</span></span></a></li><li><a class="level is-mobile" href="#生成（采样）"><span class="level-left"><span class="level-item">1.8.2</span><span class="level-item">生成（采样）</span></span></a></li></ul></li><li><a class="level is-mobile" href="#8-三种等价说法（换个马甲你也要认得）"><span class="level-left"><span class="level-item">1.9</span><span class="level-item">8. 三种等价说法（换个马甲你也要认得）</span></span></a></li><li><a class="level is-mobile" href="#9-论文里的几个关键设计"><span class="level-left"><span class="level-item">1.10</span><span class="level-item">9. 论文里的几个关键设计</span></span></a></li><li><a class="level is-mobile" href="#10-为什么”学会去噪”就等于”学会生成”？"><span class="level-left"><span class="level-item">1.11</span><span class="level-item">10. 为什么”学会去噪”就等于”学会生成”？</span></span></a></li><li><a class="level is-mobile" href="#11-常见问题-FAQ"><span class="level-left"><span class="level-item">1.12</span><span class="level-item">11. 常见问题 FAQ</span></span></a></li><li><a class="level is-mobile" href="#12-公式速查表"><span class="level-left"><span class="level-item">1.13</span><span class="level-item">12. 公式速查表</span></span></a></li><li><a class="level is-mobile" href="#13-记不住的时候，只留这三句"><span class="level-left"><span class="level-item">1.14</span><span class="level-item">13. 记不住的时候，只留这三句</span></span></a></li><li><a class="level is-mobile" href="#参考"><span class="level-left"><span class="level-item">1.15</span><span class="level-item">参考</span></span></a></li></ul></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/AI/"><span class="level-start"><span class="level-item">AI</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">15</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
+            article: {
+                highlight: {
+                    clipboard: true,
+                    fold: 'unfolded'
+                }
+            }
+        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
+            if (typeof $.fn.lightGallery === 'function') {
+                $('.article').lightGallery({ selector: '.gallery-item' });
+            }
+            if (typeof $.fn.justifiedGallery === 'function') {
+                if ($('.justified-gallery > p > .gallery-item').length) {
+                    $('.justified-gallery > p > .gallery-item').unwrap();
+                }
+                $('.justified-gallery').justifiedGallery();
+            }
+        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
+            'HTML-CSS': {
+                matchFontHeight: false
+            },
+            SVG: {
+                matchFontHeight: false
+            },
+            CommonHTML: {
+                matchFontHeight: false
+            },
+            tex2jax: {
+                inlineMath: [
+                    ['$','$'],
+                    ['\\(','\\)']
+                ]
+            }
+        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        });</script></body></html>
