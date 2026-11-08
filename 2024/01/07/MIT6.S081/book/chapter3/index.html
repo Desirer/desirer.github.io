@@ -1,28 +1,25 @@
 <!doctype html>
-<html lang="zh"><head><!-- hexo injector head_begin start --><script>(function () {
-  try {
-    var saved = localStorage.getItem('hexo-theme-mode');
-    var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var mode = (saved === 'dark' || saved === 'light') ? saved : (systemDark ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', mode);
-    document.documentElement.style.colorScheme = mode;
-  } catch (e) {}
-})();</script><!-- hexo injector head_begin end --><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>MIT6.S081 xv6book chapter3 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="第三章的主题是页表，单看页表会很抽象，但页表背后的思想是地址空间的隔离。让每个进程都有自己的地址空间，保护地址空间不受他人侵犯。同时，页表管理的“页”，页内地址连续，以页为单位，避免页表过于庞大（多级页表也是为了实现这个目标）。同时，虚拟空间到物理空间的映射，多了几分实用trick，比如内核采用直接映射、内核页表下的guard page（未映射）、内核和用户相同的映射（trampoline pag"><meta property="og:type" content="blog"><meta property="og:title" content="MIT6.S081 xv6book chapter3"><meta property="og:url" content="https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="第三章的主题是页表，单看页表会很抽象，但页表背后的思想是地址空间的隔离。让每个进程都有自己的地址空间，保护地址空间不受他人侵犯。同时，页表管理的“页”，页内地址连续，以页为单位，避免页表过于庞大（多级页表也是为了实现这个目标）。同时，虚拟空间到物理空间的映射，多了几分实用trick，比如内核采用直接映射、内核页表下的guard page（未映射）、内核和用户相同的映射（trampoline pag"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091726018.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091730189.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091739517.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091936531.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091937895.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401041330292.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401092027196.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401092044026.png"><meta property="article:published_time" content="2024-01-07T09:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T09:20:53.000Z"><meta property="article:author" content="Desirer"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091726018.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/"},"headline":"MIT6.S081 xv6book chapter3","image":["https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091726018.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091730189.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091739517.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091936531.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091937895.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401041330292.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401092027196.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401092044026.png"],"datePublished":"2024-01-07T09:00:00.000Z","dateModified":"2026-02-21T09:20:53.000Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"第三章的主题是页表，单看页表会很抽象，但页表背后的思想是地址空间的隔离。让每个进程都有自己的地址空间，保护地址空间不受他人侵犯。同时，页表管理的“页”，页内地址连续，以页为单位，避免页表过于庞大（多级页表也是为了实现这个目标）。同时，虚拟空间到物理空间的映射，多了几分实用trick，比如内核采用直接映射、内核页表下的guard page（未映射）、内核和用户相同的映射（trampoline pag"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><style>#dark-mode-toggle{color:#4a4a4a;transition:color .25s ease}#dark-mode-toggle:hover{color:#58a6ff}[data-theme="dark"] #dark-mode-toggle{color:#f0f6fc}[data-theme="dark"] #dark-mode-toggle:hover{color:#79c0ff}</style><link id="dark-mode-css" rel="stylesheet" href="/css/dark.css" media="not all"><script>(function () {
-  var link = document.getElementById('dark-mode-css');
-  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-  if (link && dark) link.media = 'all';
-  if (dark) {
-    var hl = document.querySelector('link[href*="highlight.js"][href*="atom-one-light.css"]');
-    if (hl) hl.href = hl.href.replace('atom-one-light.css', 'atom-one-dark.css');
-  }
-})();</script><script>
+<html lang="zh-CN" data-appearance-mode="auto" data-appearance="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script src="/js/appearance.js"></script><meta name="color-scheme" content="light dark"><meta><title>MIT6.S081 xv6book chapter3 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="第三章的主题是页表，单看页表会很抽象，但页表背后的思想是地址空间的隔离。让每个进程都有自己的地址空间，保护地址空间不受他人侵犯。同时，页表管理的“页”，页内地址连续，以页为单位，避免页表过于庞大（多级页表也是为了实现这个目标）。同时，虚拟空间到物理空间的映射，多了几分实用trick，比如内核采用直接映射、内核页表下的guard page（未映射）、内核和用户相同的映射（trampoline pag"><meta property="og:type" content="article"><meta property="og:title" content="MIT6.S081 xv6book chapter3"><meta property="og:url" content="https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="第三章的主题是页表，单看页表会很抽象，但页表背后的思想是地址空间的隔离。让每个进程都有自己的地址空间，保护地址空间不受他人侵犯。同时，页表管理的“页”，页内地址连续，以页为单位，避免页表过于庞大（多级页表也是为了实现这个目标）。同时，虚拟空间到物理空间的映射，多了几分实用trick，比如内核采用直接映射、内核页表下的guard page（未映射）、内核和用户相同的映射（trampoline pag"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091726018.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091730189.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091739517.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091936531.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091937895.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401041330292.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401092027196.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401092044026.png"><meta property="article:published_time" content="2024-01-07T09:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T09:20:53.000Z"><meta property="article:author" content="Desirer"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091726018.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/"},"headline":"MIT6.S081 xv6book chapter3","image":["https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091726018.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091730189.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091739517.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091936531.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091937895.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401041330292.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401092027196.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401092044026.png"],"datePublished":"2024-01-07T09:00:00.000Z","dateModified":"2026-02-21T09:20:53.000Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"第三章的主题是页表，单看页表会很抽象，但页表背后的思想是地址空间的隔离。让每个进程都有自己的地址空间，保护地址空间不受他人侵犯。同时，页表管理的“页”，页内地址连续，以页为单位，避免页表过于庞大（多级页表也是为了实现这个目标）。同时，虚拟空间到物理空间的映射，多了几分实用trick，比如内核采用直接映射、内核页表下的guard page（未映射）、内核和用户相同的映射（trampoline pag"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/"><link rel="icon" href="/images/icon2.png"><link rel="preconnect" href="https://use.fontawesome.com" crossorigin="anonymous"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="/css/github-calendar.css"><link data-pjax rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/atom-one-light.css" media="(prefers-color-scheme: light)"><link data-pjax rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/atom-one-dark.css" media="(prefers-color-scheme: dark)"><script>window.IcarusAppearance.sync();</script><link data-variant rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro&amp;display=swap"><link data-variant rel="stylesheet" href="/css/default.css"><script>if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+    document.documentElement.classList.add('is-animating');
+}</script><style>html.is-animating body>.footer,html.is-animating body>.navbar,html.is-animating body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/css/lightgallery-bundle.min.css" data-pjax><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justified-gallery@4.0.2/dist/assets/justified-gallery.css" data-pjax><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:3px}</style><script>window.paceOptions = Object.assign({}, window.paceOptions, {
+      restartOnPushState: false,
+      restartOnRequestAfter: false
+    });
+    document.addEventListener('pjax:send', function () {
+      if (window.Pace) window.Pace.restart();
+    });</script><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!--!--><!--!--><!-- hexo injector head_end start --><script>
   (function () {
       function switchTab() {
           if (!location.hash) {
             return;
           }
 
-          const id = '#' + CSS.escape(location.hash.substring(1));
+          let hash = location.hash.substring(1);
+          try {
+            // Non-ASCII IDs are percent-encoded in the URL
+            hash = decodeURIComponent(hash);
+          } catch (e) {}
+          const id = '#' + CSS.escape(hash);
           const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
           if (!$tabMenu) {
             return;
@@ -42,10 +39,15 @@
               $activeTab.classList.remove('is-hidden');
           }
       }
-      switchTab();
+      // The script is in <head>, so wait for the tabs to switch to the tab in the URL
+      if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', switchTab);
+      } else {
+          switchTab();
+      }
       window.addEventListener('hashchange', switchTab, false);
   })();
-  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-01-07T09:00:00.000Z" title="2024/1/7 17:00:00">2024-01-07</time>发表</span><span class="level-item"><time dateTime="2026-02-21T09:20:53.000Z" title="2026/2/21 17:20:53">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/MIT6-S081/">MIT6.S081</a><span> / </span><a class="link-muted" href="/categories/MIT6-S081/xv6book/">xv6book</a></span><span class="level-item">39 分钟读完 (大约5855个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">MIT6.S081 xv6book chapter3</h1><div class="content"><p>第三章的主题是页表，单看页表会很抽象，但页表背后的思想是地址空间的隔离。让每个进程都有自己的地址空间，保护地址空间不受他人侵犯。同时，页表管理的“页”，页内地址连续，以页为单位，避免页表过于庞大（多级页表也是为了实现这个目标）。同时，虚拟空间到物理空间的映射，多了几分实用trick，比如内核采用直接映射、内核页表下的guard page（未映射）、内核和用户相同的映射（trampoline page，多对一映射）。</p>
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 8.1.2"></head><body class="is-2-column"><div id="browser-notice" data-pjax></div><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><button class="navbar-item navbar-toggle" type="button" title="菜单" aria-label="菜单" aria-expanded="false" aria-controls="navbar-main-menu"><i class="fas fa-bars" aria-hidden="true"></i></button><div class="navbar-start" id="navbar-main-menu"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus" aria-label="Download on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a><button class="navbar-item is-hidden-tablet catalogue" type="button" title="目录" aria-label="目录"><i class="fas fa-list-ul" aria-hidden="true"></i></button><button class="navbar-item appearance-toggle" type="button" title="切换深色模式" aria-label="切换深色模式" aria-pressed="false"><i class="fas fa-adjust" aria-hidden="true"></i></button><button class="navbar-item search" type="button" title="搜索" aria-label="搜索"><i class="fas fa-search" aria-hidden="true"></i></button></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-01-07T09:00:00.000Z" title="2024-01-07 17:00:00">2024-01-07</time>发表</span><span class="level-item"><time dateTime="2026-02-21T09:20:53.000Z" title="2026-02-21 17:20:53">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/MIT6-S081/">MIT6.S081</a><span> / </span><a class="link-muted" href="/categories/MIT6-S081/xv6book/">xv6book</a></span><span class="level-item">35 分钟读完 (大约5296个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">MIT6.S081 xv6book chapter3</h1><div class="message message-immersive is-warning article-outdated" role="note" data-outdated-days="365" hidden><div class="message-body"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i><span class="article-outdated-text" data-template="本文最后更新于%s，其中的部分内容可能已经过时。">本文最后更新于<time dateTime="2026-02-21T09:20:53.000Z" title="2026-02-21 17:20:53">2026-02-21</time>，其中的部分内容可能已经过时。</span></div></div><div class="content"><p>第三章的主题是页表，单看页表会很抽象，但页表背后的思想是地址空间的隔离。让每个进程都有自己的地址空间，保护地址空间不受他人侵犯。同时，页表管理的“页”，页内地址连续，以页为单位，避免页表过于庞大（多级页表也是为了实现这个目标）。同时，虚拟空间到物理空间的映射，多了几分实用trick，比如内核采用直接映射、内核页表下的guard page（未映射）、内核和用户相同的映射（trampoline page，多对一映射）。</p>
 <p>本节融合了<a target="_blank" rel="noopener" href="https://mit-public-courses-cn-translatio.gitbook.io/mit6-s081/lec04-page-tables-frans">课程lec04的内容</a>。虚拟地址的抽象是为了程序的隔离性，理解这点后就很容易了。</p>
 <span id="more"></span>
 
@@ -56,13 +58,13 @@
 <p><img src="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091730189.png"></p>
 <p>这里的基本概念也很简单直观，我们给包括内核在内的所有程序专属的地址空间。每个应用程序都能看到0～n的地址空间，同时它们都认为这些地址空间都是自己专有的，其他进程无法访问。换句话说，这些地址空间彼此独立。</p>
 <p>所以现在我们的问题是如何在一个物理内存上，创建不同的地址空间，因为归根到底，我们使用的还是一堆存放了内存信息的DRAM芯片。如何在一个物理内存上，创建不同的地址空间？最常见的方法，同时也是非常灵活的一种方法就是使用页表（Page Tables）。</p>
-<h1 id="页表"><a href="#页表" class="headerlink" title="页表"></a>页表</h1><p>页表是在硬件中通过处理器和<strong>内存管理单元（Memory Management Unit）</strong>实现。</p>
+<h1 id="页表"><a href="#页表" class="headerlink" title="页表"></a>页表</h1><p>页表是在硬件中通过处理器和**内存管理单元（Memory Management Unit）**实现。</p>
 <p>对于任何一条带有地址的指令，其中的地址应该认为是虚拟内存地址而不是物理地址。虚拟内存地址会被转到内存管理单元，内存管理单元会将虚拟地址翻译成物理地址。之后这个物理地址会被用来索引物理内存，并从物理内存加载，或者向物理内存存储数据。</p>
 <p><strong>从CPU的角度来说，一旦MMU打开了，它执行的每条指令中的地址都是虚拟内存地址。</strong></p>
 <p><img src="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091739517.png"></p>
 <p><strong>怎么完成虚拟地址到物理地址的翻译呢？答案就是页表。MMU会有一个表单，表单中，一边是虚拟内存地址，另一边是物理内存地址。</strong></p>
 <p>同时，<strong>这张表单也需要保存在物理地址中</strong>，在运行时加载进内存。所以，CPU中需要有一些寄存器用来存放表单在物理内存中的地址（假设这个位置的物理内存地址是0x10，那么在<strong>RISC-V上一个叫做SATP的寄存器</strong>会保存地址0x10）。这样，CPU就可以告诉MMU，可以从哪找到将虚拟内存地址翻译成物理内存地址的表单。</p>
-<p>那么，地址隔离的基本想法是每个应用程序都有自己独立的表单，并且这个表单定义了应用程序的地址空间。<strong>当操作系统将CPU从一个应用程序切换到另一个应用程序时，同时也需要切换SATP寄存器中的内容，从而指向新的进程保存在物理内存中的地址对应表单。</strong>这样的话，cat程序和Shell程序中相同的虚拟内存地址，就可以翻译到不同的物理内存地址，因为每个应用程序都有属于自己的不同的地址对应表单。</p>
+<p>那么，地址隔离的基本想法是每个应用程序都有自己独立的表单，并且这个表单定义了应用程序的地址空间。**当操作系统将CPU从一个应用程序切换到另一个应用程序时，同时也需要切换SATP寄存器中的内容，从而指向新的进程保存在物理内存中的地址对应表单。**这样的话，cat程序和Shell程序中相同的虚拟内存地址，就可以翻译到不同的物理内存地址，因为每个应用程序都有属于自己的不同的地址对应表单。</p>
 <p>还有一个细节，表单是如何映射虚拟地址到物理地址的？如果为每个虚拟地址建立一个条目，那么64位的cpu内存很快就会被耗光。实际情况是以页为单位，每一页对应一条表单条目，每一次地址翻译都是针对一页。所以对于虚拟内存地址，我们可以将它划分为两个部分，index和offset，index用来查找page，offset对应的是一个page中的哪个字节。</p>
 <blockquote>
 <p>学生提问：我想知道4096字节作为一个page，这在物理内存中是连续的吗？</p>
@@ -74,10 +76,10 @@
 <h1 id="多级页表"><a href="#多级页表" class="headerlink" title="多级页表"></a>多级页表</h1><p>首先就是要理解单级页表的实现。</p>
 <p><strong>所谓页表，就是一个连续的数组，这个数组的元素是PTE（Page Table Entries）。</strong></p>
 <p><img src="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091936531.png"></p>
-<p>在xv6的实现上，一个进程都有自己的一个页表，这个页表就是一个64位的指针，指向数组开头地址。单级页表使用27位bit作为索引，这意味着，页表的大小也必须是这么大。<strong>在进程初始化时，必须分配2^27 * PTE大小的一个连续空间，作为存放PTE的仓库。</strong>这个仓库一开始是空的，尽管能通过索引访问仓库中的第k个PTE，但这个PTE的有效标识位是false，此时分配一个物理地址，将物理地址的高44位分配给PPN，这个PTE就有效了。</p>
+<p>在xv6的实现上，一个进程都有自己的一个页表，这个页表就是一个64位的指针，指向数组开头地址。单级页表使用27位bit作为索引，这意味着，页表的大小也必须是这么大。**在进程初始化时，必须分配2^27 * PTE大小的一个连续空间，作为存放PTE的仓库。**这个仓库一开始是空的，尽管能通过索引访问仓库中的第k个PTE，但这个PTE的有效标识位是false，此时分配一个物理地址，将物理地址的高44位分配给PPN，这个PTE就有效了。</p>
 <p><img src="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202401091937895.png"></p>
-<p>再看多级页表，xv6上实现的是3级页表，每个页表的大小是2^9<em>PTE大小。SATP寄存器会指向<strong>最高一级的page directory</strong>的物理内存地址，之后我们用虚拟内存中index的高9bit用来索引最高一级的page directory，这样我们就能得到一个PPN，也就是物理page号。这个PPN指向了<strong>中间级的page directory。</strong>当我们在使用中间级的page directory时，我们通过虚拟内存地址中的L1部分完成索引。接下来会走到最低级的page directory，我们通过虚拟内存地址中的L0部分完成索引。*<em>在最低级的page directory中，我们可以得到对应于虚拟内存地址的物理内存地址。</em></em></p>
-<p><strong>多级页表的好处就在于能够按需分配小页表。</strong>如果进程使用很少的地址空间，譬如只需要一个页面，那么在多级页表下只需要分配3个页表，大小是$3<em>512</em>PTE$。而在单级页表下，尽管我们只需要一个页，但仍然需要分配2^ 27*PTE大小的一个页表。</p>
+<p>再看多级页表，xv6上实现的是3级页表，每个页表的大小是2^9*PTE大小。SATP寄存器会指向<strong>最高一级的page directory</strong>的物理内存地址，之后我们用虚拟内存中index的高9bit用来索引最高一级的page directory，这样我们就能得到一个PPN，也就是物理page号。这个PPN指向了**中间级的page directory。**当我们在使用中间级的page directory时，我们通过虚拟内存地址中的L1部分完成索引。接下来会走到最低级的page directory，我们通过虚拟内存地址中的L0部分完成索引。<strong>在最低级的page directory中，我们可以得到对应于虚拟内存地址的物理内存地址。</strong></p>
+<p>*<em>多级页表的好处就在于能够按需分配小页表。*<em>如果进程使用很少的地址空间，譬如只需要一个页面，那么在多级页表下只需要分配3个页表，大小是$3</em>512*PTE$。而在单级页表下，尽管我们只需要一个页，但仍然需要分配2^ 27</em>PTE大小的一个页表。</p>
 <p><strong>多级页表的坏处就在于访问内存多次。</strong></p>
 <p>a potential downside of three levels is that the CPU must load three PTEs from memory to perform the translation of the virtual address in the load&#x2F;store instruction to a physical address</p>
 <p><strong>PTE为什么存的是物理地址而不是虚拟地址？其实PTE存的是物理地址的高44位。</strong></p>
@@ -123,7 +125,7 @@
 </blockquote>
 <blockquote>
 <p>学生提问：对于walk函数，我有一个比较困惑的地方，在写完SATP寄存器之后，内核还能直接访问物理地址吗？在代码里面看起来像是通过page table将虚拟地址翻译成了物理地址，但是这个时候SATP已经被设置了，得到的物理地址不会被认为是虚拟地址吗？</p>
-<p>Frans教授：<strong>让我们来看kvminithart函数，这里的kernel_page_table是一个物理地址，并写入到SATP寄存器中。从那以后，我们的代码运行在一个我们构建出来的地址空间中。</strong>在之前的kvminit函数中，kvmmap会对每个地址或者每个page调用walk函数。</p>
+<p>Frans教授：**让我们来看kvminithart函数，这里的kernel_page_table是一个物理地址，并写入到SATP寄存器中。从那以后，我们的代码运行在一个我们构建出来的地址空间中。**在之前的kvminit函数中，kvmmap会对每个地址或者每个page调用walk函数。</p>
 <p>学生提问：我想知道，在SATP寄存器设置完之后，walk是不是还是按照相同的方式工作？</p>
 <p>Frans：是的。它还能工作的原因是，内核设置了虚拟地址等于物理地址的映射关系，这里很重要，因为很多地方能工作的原因都是因为内核设置的地址映射关系是相同的。</p>
 </blockquote>
@@ -138,7 +140,7 @@
 <p>学生提问：为什么物理地址最上面一大块标为未被使用？</p>
 <p>Frans教授：物理地址总共有2^56那么多，但是你不用在主板上接入那么多的内存。所以不论主板上有多少DRAM芯片，总是会有一部分物理地址没有被用到。实际上在XV6中，我们限制了内存的大小是128MB。</p>
 </blockquote>
-<p>接下来我会切换到第一张图的左边，这就是XV6的虚拟内存地址空间。<strong>当机器刚刚启动时，还没有可用的page，XV6操作系统会设置内核使用的虚拟地址空间，也就是这张图左边的地址分布。</strong>因为我们想让XV6尽可能的简单易懂，所以这里的虚拟地址到物理地址的映射，大部分是相等的关系。比如说内核会按照这种方式设置page table，虚拟地址0x02000000对应物理地址0x02000000。这意味着左侧低于PHYSTOP的虚拟地址，与右侧使用的物理地址是一样的。</p>
+<p>接下来我会切换到第一张图的左边，这就是XV6的虚拟内存地址空间。**当机器刚刚启动时，还没有可用的page，XV6操作系统会设置内核使用的虚拟地址空间，也就是这张图左边的地址分布。**因为我们想让XV6尽可能的简单易懂，所以这里的虚拟地址到物理地址的映射，大部分是相等的关系。比如说内核会按照这种方式设置page table，虚拟地址0x02000000对应物理地址0x02000000。这意味着左侧低于PHYSTOP的虚拟地址，与右侧使用的物理地址是一样的。</p>
 <p>除此之外，这里还有两件重要的事情：</p>
 <p><strong>第一件事情是内核栈的映射。</strong></p>
 <ul>
@@ -146,7 +148,7 @@
 <li>kernel stack对应的物理地址被映射两次，一次是在高位的PHYSTOP下，另一次是在Kernel data中。就是说，有两个虚拟地址对应同一个物理地址。实际只用高位的虚拟地址，因为有guard page，更加安全。</li>
 </ul>
 <p>这是众多你可以通过page table实现的有意思的事情之一。你可以向同一个物理地址映射两个虚拟地址，你可以不将一个虚拟地址映射到物理地址。可以是一对一的映射，一对多映射，多对一映射。</p>
-<p><strong>第二件事情是权限。</strong>例如Kernel text page被标位R-X，意味着你可以读它，也可以在这个地址段执行指令，但是你不能向Kernel text写数据。通过设置权限我们可以尽早的发现Bug从而避免Bug。对于Kernel data需要能被写入，所以它的标志位是RW-，但是你不能在这个地址段运行指令，所以它的X标志位未被设置。（注，所以，kernel text用来存代码，代码可以读，可以运行，但是不能篡改，kernel data用来存数据，数据可以读写，但是不能通过数据伪装代码在kernel中运行）</p>
+<p>**第二件事情是权限。**例如Kernel text page被标位R-X，意味着你可以读它，也可以在这个地址段执行指令，但是你不能向Kernel text写数据。通过设置权限我们可以尽早的发现Bug从而避免Bug。对于Kernel data需要能被写入，所以它的标志位是RW-，但是你不能在这个地址段运行指令，所以它的X标志位未被设置。（注，所以，kernel text用来存代码，代码可以读，可以运行，但是不能篡改，kernel data用来存数据，数据可以读写，但是不能通过数据伪装代码在kernel中运行）</p>
 <blockquote>
 <p>学生提问：对于不同的进程会有不同的kernel stack吗？</p>
 <p>Frans：答案是的。每一个用户进程都有一个对应的kernel stack。</p>
@@ -165,100 +167,675 @@
 <blockquote>
 <p>Frans教授：当kernel创建了一个进程，针对这个进程的page table也会从Free memory中分配出来。内核会为用户进程的page table分配几个page，并填入PTE。在某个时间点，当内核运行了这个进程，内核会将进程的根page table的地址加载到SATP中。从那个时间点开始，处理器会使用内核为那个进程构建虚拟地址空间。</p>
 </blockquote>
-</div><div class="article-licensing box"><div class="licensing-title"><p>MIT6.S081 xv6book chapter3</p><p><a href="https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/">https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-01-07</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/01/07/MIT6.S081/book/chapter4/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">MIT6.S081 xv6book chapter4</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/01/07/MIT6.S081/book/chapter2/"><span class="level-item">MIT6.S081 xv6book chapter2</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#地址空间"><span class="level-left"><span class="level-item">1</span><span class="level-item">地址空间</span></span></a></li><li><a class="level is-mobile" href="#页表"><span class="level-left"><span class="level-item">2</span><span class="level-item">页表</span></span></a></li><li><a class="level is-mobile" href="#多级页表"><span class="level-left"><span class="level-item">3</span><span class="level-item">多级页表</span></span></a></li><li><a class="level is-mobile" href="#页表缓存"><span class="level-left"><span class="level-item">4</span><span class="level-item">页表缓存</span></span></a></li><li><a class="level is-mobile" href="#地址转换是通过硬件进行的"><span class="level-left"><span class="level-item">5</span><span class="level-item">地址转换是通过硬件进行的</span></span></a></li><li><a class="level is-mobile" href="#内核地址空间的映射"><span class="level-left"><span class="level-item">6</span><span class="level-item">内核地址空间的映射</span></span></a></li><li><a class="level is-mobile" href="#物理空间的分配"><span class="level-left"><span class="level-item">7</span><span class="level-item">物理空间的分配</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/AI/"><span class="level-start"><span class="level-item">AI</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">15</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
-            article: {
-                highlight: {
-                    clipboard: true,
-                    fold: 'unfolded'
-                }
-            }
-        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
-            if (typeof $.fn.lightGallery === 'function') {
-                $('.article').lightGallery({ selector: '.gallery-item' });
-            }
-            if (typeof $.fn.justifiedGallery === 'function') {
-                if ($('.justified-gallery > p > .gallery-item').length) {
-                    $('.justified-gallery > p > .gallery-item').unwrap();
-                }
-                $('.justified-gallery').justifiedGallery();
-            }
-        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
-            'HTML-CSS': {
-                matchFontHeight: false
-            },
-            SVG: {
-                matchFontHeight: false
-            },
-            CommonHTML: {
-                matchFontHeight: false
-            },
-            tex2jax: {
-                inlineMath: [
-                    ['$','$'],
-                    ['\\(','\\)']
-                ]
-            }
-        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
-            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
-        });</script><!-- hexo injector body_end start --><script>(function () {
-  var KEY = 'hexo-theme-mode';
-
-  function current() {
-    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-  }
-
-  function syncHighlight(dark) {
-    var hl = document.querySelector('link[href*="highlight.js"][href*="atom-one-"]');
-    if (!hl) return;
-    hl.href = dark
-      ? hl.href.replace('atom-one-light.css', 'atom-one-dark.css')
-      : hl.href.replace('atom-one-dark.css', 'atom-one-light.css');
-  }
-
-  function apply(t) {
-    var dark = t === 'dark';
-    document.documentElement.setAttribute('data-theme', t);
-    document.documentElement.style.colorScheme = t;
-    var link = document.getElementById('dark-mode-css');
-    if (link) link.media = dark ? 'all' : 'not all';
-    syncHighlight(dark);
-    var btn = document.getElementById('dark-mode-toggle');
-    if (btn) {
-      btn.innerHTML = '<i class="fas fa-moon"></i>';
-      btn.title = dark ? '切换到浅色模式' : '切换到深色模式';
-      btn.setAttribute('aria-label', btn.title);
+</div><div class="article-licensing box"><div class="licensing-title"><p>MIT6.S081 xv6book chapter3</p><p><a href="https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/">https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-01-07</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="hexo-component-share" data-share-provider="web_share" data-url="https://xyz.desirer233.fun/2024/01/07/MIT6.S081/book/chapter3/" data-title="MIT6.S081 xv6book chapter3"><div class="buttons is-centered"><a class="button" style="background-color:#000000;border-color:#000000;color:#ffffff" data-share-network="x" href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fxyz.desirer233.fun%2F2024%2F01%2F07%2FMIT6.S081%2Fbook%2Fchapter3%2F&amp;text=MIT6.S081%20xv6book%20chapter3" target="_blank" rel="noopener noreferrer" aria-label="Share on X"><span class="icon" aria-hidden="true"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3L12 14.6 5.5 22H2.4l7.9-9L.8 2h6.5l4.5 6.7L18.9 2Zm-1.1 18h1.7L6.4 3.9H4.6L17.8 20Z"></path></svg></span><span>X</span></a><a class="button" style="background-color:#0866ff;border-color:#0866ff;color:#ffffff" data-share-network="facebook" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fxyz.desirer233.fun%2F2024%2F01%2F07%2FMIT6.S081%2Fbook%2Fchapter3%2F" target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook"><span class="icon" aria-hidden="true"><i class="fab fa-facebook-f"></i></span><span>Facebook</span></a><a class="button" style="background-color:#e6162d;border-color:#e6162d;color:#ffffff" data-share-network="weibo" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fxyz.desirer233.fun%2F2024%2F01%2F07%2FMIT6.S081%2Fbook%2Fchapter3%2F&amp;title=MIT6.S081%20xv6book%20chapter3" target="_blank" rel="noopener noreferrer" aria-label="Share on Weibo"><span class="icon" aria-hidden="true"><i class="fab fa-weibo"></i></span><span>Weibo</span></a><a class="button" style="background-color:#26a5e4;border-color:#26a5e4;color:#ffffff" data-share-network="telegram" href="https://t.me/share/url?url=https%3A%2F%2Fxyz.desirer233.fun%2F2024%2F01%2F07%2FMIT6.S081%2Fbook%2Fchapter3%2F&amp;text=MIT6.S081%20xv6book%20chapter3" target="_blank" rel="noopener noreferrer" aria-label="Share on Telegram"><span class="icon" aria-hidden="true"><i class="fab fa-telegram-plane"></i></span><span>Telegram</span></a><a class="button" style="background-color:#0a66c2;border-color:#0a66c2;color:#ffffff" data-share-network="linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fxyz.desirer233.fun%2F2024%2F01%2F07%2FMIT6.S081%2Fbook%2Fchapter3%2F" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn"><span class="icon" aria-hidden="true"><i class="fab fa-linkedin-in"></i></span><span>LinkedIn</span></a><span class="has-text-centered" data-share-native="" hidden><button class="button" type="button" hidden><span class="icon" aria-hidden="true"><i class="fas fa-share-alt"></i></span><span>更多</span></button></span></div><p role="status" hidden>System sharing is unavailable in this browser. You can use the platform buttons above.</p></div><script>(function () {
+      function shareUrl(network, url, title) {
+  var link = encodeURIComponent(url);
+  var text = encodeURIComponent(title);
+  return {
+    x: 'https://twitter.com/intent/tweet?url=' + link + '&text=' + text,
+    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + link,
+    weibo: 'https://service.weibo.com/share/share.php?url=' + link + '&title=' + text,
+    telegram: 'https://t.me/share/url?url=' + link + '&text=' + text,
+    linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + link
+  }[network];
+}
+      document.querySelectorAll('.hexo-component-share').forEach(function (container) {
+        var button = container.querySelector('button');
+        var status = container.querySelector('[role="status"]');
+        var native = container.querySelector('[data-share-native]');
+        var data = { title: container.dataset.title || document.title, url: container.dataset.url || window.location.href };
+        container.querySelectorAll('[data-share-network]').forEach(function (link) {
+          link.href = shareUrl(link.dataset.shareNetwork, data.url, data.title);
+        });
+        button.hidden = false;
+        native.hidden = false;
+        button.disabled = typeof navigator.share !== 'function';
+        status.hidden = !button.disabled;
+        button.onclick = async function () {
+          status.hidden = true;
+          try {
+            await navigator.share({ title: container.dataset.title || document.title, url: container.dataset.url || window.location.href });
+          } catch (error) {
+            if (error && error.name === 'AbortError') return;
+            status.hidden = false;
+          }
+        };
+      });
+    })();</script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/01/07/MIT6.S081/book/chapter4/"><i class="level-item fas fa-chevron-left" aria-hidden="true"></i><span class="level-item">MIT6.S081 xv6book chapter4</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/01/07/MIT6.S081/book/chapter2/"><span class="level-item">MIT6.S081 xv6book chapter2</span><i class="level-item fas fa-chevron-right" aria-hidden="true"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#地址空间"><span class="level-left"><span class="level-item">1</span><span class="level-item">地址空间</span></span></a></li><li><a class="level is-mobile" href="#页表"><span class="level-left"><span class="level-item">2</span><span class="level-item">页表</span></span></a></li><li><a class="level is-mobile" href="#多级页表"><span class="level-left"><span class="level-item">3</span><span class="level-item">多级页表</span></span></a></li><li><a class="level is-mobile" href="#页表缓存"><span class="level-left"><span class="level-item">4</span><span class="level-item">页表缓存</span></span></a></li><li><a class="level is-mobile" href="#地址转换是通过硬件进行的"><span class="level-left"><span class="level-item">5</span><span class="level-item">地址转换是通过硬件进行的</span></span></a></li><li><a class="level is-mobile" href="#内核地址空间的映射"><span class="level-left"><span class="level-item">6</span><span class="level-item">内核地址空间的映射</span></span></a></li><li><a class="level is-mobile" href="#物理空间的分配"><span class="level-left"><span class="level-item">7</span><span class="level-item">物理空间的分配</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/AI/"><span class="level-start"><span class="level-item">AI</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">15</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p><p class="is-size-7"><a href="https://beian.miit.gov.cn" target="_blank" rel="noopener">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/" aria-label="Creative Commons"><i class="fab fa-creative-commons" aria-hidden="true"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/" aria-label="Attribution 4.0 International"><i class="fab fa-creative-commons-by" aria-hidden="true"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus" aria-label="Download on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js" defer></script><script>(function installGallery(window) {
+  if (window.HexoGallery) return;
+  const document = window.document;
+  const requests = new Map();
+  const layouts = new Map();
+  const lightboxes = new Map();
+  function destroyLightbox(container) {
+    const state = lightboxes.get(container);
+    if (!state) return;
+    container.removeEventListener('click', state.click);
+    // The SDK removes its container through parentNode, even after a host replaced the body.
+    const dialog = state.instance.$container && state.instance.$container.get();
+    if (dialog && !dialog.parentNode) {
+      dialog.style.display = 'none';
+      document.body.appendChild(dialog);
     }
+    if (state.instance.lgOpened) {
+      state.instance.settings.startAnimationDuration = 0;
+      state.instance.settings.backdropDuration = 0;
+    }
+    state.instance.destroy();
+    lightboxes.delete(container);
   }
-
-  function init() {
-    var end = document.querySelector('.navbar-main .navbar-end');
-    if (!end) return;
-    var a = document.createElement('a');
-    a.className = 'navbar-item';
-    a.id = 'dark-mode-toggle';
-    a.href = 'javascript:;';
-    a.title = '切换到深色模式';
-    a.addEventListener('click', function (e) {
-      e.preventDefault();
-      var t = current() === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem(KEY, t); } catch (err) {}
-      apply(t);
-    });
-    end.appendChild(a);
-    apply(current());
-
-    if (window.matchMedia) {
-      var mq = window.matchMedia('(prefers-color-scheme: dark)');
-      var onChange = function (e) {
-        var saved = null;
-        try { saved = localStorage.getItem(KEY); } catch (err) {}
-        if (!saved) apply(e.matches ? 'dark' : 'light');
+  function lightbox(container, enabled) {
+    if (!enabled) {
+      destroyLightbox(container);
+      return;
+    }
+    if (typeof window.lightGallery !== 'function') return;
+    const plugins = (window.HexoGallery.lightGalleryPlugins || []).map(name => window[name]);
+    if (plugins.some(plugin => typeof plugin !== 'function')) return;
+    const items = Array.from(container.querySelectorAll('a.gallery-item[href]'));
+    if (!items.length) {
+      destroyLightbox(container);
+      return;
+    }
+    const elements = items.map(link => {
+      const image = link.querySelector('img');
+      const caption = document.createElement('span');
+      caption.textContent = image ? image.alt : '';
+      return {
+        src: link.href,
+        thumb: image ? image.currentSrc || image.src : link.href,
+        subHtml: caption.innerHTML,
+        alt: caption.innerHTML.replace(/"/g, '&quot;')
       };
-      if (mq.addEventListener) mq.addEventListener('change', onChange);
-      else if (mq.addListener) mq.addListener(onChange);
+    });
+    const signature = JSON.stringify(elements);
+    let state = lightboxes.get(container);
+    if (state) {
+      if (!sameItems(state.items, items) || state.signature !== signature) {
+        if (state.instance.lgOpened) {
+          state.instance.updateSlides(elements, Math.min(state.instance.index, elements.length - 1));
+        } else {
+          state.instance.refresh(elements);
+        }
+        state.items = items;
+        state.signature = signature;
+      }
+      return;
+    }
+    const instance = window.lightGallery(container, {
+      dynamic: true,
+      dynamicEl: elements,
+      plugins
+    });
+    state = {
+      instance,
+      items,
+      signature,
+      click: null
+    };
+    state.click = event => {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const link = event.target.closest('a.gallery-item');
+      const index = state.items.indexOf(link);
+      if (index < 0) return;
+      event.preventDefault();
+      instance.openGallery(index, link);
+    };
+    container.addEventListener('click', state.click);
+    lightboxes.set(container, state);
+  }
+  function sameItems(items, current) {
+    return items.length === current.length && Array.from(items).every((item, i) => item === current[i]);
+  }
+  function enhance(container) {
+    container.querySelectorAll('img:not(.not-gallery-item)').forEach(image => {
+      // Third-party SDK icons are controls, not article images. Script-load retries also
+      // scan icons inserted after the article's initial enhancement.
+      if (image.closest('a, .sharethis-inline-share-buttons, .a2a_kit, [data-share-provider]')) return;
+      const link = document.createElement('a');
+      link.className = 'gallery-item';
+      const src = image.getAttribute('src');
+      if (src !== null) link.setAttribute('href', src);
+      image.parentNode.insertBefore(link, image);
+      link.appendChild(image);
+      if (image.alt) {
+        const caption = document.createElement('p');
+        caption.className = 'has-text-centered is-size-6 caption';
+        caption.textContent = image.alt;
+        link.appendChild(caption);
+      }
+    });
+  }
+  function apply(root, options) {
+    const containers = root === document ? root.querySelectorAll('.article') : [root];
+    containers.forEach(enhance);
+    // Do not capture an incomplete article while HTML is still being parsed.
+    if (document.readyState === 'loading') return;
+    containers.forEach(container => lightbox(container, options.lightGallery));
+    if (options.justifiedGallery && typeof window.JustifiedGallery === 'function') {
+      const galleries = Array.from(root.querySelectorAll('.justified-gallery'));
+      if (root !== document && root.matches('.justified-gallery')) galleries.unshift(root);
+      galleries.forEach(gallery => {
+        const paragraphs = new Set(Array.from(gallery.querySelectorAll(':scope > p > .gallery-item'), link => link.parentNode));
+        paragraphs.forEach(paragraph => {
+          paragraph.replaceWith(...paragraph.childNodes);
+        });
+        gallery.querySelectorAll(':scope > .gallery-item > .caption').forEach(caption => {
+          caption.classList.add('jg-caption');
+        });
+        let state = layouts.get(gallery);
+        const items = () => Array.from(gallery.children).filter(item => !item.classList.contains('jg-spinner') && (item.matches(state.instance.settings.selector) || item.matches('div')));
+        if (state) {
+          if (sameItems(state.items, items())) return;
+          // init refreshes entries but starts another width watcher; stop and rewind first.
+          state.instance.widthWatcher.stop();
+          state.instance.stopImgAnalyzerStarter();
+          state.instance.rewind();
+        } else {
+          // The SDK reuses .jg-caption and safely creates captions for pre-existing links.
+          state = {
+            instance: new window.JustifiedGallery(gallery)
+          };
+          layouts.set(gallery, state);
+        }
+        state.instance.init();
+        state.items = items();
+      });
     }
   }
+  function prune() {
+    layouts.forEach((state, gallery) => {
+      if (!gallery.isConnected) destroyLayout(gallery);
+    });
+    lightboxes.forEach((state, container) => {
+      if (!container.isConnected) destroyLightbox(container);
+    });
+    requests.forEach((options, root) => {
+      if (root !== document && !root.isConnected) requests.delete(root);
+    });
+  }
+  function destroyLayout(gallery) {
+    const {
+      instance
+    } = layouts.get(gallery);
+    // The SDK's destroy does not stop an active loading spinner.
+    instance.stopLoadingSpinnerAnimation();
+    instance.destroy();
+    layouts.delete(gallery);
+  }
+  function retry() {
+    prune();
+    requests.forEach((options, root) => apply(root, options));
+  }
+  window.HexoGallery = {
+    /**
+     * Enhance images in a content container, optionally initializing the two Gallery SDKs.
+     * Repeated calls reuse existing wrappers, captions and plugin instances. Missing SDKs can be
+     * retried by calling init again; DOM ready, window load and subsequent script loads also retry
+     * connected containers with their latest options. SDK initialization waits for DOM readiness.
+     * Changed item collections refresh their existing SDK instance. Disabling the lightbox destroys
+     * it; the independently managed layout plugin is unchanged.
+     * @param {Document|Element} [root=document] Content container; document targets .article images
+     *     and lightboxes, and all .justified-gallery elements.
+     * @param {Object} [options={}] SDK opt-ins; omitted flags disable plugin initialization.
+     * @param {boolean} [options.lightGallery=false] Initialize lightGallery when available.
+     * @param {boolean} [options.justifiedGallery=false] Initialize justifiedGallery when available.
+     */
+    init: function (root, options) {
+      root = root || document;
+      options = options || {};
+      const enabled = {
+        lightGallery: options.lightGallery === true,
+        justifiedGallery: options.justifiedGallery === true
+      };
+      prune();
+      requests.set(root, enabled);
+      apply(root, enabled);
+    },
+    /** Destroy lightboxes, layouts and pending retries before content is replaced (e.g. PJAX). */
+    destroy: function (root) {
+      root = root || document;
+      lightboxes.forEach((state, container) => {
+        if (root === document || root === container || root.contains(container)) destroyLightbox(container);
+      });
+      layouts.forEach((state, gallery) => {
+        if (root === document || root === gallery || root.contains(gallery)) destroyLayout(gallery);
+      });
+      requests.forEach((options, target) => {
+        if (root === document || root === target || root.contains(target)) requests.delete(target);
+      });
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', retry, {
+      once: true
+    });
+  }
+  if (document.readyState !== 'complete') window.addEventListener('load', retry, {
+    once: true
+  });
+  document.addEventListener('hexo:gallery:ready', retry);
+  // Deferred scripts may arrive after init, including on the first enabled page reached by PJAX.
+  // Retry the latest requests, rather than capturing a previous page's enabled configuration.
+  document.addEventListener('load', event => {
+    if (event.target.tagName === 'SCRIPT') retry();
+  }, true);
+})(window);</script><script data-pjax>var IcarusThemeSettings = {"gallery":true,"article":{"highlight":{"clipboard":true,"fold":"folded","fold_preview":20}},"i18n":{"copy":"复制","copied":"已复制！"}};
+if (document.readyState !== 'loading') {
+    window.HexoGallery.init(document, {
+        lightGallery: IcarusThemeSettings.gallery,
+        justifiedGallery: IcarusThemeSettings.gallery
+    });
+}</script><script data-pjax src="/js/column.js"></script><script src="/js/navbar.js" defer></script><script src="/js/github-calendar.js" defer></script><script src="/js/pjax-page.js"></script><script src="/js/pjax-prefetch.js"></script><script src="/js/animation.js" onerror="document.documentElement.classList.remove(&#039;is-animating&#039;)"></script><button type="button" id="back-to-top" title="回到顶端" aria-label="回到顶端"><i class="fas fa-chevron-up" aria-hidden="true"></i></button><script data-pjax src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/plugins/zoom/lg-zoom.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/plugins/thumbnail/lg-thumbnail.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/plugins/fullscreen/lg-fullscreen.min.js" defer></script><script>(function installGallery(window) {
+  if (window.HexoGallery) return;
+  const document = window.document;
+  const requests = new Map();
+  const layouts = new Map();
+  const lightboxes = new Map();
+  function destroyLightbox(container) {
+    const state = lightboxes.get(container);
+    if (!state) return;
+    container.removeEventListener('click', state.click);
+    // The SDK removes its container through parentNode, even after a host replaced the body.
+    const dialog = state.instance.$container && state.instance.$container.get();
+    if (dialog && !dialog.parentNode) {
+      dialog.style.display = 'none';
+      document.body.appendChild(dialog);
+    }
+    if (state.instance.lgOpened) {
+      state.instance.settings.startAnimationDuration = 0;
+      state.instance.settings.backdropDuration = 0;
+    }
+    state.instance.destroy();
+    lightboxes.delete(container);
+  }
+  function lightbox(container, enabled) {
+    if (!enabled) {
+      destroyLightbox(container);
+      return;
+    }
+    if (typeof window.lightGallery !== 'function') return;
+    const plugins = (window.HexoGallery.lightGalleryPlugins || []).map(name => window[name]);
+    if (plugins.some(plugin => typeof plugin !== 'function')) return;
+    const items = Array.from(container.querySelectorAll('a.gallery-item[href]'));
+    if (!items.length) {
+      destroyLightbox(container);
+      return;
+    }
+    const elements = items.map(link => {
+      const image = link.querySelector('img');
+      const caption = document.createElement('span');
+      caption.textContent = image ? image.alt : '';
+      return {
+        src: link.href,
+        thumb: image ? image.currentSrc || image.src : link.href,
+        subHtml: caption.innerHTML,
+        alt: caption.innerHTML.replace(/"/g, '&quot;')
+      };
+    });
+    const signature = JSON.stringify(elements);
+    let state = lightboxes.get(container);
+    if (state) {
+      if (!sameItems(state.items, items) || state.signature !== signature) {
+        if (state.instance.lgOpened) {
+          state.instance.updateSlides(elements, Math.min(state.instance.index, elements.length - 1));
+        } else {
+          state.instance.refresh(elements);
+        }
+        state.items = items;
+        state.signature = signature;
+      }
+      return;
+    }
+    const instance = window.lightGallery(container, {
+      dynamic: true,
+      dynamicEl: elements,
+      plugins
+    });
+    state = {
+      instance,
+      items,
+      signature,
+      click: null
+    };
+    state.click = event => {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const link = event.target.closest('a.gallery-item');
+      const index = state.items.indexOf(link);
+      if (index < 0) return;
+      event.preventDefault();
+      instance.openGallery(index, link);
+    };
+    container.addEventListener('click', state.click);
+    lightboxes.set(container, state);
+  }
+  function sameItems(items, current) {
+    return items.length === current.length && Array.from(items).every((item, i) => item === current[i]);
+  }
+  function enhance(container) {
+    container.querySelectorAll('img:not(.not-gallery-item)').forEach(image => {
+      // Third-party SDK icons are controls, not article images. Script-load retries also
+      // scan icons inserted after the article's initial enhancement.
+      if (image.closest('a, .sharethis-inline-share-buttons, .a2a_kit, [data-share-provider]')) return;
+      const link = document.createElement('a');
+      link.className = 'gallery-item';
+      const src = image.getAttribute('src');
+      if (src !== null) link.setAttribute('href', src);
+      image.parentNode.insertBefore(link, image);
+      link.appendChild(image);
+      if (image.alt) {
+        const caption = document.createElement('p');
+        caption.className = 'has-text-centered is-size-6 caption';
+        caption.textContent = image.alt;
+        link.appendChild(caption);
+      }
+    });
+  }
+  function apply(root, options) {
+    const containers = root === document ? root.querySelectorAll('.article') : [root];
+    containers.forEach(enhance);
+    // Do not capture an incomplete article while HTML is still being parsed.
+    if (document.readyState === 'loading') return;
+    containers.forEach(container => lightbox(container, options.lightGallery));
+    if (options.justifiedGallery && typeof window.JustifiedGallery === 'function') {
+      const galleries = Array.from(root.querySelectorAll('.justified-gallery'));
+      if (root !== document && root.matches('.justified-gallery')) galleries.unshift(root);
+      galleries.forEach(gallery => {
+        const paragraphs = new Set(Array.from(gallery.querySelectorAll(':scope > p > .gallery-item'), link => link.parentNode));
+        paragraphs.forEach(paragraph => {
+          paragraph.replaceWith(...paragraph.childNodes);
+        });
+        gallery.querySelectorAll(':scope > .gallery-item > .caption').forEach(caption => {
+          caption.classList.add('jg-caption');
+        });
+        let state = layouts.get(gallery);
+        const items = () => Array.from(gallery.children).filter(item => !item.classList.contains('jg-spinner') && (item.matches(state.instance.settings.selector) || item.matches('div')));
+        if (state) {
+          if (sameItems(state.items, items())) return;
+          // init refreshes entries but starts another width watcher; stop and rewind first.
+          state.instance.widthWatcher.stop();
+          state.instance.stopImgAnalyzerStarter();
+          state.instance.rewind();
+        } else {
+          // The SDK reuses .jg-caption and safely creates captions for pre-existing links.
+          state = {
+            instance: new window.JustifiedGallery(gallery)
+          };
+          layouts.set(gallery, state);
+        }
+        state.instance.init();
+        state.items = items();
+      });
+    }
+  }
+  function prune() {
+    layouts.forEach((state, gallery) => {
+      if (!gallery.isConnected) destroyLayout(gallery);
+    });
+    lightboxes.forEach((state, container) => {
+      if (!container.isConnected) destroyLightbox(container);
+    });
+    requests.forEach((options, root) => {
+      if (root !== document && !root.isConnected) requests.delete(root);
+    });
+  }
+  function destroyLayout(gallery) {
+    const {
+      instance
+    } = layouts.get(gallery);
+    // The SDK's destroy does not stop an active loading spinner.
+    instance.stopLoadingSpinnerAnimation();
+    instance.destroy();
+    layouts.delete(gallery);
+  }
+  function retry() {
+    prune();
+    requests.forEach((options, root) => apply(root, options));
+  }
+  window.HexoGallery = {
+    /**
+     * Enhance images in a content container, optionally initializing the two Gallery SDKs.
+     * Repeated calls reuse existing wrappers, captions and plugin instances. Missing SDKs can be
+     * retried by calling init again; DOM ready, window load and subsequent script loads also retry
+     * connected containers with their latest options. SDK initialization waits for DOM readiness.
+     * Changed item collections refresh their existing SDK instance. Disabling the lightbox destroys
+     * it; the independently managed layout plugin is unchanged.
+     * @param {Document|Element} [root=document] Content container; document targets .article images
+     *     and lightboxes, and all .justified-gallery elements.
+     * @param {Object} [options={}] SDK opt-ins; omitted flags disable plugin initialization.
+     * @param {boolean} [options.lightGallery=false] Initialize lightGallery when available.
+     * @param {boolean} [options.justifiedGallery=false] Initialize justifiedGallery when available.
+     */
+    init: function (root, options) {
+      root = root || document;
+      options = options || {};
+      const enabled = {
+        lightGallery: options.lightGallery === true,
+        justifiedGallery: options.justifiedGallery === true
+      };
+      prune();
+      requests.set(root, enabled);
+      apply(root, enabled);
+    },
+    /** Destroy lightboxes, layouts and pending retries before content is replaced (e.g. PJAX). */
+    destroy: function (root) {
+      root = root || document;
+      lightboxes.forEach((state, container) => {
+        if (root === document || root === container || root.contains(container)) destroyLightbox(container);
+      });
+      layouts.forEach((state, gallery) => {
+        if (root === document || root === gallery || root.contains(gallery)) destroyLayout(gallery);
+      });
+      requests.forEach((options, target) => {
+        if (root === document || root === target || root.contains(target)) requests.delete(target);
+      });
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', retry, {
+      once: true
+    });
+  }
+  if (document.readyState !== 'complete') window.addEventListener('load', retry, {
+    once: true
+  });
+  document.addEventListener('hexo:gallery:ready', retry);
+  // Deferred scripts may arrive after init, including on the first enabled page reached by PJAX.
+  // Retry the latest requests, rather than capturing a previous page's enabled configuration.
+  document.addEventListener('load', event => {
+    if (event.target.tagName === 'SCRIPT') retry();
+  }, true);
+})(window);
+window.HexoGallery.lightGalleryPlugins = ["lgZoom","lgThumbnail","lgFullscreen"];
+window.HexoGallery.init(document, {
+        lightGallery: true,
+        justifiedGallery: true
+    });</script><script type="module">import { JustifiedGallery } from "https://cdn.jsdelivr.net/npm/justified-gallery@4.0.2/dist/justified-gallery.js";
+window.JustifiedGallery = JustifiedGallery;
+document.dispatchEvent(new Event('hexo:gallery:ready'));</script><script type="text/javascript">window.MathJax = window.MathJax || {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      output: {
+        font: 'mathjax-newcm',
+        fontPath: "https://cdn.jsdelivr.net/npm/@mathjax/mathjax-newcm-font@4.1.3"
+      }
+    };</script><script id="MathJax-script" defer src="https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.js"></script><!--!--><script src="/js/pjax-core.js"></script><script src="/js/pjax.js"></script><script src="/js/prefetch.js" data-delay="65" defer></script><script data-pjax src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script data-pjax>(function installSearchbox(window) {
+  if (window.loadSearchbox) return;
+  const document = window.document;
+  let current;
+  window.loadSearchbox = function ($main, options) {
+    const $ = window.jQuery;
+    options = options || {};
+    // Preserve focus state only when replacing the controller for the same open DOM element.
+    let opener = current ? current.destroy($main[0]) : null;
+    let touch = false;
+    const $document = $(document);
+    const namespace = '.hexoSearchbox';
+    const controller = {
+      isCurrent: function () {
+        return current === controller && document.contains($main[0]);
+      },
+      destroy: function (nextMain) {
+        if (current !== controller) return null;
+        const nextOpener = nextMain === $main[0] && $main.hasClass('show') ? opener : null;
+        $document.off(namespace);
+        opener = null;
+        current = null;
+        if (options.onDestroy) options.onDestroy();
+        return nextOpener;
+      }
+    };
+    current = controller;
+    function open() {
+      if (!controller.isCurrent()) return;
+      if (!$main.hasClass('show')) {
+        opener = document.activeElement;
+        $main.addClass('show');
+      }
+      $main.find('.searchbox-input').focus();
+    }
+    function close(restoreFocus) {
+      $main.removeClass('show');
+      if (restoreFocus !== false && opener && document.contains(opener)) opener.focus();
+      opener = null;
+    }
+    function isSearchShortcut(e) {
+      if (e.altKey) return false;
+      if (e.ctrlKey || e.metaKey) {
+        return !e.shiftKey && typeof e.key === 'string' && e.key.toLowerCase() === 'k';
+      }
+      // e.key already accounts for the keyboard layout (including Shift).
+      const target = e.target;
+      const typing = target.isContentEditable || /^(input|textarea|select)$/i.test(target.tagName);
+      return e.key === '/' && !typing;
+    }
+    $document.on('click' + namespace, '.navbar-main .search', open).on('click' + namespace + (options.touch ? ' touchend' + namespace : ''), '.searchbox-close, .searchbox .searchbox-mask', e => {
+      if (!controller.isCurrent()) return;
+      if (e.type !== 'click' && !touch) return;
+      if (options.touch) {
+        $('.navbar-main').css('pointer-events', 'none');
+        setTimeout(() => {
+          $('.navbar-main').css('pointer-events', 'auto');
+        }, 400);
+      }
+      close();
+      touch = false;
+    }).on('focusin' + namespace, e => {
+      if (controller.isCurrent() && $main.hasClass('show') && !$main[0].contains(e.target)) {
+        close(false);
+      }
+    }).on('keydown' + namespace, e => {
+      if (!controller.isCurrent()) return;
+      if (isSearchShortcut(e)) {
+        e.preventDefault();
+        open();
+        return;
+      }
+      if (!$main.hasClass('show')) return;
+      if (e.keyCode === 27) close();else if (options.onKeyDown) options.onKeyDown(e);
+    }).on('touchstart' + namespace, () => {
+      touch = true;
+    }).on('touchmove' + namespace, () => {
+      touch = false;
+    });
+    return controller;
+  };
+})(window);
+window.searchInsight = (function createInsightSearch() {
+  const content = {
+    fields: ['title', 'text'],
+    weights: [3, 1]
+  };
+  const taxonomy = {
+    fields: ['name', 'slug'],
+    weights: [1, 1]
+  };
+  const sections = {
+    posts: content,
+    pages: content,
+    categories: taxonomy,
+    tags: taxonomy
+  };
+  function parseKeywords(query) {
+    return query.split(' ').filter(keyword => {
+      return !!keyword;
+    }).map(keyword => {
+      return keyword.toLowerCase();
+    });
+  }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
-})();</script><!-- hexo injector body_end end --></body></html>
+  // Every keyword must occur in at least one own field; keywords may span different fields.
+  function filter(keywords, obj, fields) {
+    const containKeywords = keywords.filter(keyword => {
+      const containFields = fields.filter(field => {
+        if (!Object.prototype.hasOwnProperty.call(obj, field)) {
+          return false;
+        }
+        if (obj[field].toLowerCase().indexOf(keyword) > -1) {
+          return true;
+        }
+        return false;
+      });
+      if (containFields.length > 0) {
+        return true;
+      }
+      return false;
+    });
+    return containKeywords.length === keywords.length;
+  }
+
+  // Count non-overlapping occurrences of a literal lowercase keyword, not a regular expression.
+  function countMatches(text, keyword) {
+    let count = 0;
+    for (let i = text.indexOf(keyword); i !== -1; i = text.indexOf(keyword, i + keyword.length)) {
+      count++;
+    }
+    return count;
+  }
+  function weight(keywords, obj, fields, weights) {
+    let value = 0;
+    keywords.forEach(keyword => {
+      fields.forEach((field, index) => {
+        if (Object.prototype.hasOwnProperty.call(obj, field)) {
+          value += countMatches(obj[field].toLowerCase(), keyword) * weights[index];
+        }
+      });
+    });
+    return value;
+  }
+
+  // Weigh each matching item once. Equal weights retain the input order, including an empty query.
+  function topItems(items, keywords, config) {
+    return items.filter(item => {
+      return filter(keywords, item, config.fields);
+    }).map(item => {
+      return {
+        item,
+        weight: weight(keywords, item, config.fields, config.weights)
+      };
+    }).sort((a, b) => {
+      return b.weight - a.weight;
+    }).slice(0, 5).map(result => {
+      return result.item;
+    });
+  }
+  return function search(json, query) {
+    const keywords = parseKeywords(query);
+    const results = {};
+    Object.keys(sections).forEach(section => {
+      results[section] = topItems(json[section], keywords, sections[section]);
+    });
+    return {
+      keywords,
+      results
+    };
+  };
+})();</script><script data-pjax src="/js/insight.js" defer></script><script data-pjax>function initInsight() {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initInsight, { once: true });
+        } else {
+            initInsight();
+        }</script></body></html>

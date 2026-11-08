@@ -1,28 +1,25 @@
 <!doctype html>
-<html lang="zh"><head><!-- hexo injector head_begin start --><script>(function () {
-  try {
-    var saved = localStorage.getItem('hexo-theme-mode');
-    var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var mode = (saved === 'dark' || saved === 'light') ? saved : (systemDark ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', mode);
-    document.documentElement.style.colorScheme = mode;
-  } catch (e) {}
-})();</script><!-- hexo injector head_begin end --><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>MIT6824笔记八 Aurora - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="本节介绍了一个事务的基本实现方式以及Aurora。 对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。 论文指路：https:&amp;#x2F;&amp;#x2F;pdos.csail.mit.edu&amp;#x2F;6.824&amp;#x2F;papers&amp;#x2F;aurora.pdf"><meta property="og:type" content="blog"><meta property="og:title" content="MIT6824笔记八 Aurora"><meta property="og:url" content="https://xyz.desirer233.fun/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="本节介绍了一个事务的基本实现方式以及Aurora。 对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。 论文指路：https:&amp;#x2F;&amp;#x2F;pdos.csail.mit.edu&amp;#x2F;6.824&amp;#x2F;papers&amp;#x2F;aurora.pdf"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311744168.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311745195.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311749839.png"><meta property="og:image" content="https://pic4.zhimg.com/80/v2-c09698c911b26f2022aa6ac47abd6d3f_720w.webp"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311752583.png"><meta property="article:published_time" content="2024-02-27T01:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T09:20:53.000Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="分布式系统"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311744168.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/"},"headline":"MIT6824笔记八 Aurora","image":["https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311744168.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311745195.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311749839.png","https://pic4.zhimg.com/80/v2-c09698c911b26f2022aa6ac47abd6d3f_720w.webp","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311752583.png"],"datePublished":"2024-02-27T01:00:00.000Z","dateModified":"2026-02-21T09:20:53.000Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"本节介绍了一个事务的基本实现方式以及Aurora。 对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。 论文指路：https:&#x2F;&#x2F;pdos.csail.mit.edu&#x2F;6.824&#x2F;papers&#x2F;aurora.pdf"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><style>#dark-mode-toggle{color:#4a4a4a;transition:color .25s ease}#dark-mode-toggle:hover{color:#58a6ff}[data-theme="dark"] #dark-mode-toggle{color:#f0f6fc}[data-theme="dark"] #dark-mode-toggle:hover{color:#79c0ff}</style><link id="dark-mode-css" rel="stylesheet" href="/css/dark.css" media="not all"><script>(function () {
-  var link = document.getElementById('dark-mode-css');
-  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-  if (link && dark) link.media = 'all';
-  if (dark) {
-    var hl = document.querySelector('link[href*="highlight.js"][href*="atom-one-light.css"]');
-    if (hl) hl.href = hl.href.replace('atom-one-light.css', 'atom-one-dark.css');
-  }
-})();</script><script>
+<html lang="zh-CN" data-appearance-mode="auto" data-appearance="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script src="/js/appearance.js"></script><meta name="color-scheme" content="light dark"><meta><title>MIT6824笔记八 Aurora - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="本节介绍了一个事务的基本实现方式以及Aurora。 对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。 论文指路：https://pdos.csail.mit.edu/6.824/papers/aurora.pdf"><meta property="og:type" content="article"><meta property="og:title" content="MIT6824笔记八 Aurora"><meta property="og:url" content="https://xyz.desirer233.fun/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="本节介绍了一个事务的基本实现方式以及Aurora。 对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。 论文指路：https://pdos.csail.mit.edu/6.824/papers/aurora.pdf"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311744168.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311745195.png"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311749839.png"><meta property="og:image" content="https://pic4.zhimg.com/80/v2-c09698c911b26f2022aa6ac47abd6d3f_720w.webp"><meta property="og:image" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311752583.png"><meta property="article:published_time" content="2024-02-27T01:00:00.000Z"><meta property="article:modified_time" content="2026-02-21T09:20:53.000Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="分布式系统"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311744168.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/"},"headline":"MIT6824笔记八 Aurora","image":["https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311744168.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311745195.png","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311749839.png","https://pic4.zhimg.com/80/v2-c09698c911b26f2022aa6ac47abd6d3f_720w.webp","https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311752583.png"],"datePublished":"2024-02-27T01:00:00.000Z","dateModified":"2026-02-21T09:20:53.000Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"本节介绍了一个事务的基本实现方式以及Aurora。 对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。 论文指路：https://pdos.csail.mit.edu/6.824/papers/aurora.pdf"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/"><link rel="icon" href="/images/icon2.png"><link rel="preconnect" href="https://use.fontawesome.com" crossorigin="anonymous"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="/css/github-calendar.css"><link data-pjax rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/atom-one-light.css" media="(prefers-color-scheme: light)"><link data-pjax rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/atom-one-dark.css" media="(prefers-color-scheme: dark)"><script>window.IcarusAppearance.sync();</script><link data-variant rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro&amp;display=swap"><link data-variant rel="stylesheet" href="/css/default.css"><script>if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+    document.documentElement.classList.add('is-animating');
+}</script><style>html.is-animating body>.footer,html.is-animating body>.navbar,html.is-animating body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/css/lightgallery-bundle.min.css" data-pjax><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justified-gallery@4.0.2/dist/assets/justified-gallery.css" data-pjax><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:3px}</style><script>window.paceOptions = Object.assign({}, window.paceOptions, {
+      restartOnPushState: false,
+      restartOnRequestAfter: false
+    });
+    document.addEventListener('pjax:send', function () {
+      if (window.Pace) window.Pace.restart();
+    });</script><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!--!--><!--!--><!-- hexo injector head_end start --><script>
   (function () {
       function switchTab() {
           if (!location.hash) {
             return;
           }
 
-          const id = '#' + CSS.escape(location.hash.substring(1));
+          let hash = location.hash.substring(1);
+          try {
+            // Non-ASCII IDs are percent-encoded in the URL
+            hash = decodeURIComponent(hash);
+          } catch (e) {}
+          const id = '#' + CSS.escape(hash);
           const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
           if (!$tabMenu) {
             return;
@@ -42,10 +39,15 @@
               $activeTab.classList.remove('is-hidden');
           }
       }
-      switchTab();
+      // The script is in <head>, so wait for the tabs to switch to the tab in the URL
+      if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', switchTab);
+      } else {
+          switchTab();
+      }
       window.addEventListener('hashchange', switchTab, false);
   })();
-  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-02-27T01:00:00.000Z" title="2024/2/27 09:00:00">2024-02-27</time>发表</span><span class="level-item"><time dateTime="2026-02-21T09:20:53.000Z" title="2026/2/21 17:20:53">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/MIT6-824/">MIT6.824</a></span><span class="level-item">29 分钟读完 (大约4334个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">MIT6824笔记八 Aurora</h1><div class="content"><p>本节介绍了一个事务的基本实现方式以及Aurora。</p>
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 8.1.2"></head><body class="is-2-column"><div id="browser-notice" data-pjax></div><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><button class="navbar-item navbar-toggle" type="button" title="菜单" aria-label="菜单" aria-expanded="false" aria-controls="navbar-main-menu"><i class="fas fa-bars" aria-hidden="true"></i></button><div class="navbar-start" id="navbar-main-menu"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus" aria-label="Download on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a><button class="navbar-item is-hidden-tablet catalogue" type="button" title="目录" aria-label="目录"><i class="fas fa-list-ul" aria-hidden="true"></i></button><button class="navbar-item appearance-toggle" type="button" title="切换深色模式" aria-label="切换深色模式" aria-pressed="false"><i class="fas fa-adjust" aria-hidden="true"></i></button><button class="navbar-item search" type="button" title="搜索" aria-label="搜索"><i class="fas fa-search" aria-hidden="true"></i></button></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2024-02-27T01:00:00.000Z" title="2024-02-27 09:00:00">2024-02-27</time>发表</span><span class="level-item"><time dateTime="2026-02-21T09:20:53.000Z" title="2026-02-21 17:20:53">2026-02-21</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/MIT6-824/">MIT6.824</a></span><span class="level-item">26 分钟读完 (大约3955个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">MIT6824笔记八 Aurora</h1><div class="message message-immersive is-warning article-outdated" role="note" data-outdated-days="365" hidden><div class="message-body"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i><span class="article-outdated-text" data-template="本文最后更新于%s，其中的部分内容可能已经过时。">本文最后更新于<time dateTime="2026-02-21T09:20:53.000Z" title="2026-02-21 17:20:53">2026-02-21</time>，其中的部分内容可能已经过时。</span></div></div><div class="content"><p>本节介绍了一个事务的基本实现方式以及Aurora。</p>
 <p>对于Aurora，值得注意的是6个副本3个中心的设计，以及Quorum的读写思想。还有就是违背抽象，设计耦合的日志专用存储能极大提升性能。</p>
 <p>论文指路：<a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/aurora.pdf">https://pdos.csail.mit.edu/6.824/papers/aurora.pdf</a></p>
 <span id="more"></span>
@@ -86,7 +88,7 @@
 <img src="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311745195.png" style="zoom:50%;" />
 
 <p>所以，现在你运行了一个数据库，相应的EC2实例将一个EBS volume挂载成自己的硬盘。当数据库执行写磁盘操作时，数据会通过网络送到EBS服务器。<strong>这两个EBS服务器会使用Chain Replication进行复制</strong>。</p>
-<p>问题一：<strong>网络传输大。</strong>如果你在EBS上运行一个数据库，那么最终会有大量的数据通过网络来传递。</p>
+<p>问题一：**网络传输大。**如果你在EBS上运行一个数据库，那么最终会有大量的数据通过网络来传递。</p>
 <p>问题二：<strong>EBS的容错性不是很好</strong>。为了降低使用Chain Replication的代价，Amazon总是将EBS volume的两个副本存放在同一个数据中心，如果整个数据中心挂了，那就没辙了。</p>
 <p>（2）Amazon RDS（Relational Database Service，关系型数据服务）</p>
 <p>在MySQL基础上，结合Amazon自己的基础设施，Amazon为其云用户开发了改进版的数据库，叫做RDS。RDS是第一次尝试将数据库在多个AZ之间做复制，这样就算整个数据中心挂了，你还是可以从另一个AZ重新获得数据而不丢失任何写操作。</p>
@@ -105,7 +107,7 @@
 <p>学生提问：为什么会慢呢？</p>
 <p>Robert教授：在这个架构中，对于数据库来说是无感知的，每一次数据库调用写操作，更新自己对应的EBS服务器，每一个写操作的拷贝穿过AZ也会写入到另一个AZ中的2个EBS服务器中，另一个AZ会返回确认说写入成功，只有这时，写操作看起来才是完成的。所以这里必须要等待4个服务器更新完成，并且等待数据在链路上传输。</p>
 </blockquote>
-<p><strong>性能低：这种Mirrored MySQL比Aurora慢得多的原因是，它通过网络传输了大量的数据。</strong>并且具有大量串行操作。</p>
+<p>**性能低：这种Mirrored MySQL比Aurora慢得多的原因是，它通过网络传输了大量的数据。**并且具有大量串行操作。</p>
 <h2 id="Aurora架构"><a href="#Aurora架构" class="headerlink" title="Aurora架构"></a>Aurora架构</h2><p><img src="https://cdn.jsdelivr.net/gh/Desirer/backup@main/images/202403311752583.png"><br>整体上来看，我们还是有一个数据库服务器，但是这里运行的是Amazon提供的定制软件。</p>
 <p>第一个是，在替代EBS的位置，有6个数据的副本，位于3个AZ，每个AZ有2个副本。所以现在有了超级容错性，并且每个写请求都需要以Quorum方式发送给这6个副本。</p>
 <p>第二个是，这里通过网络传递的数据只有Log条目。后果是，这里的存储系统不再是通用存储，而是专门理解MySQL Log条目的存储系统。</p>
@@ -118,14 +120,14 @@
 <li><p>读请求，至少需要从R个副本得到所读取的信息。</p>
 </li>
 </ul>
-<p><strong>Quorum系统要求，发送写请求的W个服务器，必须与任意接收读请求的R个服务器有重叠。</strong>这意味着，R加上W必须大于N（ 至少满足R + W &#x3D; N + 1 ），这样任意W个服务器至少与任意R个服务器有一个重合。</p>
-<h3 id="读请求"><a href="#读请求" class="headerlink" title="读请求"></a>读请求</h3><p><strong>这里还有一个关键的点，客户端读请求可能会得到R个不同的结果，现在的问题是R个结果中，哪一个是正确的呢？</strong>不能使用投票法决定，因为返回的R个结果可能只有一个结果是正确的。</p>
-<p><strong>在Quorum系统中使用的是版本号（Version）。</strong>每一次执行写请求，你需要将新的数值与一个增加的版本号绑定。之后，客户端发送读请求，从Read Quorum得到了一些回复，客户端可以直接使用其中的最高版本号的数值。</p>
+<p>**Quorum系统要求，发送写请求的W个服务器，必须与任意接收读请求的R个服务器有重叠。**这意味着，R加上W必须大于N（ 至少满足R + W &#x3D; N + 1 ），这样任意W个服务器至少与任意R个服务器有一个重合。</p>
+<h3 id="读请求"><a href="#读请求" class="headerlink" title="读请求"></a>读请求</h3><p>**这里还有一个关键的点，客户端读请求可能会得到R个不同的结果，现在的问题是R个结果中，哪一个是正确的呢？**不能使用投票法决定，因为返回的R个结果可能只有一个结果是正确的。</p>
+<p>**在Quorum系统中使用的是版本号（Version）。**每一次执行写请求，你需要将新的数值与一个增加的版本号绑定。之后，客户端发送读请求，从Read Quorum得到了一些回复，客户端可以直接使用其中的最高版本号的数值。</p>
 <h3 id="优点"><a href="#优点" class="headerlink" title="优点"></a>优点</h3><p>（1）相比Chain Replication，这里的优势是可以轻易的剔除暂时故障、失联或者慢的服务器。<strong>发N个只需要等最快的R或W个回复。</strong></p>
 <blockquote>
 <p>实际上，这里是这样工作的，当你执行写请求时，你会将新的数值和对应的版本号给所有N个服务器，但是只会等待W个服务器确认。类似的，对于读请求，你可以将读请求发送给所有的服务器，但是只等待R个服务器返回结果。因为你只需要等待R个服务器，这意味着在最快的R个服务器返回了之后，你就可以不用再等待慢服务器或者故障服务器超时。这里忽略慢服务器或者挂了的服务器的机制完全是隐式的。在这里，我们不用决定哪个服务器是在线或者是离线的，只要Quorum能达到，系统就能继续工作，所以我们可以非常平滑的处理慢服务或者挂了的服务。</p>
 </blockquote>
-<p>（2）<strong>Quorum系统可以调整读写的性能。</strong>通过调整Read Quorum和Write Quorum，可以使得系统更好的支持读请求或者写请求。</p>
+<p>（2）**Quorum系统可以调整读写的性能。**通过调整Read Quorum和Write Quorum，可以使得系统更好的支持读请求或者写请求。</p>
 <blockquote>
 <p>对于前面的例子，我们可以假设Write Quorum是3，每一个写请求必须被所有的3个服务器所确认。这样的话，Read Quorum可以只是1。所以，如果你想要提升读请求的性能，在一个3个服务器的Quorum系统中，你可以设置R为1，W为3，这样读请求会快得多，因为它只需要等待一个服务器的结果，但是代价是写请求执行的比较慢。</p>
 <p>当R为1，W为3时，写请求就不再是容错的了，同样，当R为3，W为1时，读请求不再是容错。</p>
@@ -151,100 +153,675 @@
 <li><p>数据库和存储系统可以耦合开发。通常来说，存储系统是非常通用的，并不会为某个特定的应用程序定制。因为一个通用的设计可以被大量服务使用。但是在Aurora面临的问题中，性能问题是非常严重的，它不得不通过模糊服务和底层基础架构的边界来获得35倍的性能提升，这是个巨大的成功。</p>
 </li>
 </ul>
-</div><div class="article-licensing box"><div class="licensing-title"><p>MIT6824笔记八 Aurora</p><p><a href="https://xyz.desirer233.fun/2024/02/27/MIT6.824/笔记8Aurora/">https://xyz.desirer233.fun/2024/02/27/MIT6.824/笔记8Aurora/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-02-27</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/">分布式系统</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/03/30/MIT6.824/%E7%AC%94%E8%AE%B010%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">MIT6824笔记十 分布式事务</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/02/20/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/STL%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/"><span class="level-item">STL读书笔记</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#故障可恢复事务"><span class="level-left"><span class="level-item">1</span><span class="level-item">故障可恢复事务</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#认识事务"><span class="level-left"><span class="level-item">1.1</span><span class="level-item">认识事务</span></span></a></li><li><a class="level is-mobile" href="#事务实现"><span class="level-left"><span class="level-item">1.2</span><span class="level-item">事务实现</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Aurora"><span class="level-left"><span class="level-item">2</span><span class="level-item">Aurora</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#背景"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">背景</span></span></a></li><li><a class="level is-mobile" href="#Aurora架构"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">Aurora架构</span></span></a></li><li><a class="level is-mobile" href="#Quorum复制思想"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">Quorum复制思想</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#读请求"><span class="level-left"><span class="level-item">2.3.1</span><span class="level-item">读请求</span></span></a></li><li><a class="level is-mobile" href="#优点"><span class="level-left"><span class="level-item">2.3.2</span><span class="level-item">优点</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Aruora的读写存储服务器"><span class="level-left"><span class="level-item">2.4</span><span class="level-item">Aruora的读写存储服务器</span></span></a></li><li><a class="level is-mobile" href="#数据分片"><span class="level-left"><span class="level-item">2.5</span><span class="level-item">数据分片</span></span></a></li><li><a class="level is-mobile" href="#只读数据库"><span class="level-left"><span class="level-item">2.6</span><span class="level-item">只读数据库</span></span></a></li></ul></li><li><a class="level is-mobile" href="#总结"><span class="level-left"><span class="level-item">3</span><span class="level-item">总结</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/AI/"><span class="level-start"><span class="level-item">AI</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">15</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
-            article: {
-                highlight: {
-                    clipboard: true,
-                    fold: 'unfolded'
-                }
-            }
-        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
-            if (typeof $.fn.lightGallery === 'function') {
-                $('.article').lightGallery({ selector: '.gallery-item' });
-            }
-            if (typeof $.fn.justifiedGallery === 'function') {
-                if ($('.justified-gallery > p > .gallery-item').length) {
-                    $('.justified-gallery > p > .gallery-item').unwrap();
-                }
-                $('.justified-gallery').justifiedGallery();
-            }
-        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
-            'HTML-CSS': {
-                matchFontHeight: false
-            },
-            SVG: {
-                matchFontHeight: false
-            },
-            CommonHTML: {
-                matchFontHeight: false
-            },
-            tex2jax: {
-                inlineMath: [
-                    ['$','$'],
-                    ['\\(','\\)']
-                ]
-            }
-        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
-            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
-        });</script><!-- hexo injector body_end start --><script>(function () {
-  var KEY = 'hexo-theme-mode';
-
-  function current() {
-    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-  }
-
-  function syncHighlight(dark) {
-    var hl = document.querySelector('link[href*="highlight.js"][href*="atom-one-"]');
-    if (!hl) return;
-    hl.href = dark
-      ? hl.href.replace('atom-one-light.css', 'atom-one-dark.css')
-      : hl.href.replace('atom-one-dark.css', 'atom-one-light.css');
-  }
-
-  function apply(t) {
-    var dark = t === 'dark';
-    document.documentElement.setAttribute('data-theme', t);
-    document.documentElement.style.colorScheme = t;
-    var link = document.getElementById('dark-mode-css');
-    if (link) link.media = dark ? 'all' : 'not all';
-    syncHighlight(dark);
-    var btn = document.getElementById('dark-mode-toggle');
-    if (btn) {
-      btn.innerHTML = '<i class="fas fa-moon"></i>';
-      btn.title = dark ? '切换到浅色模式' : '切换到深色模式';
-      btn.setAttribute('aria-label', btn.title);
+</div><div class="article-licensing box"><div class="licensing-title"><p>MIT6824笔记八 Aurora</p><p><a href="https://xyz.desirer233.fun/2024/02/27/MIT6.824/笔记8Aurora/">https://xyz.desirer233.fun/2024/02/27/MIT6.824/笔记8Aurora/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2024-02-27</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-02-21</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E7%B3%BB%E7%BB%9F/">分布式系统</a></div><div class="hexo-component-share" data-share-provider="web_share" data-url="https://xyz.desirer233.fun/2024/02/27/MIT6.824/%E7%AC%94%E8%AE%B08Aurora/" data-title="MIT6824笔记八 Aurora"><div class="buttons is-centered"><a class="button" style="background-color:#000000;border-color:#000000;color:#ffffff" data-share-network="x" href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fxyz.desirer233.fun%2F2024%2F02%2F27%2FMIT6.824%2F%25E7%25AC%2594%25E8%25AE%25B08Aurora%2F&amp;text=MIT6824%E7%AC%94%E8%AE%B0%E5%85%AB%20Aurora" target="_blank" rel="noopener noreferrer" aria-label="Share on X"><span class="icon" aria-hidden="true"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3L12 14.6 5.5 22H2.4l7.9-9L.8 2h6.5l4.5 6.7L18.9 2Zm-1.1 18h1.7L6.4 3.9H4.6L17.8 20Z"></path></svg></span><span>X</span></a><a class="button" style="background-color:#0866ff;border-color:#0866ff;color:#ffffff" data-share-network="facebook" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fxyz.desirer233.fun%2F2024%2F02%2F27%2FMIT6.824%2F%25E7%25AC%2594%25E8%25AE%25B08Aurora%2F" target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook"><span class="icon" aria-hidden="true"><i class="fab fa-facebook-f"></i></span><span>Facebook</span></a><a class="button" style="background-color:#e6162d;border-color:#e6162d;color:#ffffff" data-share-network="weibo" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fxyz.desirer233.fun%2F2024%2F02%2F27%2FMIT6.824%2F%25E7%25AC%2594%25E8%25AE%25B08Aurora%2F&amp;title=MIT6824%E7%AC%94%E8%AE%B0%E5%85%AB%20Aurora" target="_blank" rel="noopener noreferrer" aria-label="Share on Weibo"><span class="icon" aria-hidden="true"><i class="fab fa-weibo"></i></span><span>Weibo</span></a><a class="button" style="background-color:#26a5e4;border-color:#26a5e4;color:#ffffff" data-share-network="telegram" href="https://t.me/share/url?url=https%3A%2F%2Fxyz.desirer233.fun%2F2024%2F02%2F27%2FMIT6.824%2F%25E7%25AC%2594%25E8%25AE%25B08Aurora%2F&amp;text=MIT6824%E7%AC%94%E8%AE%B0%E5%85%AB%20Aurora" target="_blank" rel="noopener noreferrer" aria-label="Share on Telegram"><span class="icon" aria-hidden="true"><i class="fab fa-telegram-plane"></i></span><span>Telegram</span></a><a class="button" style="background-color:#0a66c2;border-color:#0a66c2;color:#ffffff" data-share-network="linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fxyz.desirer233.fun%2F2024%2F02%2F27%2FMIT6.824%2F%25E7%25AC%2594%25E8%25AE%25B08Aurora%2F" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn"><span class="icon" aria-hidden="true"><i class="fab fa-linkedin-in"></i></span><span>LinkedIn</span></a><span class="has-text-centered" data-share-native="" hidden><button class="button" type="button" hidden><span class="icon" aria-hidden="true"><i class="fas fa-share-alt"></i></span><span>更多</span></button></span></div><p role="status" hidden>System sharing is unavailable in this browser. You can use the platform buttons above.</p></div><script>(function () {
+      function shareUrl(network, url, title) {
+  var link = encodeURIComponent(url);
+  var text = encodeURIComponent(title);
+  return {
+    x: 'https://twitter.com/intent/tweet?url=' + link + '&text=' + text,
+    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + link,
+    weibo: 'https://service.weibo.com/share/share.php?url=' + link + '&title=' + text,
+    telegram: 'https://t.me/share/url?url=' + link + '&text=' + text,
+    linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + link
+  }[network];
+}
+      document.querySelectorAll('.hexo-component-share').forEach(function (container) {
+        var button = container.querySelector('button');
+        var status = container.querySelector('[role="status"]');
+        var native = container.querySelector('[data-share-native]');
+        var data = { title: container.dataset.title || document.title, url: container.dataset.url || window.location.href };
+        container.querySelectorAll('[data-share-network]').forEach(function (link) {
+          link.href = shareUrl(link.dataset.shareNetwork, data.url, data.title);
+        });
+        button.hidden = false;
+        native.hidden = false;
+        button.disabled = typeof navigator.share !== 'function';
+        status.hidden = !button.disabled;
+        button.onclick = async function () {
+          status.hidden = true;
+          try {
+            await navigator.share({ title: container.dataset.title || document.title, url: container.dataset.url || window.location.href });
+          } catch (error) {
+            if (error && error.name === 'AbortError') return;
+            status.hidden = false;
+          }
+        };
+      });
+    })();</script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2024/03/30/MIT6.824/%E7%AC%94%E8%AE%B010%E5%88%86%E5%B8%83%E5%BC%8F%E4%BA%8B%E5%8A%A1/"><i class="level-item fas fa-chevron-left" aria-hidden="true"></i><span class="level-item">MIT6824笔记十 分布式事务</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2024/02/20/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/STL%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/"><span class="level-item">STL读书笔记</span><i class="level-item fas fa-chevron-right" aria-hidden="true"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#故障可恢复事务"><span class="level-left"><span class="level-item">1</span><span class="level-item">故障可恢复事务</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#认识事务"><span class="level-left"><span class="level-item">1.1</span><span class="level-item">认识事务</span></span></a></li><li><a class="level is-mobile" href="#事务实现"><span class="level-left"><span class="level-item">1.2</span><span class="level-item">事务实现</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Aurora"><span class="level-left"><span class="level-item">2</span><span class="level-item">Aurora</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#背景"><span class="level-left"><span class="level-item">2.1</span><span class="level-item">背景</span></span></a></li><li><a class="level is-mobile" href="#Aurora架构"><span class="level-left"><span class="level-item">2.2</span><span class="level-item">Aurora架构</span></span></a></li><li><a class="level is-mobile" href="#Quorum复制思想"><span class="level-left"><span class="level-item">2.3</span><span class="level-item">Quorum复制思想</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#读请求"><span class="level-left"><span class="level-item">2.3.1</span><span class="level-item">读请求</span></span></a></li><li><a class="level is-mobile" href="#优点"><span class="level-left"><span class="level-item">2.3.2</span><span class="level-item">优点</span></span></a></li></ul></li><li><a class="level is-mobile" href="#Aruora的读写存储服务器"><span class="level-left"><span class="level-item">2.4</span><span class="level-item">Aruora的读写存储服务器</span></span></a></li><li><a class="level is-mobile" href="#数据分片"><span class="level-left"><span class="level-item">2.5</span><span class="level-item">数据分片</span></span></a></li><li><a class="level is-mobile" href="#只读数据库"><span class="level-left"><span class="level-item">2.6</span><span class="level-item">只读数据库</span></span></a></li></ul></li><li><a class="level is-mobile" href="#总结"><span class="level-left"><span class="level-item">3</span><span class="level-item">总结</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/AI/"><span class="level-start"><span class="level-item">AI</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">15</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p><p class="is-size-7"><a href="https://beian.miit.gov.cn" target="_blank" rel="noopener">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/" aria-label="Creative Commons"><i class="fab fa-creative-commons" aria-hidden="true"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/" aria-label="Attribution 4.0 International"><i class="fab fa-creative-commons-by" aria-hidden="true"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus" aria-label="Download on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js" defer></script><script>(function installGallery(window) {
+  if (window.HexoGallery) return;
+  const document = window.document;
+  const requests = new Map();
+  const layouts = new Map();
+  const lightboxes = new Map();
+  function destroyLightbox(container) {
+    const state = lightboxes.get(container);
+    if (!state) return;
+    container.removeEventListener('click', state.click);
+    // The SDK removes its container through parentNode, even after a host replaced the body.
+    const dialog = state.instance.$container && state.instance.$container.get();
+    if (dialog && !dialog.parentNode) {
+      dialog.style.display = 'none';
+      document.body.appendChild(dialog);
     }
+    if (state.instance.lgOpened) {
+      state.instance.settings.startAnimationDuration = 0;
+      state.instance.settings.backdropDuration = 0;
+    }
+    state.instance.destroy();
+    lightboxes.delete(container);
   }
-
-  function init() {
-    var end = document.querySelector('.navbar-main .navbar-end');
-    if (!end) return;
-    var a = document.createElement('a');
-    a.className = 'navbar-item';
-    a.id = 'dark-mode-toggle';
-    a.href = 'javascript:;';
-    a.title = '切换到深色模式';
-    a.addEventListener('click', function (e) {
-      e.preventDefault();
-      var t = current() === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem(KEY, t); } catch (err) {}
-      apply(t);
-    });
-    end.appendChild(a);
-    apply(current());
-
-    if (window.matchMedia) {
-      var mq = window.matchMedia('(prefers-color-scheme: dark)');
-      var onChange = function (e) {
-        var saved = null;
-        try { saved = localStorage.getItem(KEY); } catch (err) {}
-        if (!saved) apply(e.matches ? 'dark' : 'light');
+  function lightbox(container, enabled) {
+    if (!enabled) {
+      destroyLightbox(container);
+      return;
+    }
+    if (typeof window.lightGallery !== 'function') return;
+    const plugins = (window.HexoGallery.lightGalleryPlugins || []).map(name => window[name]);
+    if (plugins.some(plugin => typeof plugin !== 'function')) return;
+    const items = Array.from(container.querySelectorAll('a.gallery-item[href]'));
+    if (!items.length) {
+      destroyLightbox(container);
+      return;
+    }
+    const elements = items.map(link => {
+      const image = link.querySelector('img');
+      const caption = document.createElement('span');
+      caption.textContent = image ? image.alt : '';
+      return {
+        src: link.href,
+        thumb: image ? image.currentSrc || image.src : link.href,
+        subHtml: caption.innerHTML,
+        alt: caption.innerHTML.replace(/"/g, '&quot;')
       };
-      if (mq.addEventListener) mq.addEventListener('change', onChange);
-      else if (mq.addListener) mq.addListener(onChange);
+    });
+    const signature = JSON.stringify(elements);
+    let state = lightboxes.get(container);
+    if (state) {
+      if (!sameItems(state.items, items) || state.signature !== signature) {
+        if (state.instance.lgOpened) {
+          state.instance.updateSlides(elements, Math.min(state.instance.index, elements.length - 1));
+        } else {
+          state.instance.refresh(elements);
+        }
+        state.items = items;
+        state.signature = signature;
+      }
+      return;
+    }
+    const instance = window.lightGallery(container, {
+      dynamic: true,
+      dynamicEl: elements,
+      plugins
+    });
+    state = {
+      instance,
+      items,
+      signature,
+      click: null
+    };
+    state.click = event => {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const link = event.target.closest('a.gallery-item');
+      const index = state.items.indexOf(link);
+      if (index < 0) return;
+      event.preventDefault();
+      instance.openGallery(index, link);
+    };
+    container.addEventListener('click', state.click);
+    lightboxes.set(container, state);
+  }
+  function sameItems(items, current) {
+    return items.length === current.length && Array.from(items).every((item, i) => item === current[i]);
+  }
+  function enhance(container) {
+    container.querySelectorAll('img:not(.not-gallery-item)').forEach(image => {
+      // Third-party SDK icons are controls, not article images. Script-load retries also
+      // scan icons inserted after the article's initial enhancement.
+      if (image.closest('a, .sharethis-inline-share-buttons, .a2a_kit, [data-share-provider]')) return;
+      const link = document.createElement('a');
+      link.className = 'gallery-item';
+      const src = image.getAttribute('src');
+      if (src !== null) link.setAttribute('href', src);
+      image.parentNode.insertBefore(link, image);
+      link.appendChild(image);
+      if (image.alt) {
+        const caption = document.createElement('p');
+        caption.className = 'has-text-centered is-size-6 caption';
+        caption.textContent = image.alt;
+        link.appendChild(caption);
+      }
+    });
+  }
+  function apply(root, options) {
+    const containers = root === document ? root.querySelectorAll('.article') : [root];
+    containers.forEach(enhance);
+    // Do not capture an incomplete article while HTML is still being parsed.
+    if (document.readyState === 'loading') return;
+    containers.forEach(container => lightbox(container, options.lightGallery));
+    if (options.justifiedGallery && typeof window.JustifiedGallery === 'function') {
+      const galleries = Array.from(root.querySelectorAll('.justified-gallery'));
+      if (root !== document && root.matches('.justified-gallery')) galleries.unshift(root);
+      galleries.forEach(gallery => {
+        const paragraphs = new Set(Array.from(gallery.querySelectorAll(':scope > p > .gallery-item'), link => link.parentNode));
+        paragraphs.forEach(paragraph => {
+          paragraph.replaceWith(...paragraph.childNodes);
+        });
+        gallery.querySelectorAll(':scope > .gallery-item > .caption').forEach(caption => {
+          caption.classList.add('jg-caption');
+        });
+        let state = layouts.get(gallery);
+        const items = () => Array.from(gallery.children).filter(item => !item.classList.contains('jg-spinner') && (item.matches(state.instance.settings.selector) || item.matches('div')));
+        if (state) {
+          if (sameItems(state.items, items())) return;
+          // init refreshes entries but starts another width watcher; stop and rewind first.
+          state.instance.widthWatcher.stop();
+          state.instance.stopImgAnalyzerStarter();
+          state.instance.rewind();
+        } else {
+          // The SDK reuses .jg-caption and safely creates captions for pre-existing links.
+          state = {
+            instance: new window.JustifiedGallery(gallery)
+          };
+          layouts.set(gallery, state);
+        }
+        state.instance.init();
+        state.items = items();
+      });
     }
   }
+  function prune() {
+    layouts.forEach((state, gallery) => {
+      if (!gallery.isConnected) destroyLayout(gallery);
+    });
+    lightboxes.forEach((state, container) => {
+      if (!container.isConnected) destroyLightbox(container);
+    });
+    requests.forEach((options, root) => {
+      if (root !== document && !root.isConnected) requests.delete(root);
+    });
+  }
+  function destroyLayout(gallery) {
+    const {
+      instance
+    } = layouts.get(gallery);
+    // The SDK's destroy does not stop an active loading spinner.
+    instance.stopLoadingSpinnerAnimation();
+    instance.destroy();
+    layouts.delete(gallery);
+  }
+  function retry() {
+    prune();
+    requests.forEach((options, root) => apply(root, options));
+  }
+  window.HexoGallery = {
+    /**
+     * Enhance images in a content container, optionally initializing the two Gallery SDKs.
+     * Repeated calls reuse existing wrappers, captions and plugin instances. Missing SDKs can be
+     * retried by calling init again; DOM ready, window load and subsequent script loads also retry
+     * connected containers with their latest options. SDK initialization waits for DOM readiness.
+     * Changed item collections refresh their existing SDK instance. Disabling the lightbox destroys
+     * it; the independently managed layout plugin is unchanged.
+     * @param {Document|Element} [root=document] Content container; document targets .article images
+     *     and lightboxes, and all .justified-gallery elements.
+     * @param {Object} [options={}] SDK opt-ins; omitted flags disable plugin initialization.
+     * @param {boolean} [options.lightGallery=false] Initialize lightGallery when available.
+     * @param {boolean} [options.justifiedGallery=false] Initialize justifiedGallery when available.
+     */
+    init: function (root, options) {
+      root = root || document;
+      options = options || {};
+      const enabled = {
+        lightGallery: options.lightGallery === true,
+        justifiedGallery: options.justifiedGallery === true
+      };
+      prune();
+      requests.set(root, enabled);
+      apply(root, enabled);
+    },
+    /** Destroy lightboxes, layouts and pending retries before content is replaced (e.g. PJAX). */
+    destroy: function (root) {
+      root = root || document;
+      lightboxes.forEach((state, container) => {
+        if (root === document || root === container || root.contains(container)) destroyLightbox(container);
+      });
+      layouts.forEach((state, gallery) => {
+        if (root === document || root === gallery || root.contains(gallery)) destroyLayout(gallery);
+      });
+      requests.forEach((options, target) => {
+        if (root === document || root === target || root.contains(target)) requests.delete(target);
+      });
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', retry, {
+      once: true
+    });
+  }
+  if (document.readyState !== 'complete') window.addEventListener('load', retry, {
+    once: true
+  });
+  document.addEventListener('hexo:gallery:ready', retry);
+  // Deferred scripts may arrive after init, including on the first enabled page reached by PJAX.
+  // Retry the latest requests, rather than capturing a previous page's enabled configuration.
+  document.addEventListener('load', event => {
+    if (event.target.tagName === 'SCRIPT') retry();
+  }, true);
+})(window);</script><script data-pjax>var IcarusThemeSettings = {"gallery":true,"article":{"highlight":{"clipboard":true,"fold":"folded","fold_preview":20}},"i18n":{"copy":"复制","copied":"已复制！"}};
+if (document.readyState !== 'loading') {
+    window.HexoGallery.init(document, {
+        lightGallery: IcarusThemeSettings.gallery,
+        justifiedGallery: IcarusThemeSettings.gallery
+    });
+}</script><script data-pjax src="/js/column.js"></script><script src="/js/navbar.js" defer></script><script src="/js/github-calendar.js" defer></script><script src="/js/pjax-page.js"></script><script src="/js/pjax-prefetch.js"></script><script src="/js/animation.js" onerror="document.documentElement.classList.remove(&#039;is-animating&#039;)"></script><button type="button" id="back-to-top" title="回到顶端" aria-label="回到顶端"><i class="fas fa-chevron-up" aria-hidden="true"></i></button><script data-pjax src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/plugins/zoom/lg-zoom.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/plugins/thumbnail/lg-thumbnail.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/plugins/fullscreen/lg-fullscreen.min.js" defer></script><script>(function installGallery(window) {
+  if (window.HexoGallery) return;
+  const document = window.document;
+  const requests = new Map();
+  const layouts = new Map();
+  const lightboxes = new Map();
+  function destroyLightbox(container) {
+    const state = lightboxes.get(container);
+    if (!state) return;
+    container.removeEventListener('click', state.click);
+    // The SDK removes its container through parentNode, even after a host replaced the body.
+    const dialog = state.instance.$container && state.instance.$container.get();
+    if (dialog && !dialog.parentNode) {
+      dialog.style.display = 'none';
+      document.body.appendChild(dialog);
+    }
+    if (state.instance.lgOpened) {
+      state.instance.settings.startAnimationDuration = 0;
+      state.instance.settings.backdropDuration = 0;
+    }
+    state.instance.destroy();
+    lightboxes.delete(container);
+  }
+  function lightbox(container, enabled) {
+    if (!enabled) {
+      destroyLightbox(container);
+      return;
+    }
+    if (typeof window.lightGallery !== 'function') return;
+    const plugins = (window.HexoGallery.lightGalleryPlugins || []).map(name => window[name]);
+    if (plugins.some(plugin => typeof plugin !== 'function')) return;
+    const items = Array.from(container.querySelectorAll('a.gallery-item[href]'));
+    if (!items.length) {
+      destroyLightbox(container);
+      return;
+    }
+    const elements = items.map(link => {
+      const image = link.querySelector('img');
+      const caption = document.createElement('span');
+      caption.textContent = image ? image.alt : '';
+      return {
+        src: link.href,
+        thumb: image ? image.currentSrc || image.src : link.href,
+        subHtml: caption.innerHTML,
+        alt: caption.innerHTML.replace(/"/g, '&quot;')
+      };
+    });
+    const signature = JSON.stringify(elements);
+    let state = lightboxes.get(container);
+    if (state) {
+      if (!sameItems(state.items, items) || state.signature !== signature) {
+        if (state.instance.lgOpened) {
+          state.instance.updateSlides(elements, Math.min(state.instance.index, elements.length - 1));
+        } else {
+          state.instance.refresh(elements);
+        }
+        state.items = items;
+        state.signature = signature;
+      }
+      return;
+    }
+    const instance = window.lightGallery(container, {
+      dynamic: true,
+      dynamicEl: elements,
+      plugins
+    });
+    state = {
+      instance,
+      items,
+      signature,
+      click: null
+    };
+    state.click = event => {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const link = event.target.closest('a.gallery-item');
+      const index = state.items.indexOf(link);
+      if (index < 0) return;
+      event.preventDefault();
+      instance.openGallery(index, link);
+    };
+    container.addEventListener('click', state.click);
+    lightboxes.set(container, state);
+  }
+  function sameItems(items, current) {
+    return items.length === current.length && Array.from(items).every((item, i) => item === current[i]);
+  }
+  function enhance(container) {
+    container.querySelectorAll('img:not(.not-gallery-item)').forEach(image => {
+      // Third-party SDK icons are controls, not article images. Script-load retries also
+      // scan icons inserted after the article's initial enhancement.
+      if (image.closest('a, .sharethis-inline-share-buttons, .a2a_kit, [data-share-provider]')) return;
+      const link = document.createElement('a');
+      link.className = 'gallery-item';
+      const src = image.getAttribute('src');
+      if (src !== null) link.setAttribute('href', src);
+      image.parentNode.insertBefore(link, image);
+      link.appendChild(image);
+      if (image.alt) {
+        const caption = document.createElement('p');
+        caption.className = 'has-text-centered is-size-6 caption';
+        caption.textContent = image.alt;
+        link.appendChild(caption);
+      }
+    });
+  }
+  function apply(root, options) {
+    const containers = root === document ? root.querySelectorAll('.article') : [root];
+    containers.forEach(enhance);
+    // Do not capture an incomplete article while HTML is still being parsed.
+    if (document.readyState === 'loading') return;
+    containers.forEach(container => lightbox(container, options.lightGallery));
+    if (options.justifiedGallery && typeof window.JustifiedGallery === 'function') {
+      const galleries = Array.from(root.querySelectorAll('.justified-gallery'));
+      if (root !== document && root.matches('.justified-gallery')) galleries.unshift(root);
+      galleries.forEach(gallery => {
+        const paragraphs = new Set(Array.from(gallery.querySelectorAll(':scope > p > .gallery-item'), link => link.parentNode));
+        paragraphs.forEach(paragraph => {
+          paragraph.replaceWith(...paragraph.childNodes);
+        });
+        gallery.querySelectorAll(':scope > .gallery-item > .caption').forEach(caption => {
+          caption.classList.add('jg-caption');
+        });
+        let state = layouts.get(gallery);
+        const items = () => Array.from(gallery.children).filter(item => !item.classList.contains('jg-spinner') && (item.matches(state.instance.settings.selector) || item.matches('div')));
+        if (state) {
+          if (sameItems(state.items, items())) return;
+          // init refreshes entries but starts another width watcher; stop and rewind first.
+          state.instance.widthWatcher.stop();
+          state.instance.stopImgAnalyzerStarter();
+          state.instance.rewind();
+        } else {
+          // The SDK reuses .jg-caption and safely creates captions for pre-existing links.
+          state = {
+            instance: new window.JustifiedGallery(gallery)
+          };
+          layouts.set(gallery, state);
+        }
+        state.instance.init();
+        state.items = items();
+      });
+    }
+  }
+  function prune() {
+    layouts.forEach((state, gallery) => {
+      if (!gallery.isConnected) destroyLayout(gallery);
+    });
+    lightboxes.forEach((state, container) => {
+      if (!container.isConnected) destroyLightbox(container);
+    });
+    requests.forEach((options, root) => {
+      if (root !== document && !root.isConnected) requests.delete(root);
+    });
+  }
+  function destroyLayout(gallery) {
+    const {
+      instance
+    } = layouts.get(gallery);
+    // The SDK's destroy does not stop an active loading spinner.
+    instance.stopLoadingSpinnerAnimation();
+    instance.destroy();
+    layouts.delete(gallery);
+  }
+  function retry() {
+    prune();
+    requests.forEach((options, root) => apply(root, options));
+  }
+  window.HexoGallery = {
+    /**
+     * Enhance images in a content container, optionally initializing the two Gallery SDKs.
+     * Repeated calls reuse existing wrappers, captions and plugin instances. Missing SDKs can be
+     * retried by calling init again; DOM ready, window load and subsequent script loads also retry
+     * connected containers with their latest options. SDK initialization waits for DOM readiness.
+     * Changed item collections refresh their existing SDK instance. Disabling the lightbox destroys
+     * it; the independently managed layout plugin is unchanged.
+     * @param {Document|Element} [root=document] Content container; document targets .article images
+     *     and lightboxes, and all .justified-gallery elements.
+     * @param {Object} [options={}] SDK opt-ins; omitted flags disable plugin initialization.
+     * @param {boolean} [options.lightGallery=false] Initialize lightGallery when available.
+     * @param {boolean} [options.justifiedGallery=false] Initialize justifiedGallery when available.
+     */
+    init: function (root, options) {
+      root = root || document;
+      options = options || {};
+      const enabled = {
+        lightGallery: options.lightGallery === true,
+        justifiedGallery: options.justifiedGallery === true
+      };
+      prune();
+      requests.set(root, enabled);
+      apply(root, enabled);
+    },
+    /** Destroy lightboxes, layouts and pending retries before content is replaced (e.g. PJAX). */
+    destroy: function (root) {
+      root = root || document;
+      lightboxes.forEach((state, container) => {
+        if (root === document || root === container || root.contains(container)) destroyLightbox(container);
+      });
+      layouts.forEach((state, gallery) => {
+        if (root === document || root === gallery || root.contains(gallery)) destroyLayout(gallery);
+      });
+      requests.forEach((options, target) => {
+        if (root === document || root === target || root.contains(target)) requests.delete(target);
+      });
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', retry, {
+      once: true
+    });
+  }
+  if (document.readyState !== 'complete') window.addEventListener('load', retry, {
+    once: true
+  });
+  document.addEventListener('hexo:gallery:ready', retry);
+  // Deferred scripts may arrive after init, including on the first enabled page reached by PJAX.
+  // Retry the latest requests, rather than capturing a previous page's enabled configuration.
+  document.addEventListener('load', event => {
+    if (event.target.tagName === 'SCRIPT') retry();
+  }, true);
+})(window);
+window.HexoGallery.lightGalleryPlugins = ["lgZoom","lgThumbnail","lgFullscreen"];
+window.HexoGallery.init(document, {
+        lightGallery: true,
+        justifiedGallery: true
+    });</script><script type="module">import { JustifiedGallery } from "https://cdn.jsdelivr.net/npm/justified-gallery@4.0.2/dist/justified-gallery.js";
+window.JustifiedGallery = JustifiedGallery;
+document.dispatchEvent(new Event('hexo:gallery:ready'));</script><script type="text/javascript">window.MathJax = window.MathJax || {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      output: {
+        font: 'mathjax-newcm',
+        fontPath: "https://cdn.jsdelivr.net/npm/@mathjax/mathjax-newcm-font@4.1.3"
+      }
+    };</script><script id="MathJax-script" defer src="https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.js"></script><!--!--><script src="/js/pjax-core.js"></script><script src="/js/pjax.js"></script><script src="/js/prefetch.js" data-delay="65" defer></script><script data-pjax src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script data-pjax>(function installSearchbox(window) {
+  if (window.loadSearchbox) return;
+  const document = window.document;
+  let current;
+  window.loadSearchbox = function ($main, options) {
+    const $ = window.jQuery;
+    options = options || {};
+    // Preserve focus state only when replacing the controller for the same open DOM element.
+    let opener = current ? current.destroy($main[0]) : null;
+    let touch = false;
+    const $document = $(document);
+    const namespace = '.hexoSearchbox';
+    const controller = {
+      isCurrent: function () {
+        return current === controller && document.contains($main[0]);
+      },
+      destroy: function (nextMain) {
+        if (current !== controller) return null;
+        const nextOpener = nextMain === $main[0] && $main.hasClass('show') ? opener : null;
+        $document.off(namespace);
+        opener = null;
+        current = null;
+        if (options.onDestroy) options.onDestroy();
+        return nextOpener;
+      }
+    };
+    current = controller;
+    function open() {
+      if (!controller.isCurrent()) return;
+      if (!$main.hasClass('show')) {
+        opener = document.activeElement;
+        $main.addClass('show');
+      }
+      $main.find('.searchbox-input').focus();
+    }
+    function close(restoreFocus) {
+      $main.removeClass('show');
+      if (restoreFocus !== false && opener && document.contains(opener)) opener.focus();
+      opener = null;
+    }
+    function isSearchShortcut(e) {
+      if (e.altKey) return false;
+      if (e.ctrlKey || e.metaKey) {
+        return !e.shiftKey && typeof e.key === 'string' && e.key.toLowerCase() === 'k';
+      }
+      // e.key already accounts for the keyboard layout (including Shift).
+      const target = e.target;
+      const typing = target.isContentEditable || /^(input|textarea|select)$/i.test(target.tagName);
+      return e.key === '/' && !typing;
+    }
+    $document.on('click' + namespace, '.navbar-main .search', open).on('click' + namespace + (options.touch ? ' touchend' + namespace : ''), '.searchbox-close, .searchbox .searchbox-mask', e => {
+      if (!controller.isCurrent()) return;
+      if (e.type !== 'click' && !touch) return;
+      if (options.touch) {
+        $('.navbar-main').css('pointer-events', 'none');
+        setTimeout(() => {
+          $('.navbar-main').css('pointer-events', 'auto');
+        }, 400);
+      }
+      close();
+      touch = false;
+    }).on('focusin' + namespace, e => {
+      if (controller.isCurrent() && $main.hasClass('show') && !$main[0].contains(e.target)) {
+        close(false);
+      }
+    }).on('keydown' + namespace, e => {
+      if (!controller.isCurrent()) return;
+      if (isSearchShortcut(e)) {
+        e.preventDefault();
+        open();
+        return;
+      }
+      if (!$main.hasClass('show')) return;
+      if (e.keyCode === 27) close();else if (options.onKeyDown) options.onKeyDown(e);
+    }).on('touchstart' + namespace, () => {
+      touch = true;
+    }).on('touchmove' + namespace, () => {
+      touch = false;
+    });
+    return controller;
+  };
+})(window);
+window.searchInsight = (function createInsightSearch() {
+  const content = {
+    fields: ['title', 'text'],
+    weights: [3, 1]
+  };
+  const taxonomy = {
+    fields: ['name', 'slug'],
+    weights: [1, 1]
+  };
+  const sections = {
+    posts: content,
+    pages: content,
+    categories: taxonomy,
+    tags: taxonomy
+  };
+  function parseKeywords(query) {
+    return query.split(' ').filter(keyword => {
+      return !!keyword;
+    }).map(keyword => {
+      return keyword.toLowerCase();
+    });
+  }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
-})();</script><!-- hexo injector body_end end --></body></html>
+  // Every keyword must occur in at least one own field; keywords may span different fields.
+  function filter(keywords, obj, fields) {
+    const containKeywords = keywords.filter(keyword => {
+      const containFields = fields.filter(field => {
+        if (!Object.prototype.hasOwnProperty.call(obj, field)) {
+          return false;
+        }
+        if (obj[field].toLowerCase().indexOf(keyword) > -1) {
+          return true;
+        }
+        return false;
+      });
+      if (containFields.length > 0) {
+        return true;
+      }
+      return false;
+    });
+    return containKeywords.length === keywords.length;
+  }
+
+  // Count non-overlapping occurrences of a literal lowercase keyword, not a regular expression.
+  function countMatches(text, keyword) {
+    let count = 0;
+    for (let i = text.indexOf(keyword); i !== -1; i = text.indexOf(keyword, i + keyword.length)) {
+      count++;
+    }
+    return count;
+  }
+  function weight(keywords, obj, fields, weights) {
+    let value = 0;
+    keywords.forEach(keyword => {
+      fields.forEach((field, index) => {
+        if (Object.prototype.hasOwnProperty.call(obj, field)) {
+          value += countMatches(obj[field].toLowerCase(), keyword) * weights[index];
+        }
+      });
+    });
+    return value;
+  }
+
+  // Weigh each matching item once. Equal weights retain the input order, including an empty query.
+  function topItems(items, keywords, config) {
+    return items.filter(item => {
+      return filter(keywords, item, config.fields);
+    }).map(item => {
+      return {
+        item,
+        weight: weight(keywords, item, config.fields, config.weights)
+      };
+    }).sort((a, b) => {
+      return b.weight - a.weight;
+    }).slice(0, 5).map(result => {
+      return result.item;
+    });
+  }
+  return function search(json, query) {
+    const keywords = parseKeywords(query);
+    const results = {};
+    Object.keys(sections).forEach(section => {
+      results[section] = topItems(json[section], keywords, sections[section]);
+    });
+    return {
+      keywords,
+      results
+    };
+  };
+})();</script><script data-pjax src="/js/insight.js" defer></script><script data-pjax>function initInsight() {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initInsight, { once: true });
+        } else {
+            initInsight();
+        }</script></body></html>

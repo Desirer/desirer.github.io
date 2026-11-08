@@ -1,28 +1,25 @@
 <!doctype html>
-<html lang="zh"><head><!-- hexo injector head_begin start --><script>(function () {
-  try {
-    var saved = localStorage.getItem('hexo-theme-mode');
-    var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    var mode = (saved === 'dark' || saved === 'light') ? saved : (systemDark ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', mode);
-    document.documentElement.style.colorScheme = mode;
-  } catch (e) {}
-})();</script><!-- hexo injector head_begin end --><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"><meta><title>DDPM 基本原理讲解 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="参考论文：Ho, Jain, Abbeel. Denoising Diffusion Probabilistic Models, NeurIPS 2020（arXiv:2006.11239）本文只讲原理与公式，不涉及代码。   本文由AI生成。"><meta property="og:type" content="blog"><meta property="og:title" content="DDPM 基本原理讲解"><meta property="og:url" content="https://xyz.desirer233.fun/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="参考论文：Ho, Jain, Abbeel. Denoising Diffusion Probabilistic Models, NeurIPS 2020（arXiv:2006.11239）本文只讲原理与公式，不涉及代码。   本文由AI生成。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://xyz.desirer233.fun/img/og_image.png"><meta property="article:published_time" content="2026-10-06T06:00:00.000Z"><meta property="article:modified_time" content="2026-10-25T09:14:07.000Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="AI生成"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://xyz.desirer233.fun/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/"},"headline":"DDPM 基本原理讲解","image":["https://xyz.desirer233.fun/img/og_image.png"],"datePublished":"2026-10-06T06:00:00.000Z","dateModified":"2026-10-25T09:14:07.000Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"参考论文：Ho, Jain, Abbeel. Denoising Diffusion Probabilistic Models, NeurIPS 2020（arXiv:2006.11239）本文只讲原理与公式，不涉及代码。   本文由AI生成。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/"><link rel="icon" href="/images/icon2.png"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/atom-one-light.css"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro"><link rel="stylesheet" href="/css/default.css"><style>body>.footer,body>.navbar,body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/css/lightgallery.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/css/justifiedGallery.min.css"><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:2px}</style><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!-- hexo injector head_end start --><style>#dark-mode-toggle{color:#4a4a4a;transition:color .25s ease}#dark-mode-toggle:hover{color:#58a6ff}[data-theme="dark"] #dark-mode-toggle{color:#f0f6fc}[data-theme="dark"] #dark-mode-toggle:hover{color:#79c0ff}</style><link id="dark-mode-css" rel="stylesheet" href="/css/dark.css" media="not all"><script>(function () {
-  var link = document.getElementById('dark-mode-css');
-  var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-  if (link && dark) link.media = 'all';
-  if (dark) {
-    var hl = document.querySelector('link[href*="highlight.js"][href*="atom-one-light.css"]');
-    if (hl) hl.href = hl.href.replace('atom-one-light.css', 'atom-one-dark.css');
-  }
-})();</script><script>
+<html lang="zh-CN" data-appearance-mode="auto" data-appearance="auto"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><script src="/js/appearance.js"></script><meta name="color-scheme" content="light dark"><meta><title>DDPM 基本原理讲解 - Desirer&#039;s blog</title><link rel="manifest" href="/manifest.json"><meta name="application-name" content="Desirer&#039;s blog"><meta name="msapplication-TileImage" content="/images/icon2.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Desirer&#039;s blog"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="description" content="参考论文：Ho, Jain, Abbeel. Denoising Diffusion Probabilistic Models, NeurIPS 2020（arXiv:2006.11239）本文只讲原理与公式，不涉及代码。 本文由AI生成。"><meta property="og:type" content="article"><meta property="og:title" content="DDPM 基本原理讲解"><meta property="og:url" content="https://xyz.desirer233.fun/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/"><meta property="og:site_name" content="Desirer&#039;s blog"><meta property="og:description" content="参考论文：Ho, Jain, Abbeel. Denoising Diffusion Probabilistic Models, NeurIPS 2020（arXiv:2006.11239）本文只讲原理与公式，不涉及代码。 本文由AI生成。"><meta property="og:locale" content="zh_CN"><meta property="og:image" content="https://xyz.desirer233.fun/img/og_image.png"><meta property="article:published_time" content="2026-10-06T06:00:00.000Z"><meta property="article:modified_time" content="2026-10-25T09:14:07.000Z"><meta property="article:author" content="Desirer"><meta property="article:tag" content="AI生成"><meta property="twitter:card" content="summary"><meta property="twitter:image:src" content="https://xyz.desirer233.fun/img/og_image.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"https://xyz.desirer233.fun/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/"},"headline":"DDPM 基本原理讲解","image":["https://xyz.desirer233.fun/img/og_image.png"],"datePublished":"2026-10-06T06:00:00.000Z","dateModified":"2026-10-25T09:14:07.000Z","author":{"@type":"Person","name":"Desirer"},"publisher":{"@type":"Organization","name":"Desirer's blog","logo":{"@type":"ImageObject","url":"https://xyz.desirer233.fun/images/icon2.png"}},"description":"参考论文：Ho, Jain, Abbeel. Denoising Diffusion Probabilistic Models, NeurIPS 2020（arXiv:2006.11239）本文只讲原理与公式，不涉及代码。 本文由AI生成。"}</script><link rel="canonical" href="https://xyz.desirer233.fun/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/"><link rel="icon" href="/images/icon2.png"><link rel="preconnect" href="https://use.fontawesome.com" crossorigin="anonymous"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"><link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.0.0/css/all.css"><link rel="stylesheet" href="/css/github-calendar.css"><link data-pjax rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/atom-one-light.css" media="(prefers-color-scheme: light)"><link data-pjax rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/atom-one-dark.css" media="(prefers-color-scheme: dark)"><script>window.IcarusAppearance.sync();</script><link data-variant rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;600&amp;family=Source+Code+Pro&amp;display=swap"><link data-variant rel="stylesheet" href="/css/default.css"><script>if (!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) {
+    document.documentElement.classList.add('is-animating');
+}</script><style>html.is-animating body>.footer,html.is-animating body>.navbar,html.is-animating body>.section{opacity:0}</style><!--!--><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/css/lightgallery-bundle.min.css" data-pjax><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/justified-gallery@4.0.2/dist/assets/justified-gallery.css" data-pjax><!--!--><style>.pace{-webkit-pointer-events:none;pointer-events:none;-webkit-user-select:none;-moz-user-select:none;user-select:none}.pace-inactive{display:none}.pace .pace-progress{background:#3273dc;position:fixed;z-index:2000;top:0;right:100%;width:100%;height:3px}</style><script>window.paceOptions = Object.assign({}, window.paceOptions, {
+      restartOnPushState: false,
+      restartOnRequestAfter: false
+    });
+    document.addEventListener('pjax:send', function () {
+      if (window.Pace) window.Pace.restart();
+    });</script><script src="https://cdn.jsdelivr.net/npm/pace-js@1.2.4/pace.min.js"></script><!--!--><!--!--><!-- hexo injector head_end start --><script>
   (function () {
       function switchTab() {
           if (!location.hash) {
             return;
           }
 
-          const id = '#' + CSS.escape(location.hash.substring(1));
+          let hash = location.hash.substring(1);
+          try {
+            // Non-ASCII IDs are percent-encoded in the URL
+            hash = decodeURIComponent(hash);
+          } catch (e) {}
+          const id = '#' + CSS.escape(hash);
           const $tabMenu = document.querySelector(`.tabs a[href="${id}"]`);
           if (!$tabMenu) {
             return;
@@ -42,10 +39,15 @@
               $activeTab.classList.remove('is-hidden');
           }
       }
-      switchTab();
+      // The script is in <head>, so wait for the tabs to switch to the tab in the URL
+      if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', switchTab);
+      } else {
+          switchTab();
+      }
       window.addEventListener('hashchange', switchTab, false);
   })();
-  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 6.3.0"></head><body class="is-3-column"><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><div class="navbar-start"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a><a class="navbar-item is-hidden-tablet catalogue" title="目录" href="javascript:;"><i class="fas fa-list-ul"></i></a><a class="navbar-item search" title="搜索" href="javascript:;"><i class="fas fa-search"></i></a></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-9-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2026-10-06T06:00:00.000Z" title="2026/10/6 14:00:00">2026-10-06</time>发表</span><span class="level-item"><time dateTime="2026-10-25T09:14:07.000Z" title="2026/10/25 17:14:07">2026-10-25</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/AI/">AI</a></span><span class="level-item">1 小时读完 (大约10104个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">DDPM 基本原理讲解</h1><div class="content"><blockquote>
+  </script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 8.1.2"></head><body class="is-2-column"><div id="browser-notice" data-pjax></div><nav class="navbar navbar-main"><div class="container navbar-container"><div class="navbar-brand justify-content-center"><a class="navbar-item navbar-logo" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a></div><div class="navbar-menu"><button class="navbar-item navbar-toggle" type="button" title="菜单" aria-label="菜单" aria-expanded="false" aria-controls="navbar-main-menu"><i class="fas fa-bars" aria-hidden="true"></i></button><div class="navbar-start" id="navbar-main-menu"><a class="navbar-item" href="/">主页</a><a class="navbar-item" href="/bangumis">追番</a><a class="navbar-item" href="/archives">归档</a><a class="navbar-item" href="/categories">分类</a><a class="navbar-item" href="/tags">标签</a><a class="navbar-item" href="/about">关于</a></div><div class="navbar-end"><a class="navbar-item" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus" aria-label="Download on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a><button class="navbar-item is-hidden-tablet catalogue" type="button" title="目录" aria-label="目录"><i class="fas fa-list-ul" aria-hidden="true"></i></button><button class="navbar-item appearance-toggle" type="button" title="切换深色模式" aria-label="切换深色模式" aria-pressed="false"><i class="fas fa-adjust" aria-hidden="true"></i></button><button class="navbar-item search" type="button" title="搜索" aria-label="搜索"><i class="fas fa-search" aria-hidden="true"></i></button></div></div></div></nav><section class="section"><div class="container"><div class="columns"><div class="column order-2 column-main is-8-tablet is-8-desktop is-8-widescreen"><div class="card"><article class="card-content article" role="article"><div class="article-meta is-size-7 is-uppercase level is-mobile"><div class="level-left"><span class="level-item"><time dateTime="2026-10-06T06:00:00.000Z" title="2026-10-06 14:00:00">2026-10-06</time>发表</span><span class="level-item"><time dateTime="2026-10-25T09:14:07.000Z" title="2026-10-25 17:14:07">2026-10-25</time>更新</span><span class="level-item"><a class="link-muted" href="/categories/AI/">AI</a></span><span class="level-item">1 小时读完 (大约9133个字)</span></div></div><h1 class="title is-3 is-size-4-mobile">DDPM 基本原理讲解</h1><div class="message message-immersive is-warning article-outdated" role="note" data-outdated-days="365" hidden><div class="message-body"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i><span class="article-outdated-text" data-template="本文最后更新于%s，其中的部分内容可能已经过时。">本文最后更新于<time dateTime="2026-10-25T09:14:07.000Z" title="2026-10-25 17:14:07">2026-10-25</time>，其中的部分内容可能已经过时。</span></div></div><div class="content"><blockquote>
 <p>参考论文：Ho, Jain, Abbeel. <em>Denoising Diffusion Probabilistic Models</em>, NeurIPS 2020（arXiv:2006.11239）<br>本文只讲原理与公式，不涉及代码。</p>
 </blockquote>
 <blockquote>
@@ -95,7 +97,7 @@
 <p><strong>③ 两个会反复用到的性质</strong></p>
 <ul>
 <li><strong>可加性</strong>：两个独立的零均值高斯相加，还是零均值高斯，<strong>方差直接相加</strong>。<br>$$\mathcal N(0, \sigma_1^2) + \mathcal N(0, \sigma_2^2) &#x3D; \mathcal N(0, \sigma_1^2 + \sigma_2^2)$$<br>这是后面”一步跳到第 $t$ 步”的根据。</li>
-<li>**KL 散度 $D_{\text{KL}}$**：衡量两个分布”差多远”，恒 $\ge 0$，两个分布完全相同时等于 0。</li>
+<li><strong>KL 散度 $D_{\text{KL}}$</strong>：衡量两个分布”差多远”，恒 $\ge 0$，两个分布完全相同时等于 0。</li>
 </ul>
 <p><strong>④ 三种概率写法：$P(B)$、$P(B, C)$、$P(B \mid C)$</strong></p>
 <p>这三兄弟看着像，<strong>唯一区别在分母是谁</strong>。用 100 天的例子（$C$ &#x3D; 下雨共 30 天，$B$ &#x3D; 地湿共 40 天，两者都发生共 27 天）：</p>
@@ -329,7 +331,7 @@
 <p>$$\boxed{\beta_t &#x3D; \left(\sqrt{\beta_{\text{start}}} + \big(\sqrt{\beta_{\text{end}}} - \sqrt{\beta_{\text{start}}}\big),\frac{t}{T-1}\right)^2}$$</p>
 <p>Stable Diffusion 1.x 取 $\beta_{\text{start}} &#x3D; 0.00085$，$\beta_{\text{end}} &#x3D; 0.012$，$T &#x3D; 1000$。末端 $\beta$ 更小，是因为它工作在 VAE 压缩后的潜空间里，噪声强度需要相应调小。</p>
 <p><strong>③ cosine（Improved DDPM，Nichol &amp; Dhariwal 2021）</strong></p>
-<p>它**不直接定义 $\beta_t$**，而是先定好 $\bar\alpha_t$，再反推每一步的 $\beta_t$：</p>
+<p>它<strong>不直接定义 $\beta_t$</strong>，而是先定好 $\bar\alpha_t$，再反推每一步的 $\beta_t$：</p>
 <p>$$\bar\alpha_t &#x3D; \frac{f(t&#x2F;T)}{f(0)}, \qquad f(u) &#x3D; \cos^2!\left(\frac{u + s}{1 + s}\cdot\frac{\pi}{2}\right), \quad s &#x3D; 0.008$$</p>
 <p>$$\beta_t &#x3D; 1 - \frac{\bar\alpha_t}{\bar\alpha_{t-1}}, \qquad \text{并裁剪 } \beta_t \le 0.999$$</p>
 <blockquote>
@@ -376,7 +378,7 @@
 <blockquote>
 <p><strong>说人话</strong>：线性调度在<strong>中段掉得太快</strong>——走到一半时原图只剩 7.8%，后面几百步几乎都在对着纯噪声做无用功，浪费了步数。cosine 让”还剩多少图”下降得更均匀，每一步都更有信息量，所以在步数较少（比如只采 50 步）时优势明显。</p>
 </blockquote>
-<p>无论用哪种，唯一的要求只有一条：**掺到最后 $\bar\alpha_T \approx 0$**，让 $x_T$ 足够接近标准高斯，反向才能直接从 $\mathcal N(0, I)$ 起步。</p>
+<p>无论用哪种，唯一的要求只有一条：<strong>掺到最后 $\bar\alpha_T \approx 0$</strong>，让 $x_T$ 足够接近标准高斯，反向才能直接从 $\mathcal N(0, I)$ 起步。</p>
 <hr>
 <h2 id="5-反向过程：怎么把图救回来"><a href="#5-反向过程：怎么把图救回来" class="headerlink" title="5. 反向过程：怎么把图救回来"></a>5. 反向过程：怎么把图救回来</h2><h3 id="5-1-想要什么，能算什么"><a href="#5-1-想要什么，能算什么" class="headerlink" title="5.1 想要什么，能算什么"></a>5.1 想要什么，能算什么</h3><p>我们<strong>想要</strong>的是：给定一团噪声 $x_t$，还原出上一步 $x_{t-1}$，也就是 $q(x_{t-1} \mid x_t)$。</p>
 <p>问题是：这个分布要”知道全世界的图片长什么样”才算得出来，<strong>算不动</strong>。</p>
@@ -392,7 +394,7 @@
 <blockquote>
 <p><strong>说人话</strong>：每一步只做极小的修正，那么”从上一步到这一步”这件事的形状就很简单，简单到用一条钟形曲线就能描出来。<br>这也解释了为什么扩散模型需要很多步：<strong>步数越多，每步的修正越小，高斯近似越准</strong>。</p>
 </blockquote>
-<h3 id="5-3-训练时的”标准答案”：后验"><a href="#5-3-训练时的”标准答案”：后验" class="headerlink" title="5.3 训练时的”标准答案”：后验"></a>5.3 训练时的”标准答案”：后验</h3><p>训练时我们有个作弊器——**$x_0$ 是已知的**（就是训练样本本身）。</p>
+<h3 id="5-3-训练时的”标准答案”：后验"><a href="#5-3-训练时的”标准答案”：后验" class="headerlink" title="5.3 训练时的”标准答案”：后验"></a>5.3 训练时的”标准答案”：后验</h3><p>训练时我们有个作弊器——<strong>$x_0$ 是已知的</strong>（就是训练样本本身）。</p>
 <p>一旦把 $x_0$ 也给定，$q(x_{t-1} \mid x_t)$ 就变成<strong>可以精确算出来的高斯</strong>了：</p>
 <p>$$\boxed{q(x_{t-1} \mid x_t, x_0) &#x3D; \mathcal N\big(x_{t-1};\ \tilde\mu_t(x_t, x_0),\ \tilde\beta_t I\big)}$$</p>
 <p>$$\tilde\mu_t(x_t, x_0) &#x3D; \frac{\sqrt{\bar\alpha_{t-1}},\beta_t}{1 - \bar\alpha_t}, x_0 ;+; \frac{\sqrt{\alpha_t},(1 - \bar\alpha_{t-1})}{1 - \bar\alpha_t}, x_t$$</p>
@@ -437,7 +439,7 @@
 </tbody></table>
 <p>代入：$P(\text{下雨} \mid \text{地湿}) &#x3D; 0.9 \times 0.3 ,&#x2F;, 0.4 &#x3D; 0.675$。</p>
 <p><strong>第 1 步：写成”带条件”的贝叶斯公式。</strong></p>
-<p>直接套 $P(A \mid B)$ 还不够，因为 DDPM 这里**多了一个条件 $x_0$**（训练时原图摆在眼前）。所以要用条件版：</p>
+<p>直接套 $P(A \mid B)$ 还不够，因为 DDPM 这里<strong>多了一个条件 $x_0$</strong>（训练时原图摆在眼前）。所以要用条件版：</p>
 <p>$$P(A \mid B, C) &#x3D; \frac{P(B \mid A, C),P(A \mid C)}{P(B \mid C)}$$</p>
 <blockquote>
 <p><strong>说人话</strong>：$C$ 是”额外已知的背景信息”，全程不动。<strong>左边条件里挂着 $C$，右边每一项就都得跟着挂上 $C$</strong> ——就这么简单，没有别的花样。</p>
@@ -482,7 +484,7 @@
 <p><strong>说人话</strong>：已经知道”下雨了”，再告诉你”昨天也下过雨”，也改变不了”今天地湿不湿”。</p>
 </blockquote>
 <p><strong>第 3 步：把分母扔掉。</strong></p>
-<p>分母 $q(x_t \mid x_0)$ 里<strong>根本没有 $x_{t-1}$<strong>。而我们求的是”关于 $x_{t-1}$ 的分布”，关心的是曲线</strong>峰在哪、有多胖</strong>；分母对每一个 $x_{t-1}$ 都乘上同一个数，只改变整体高度、<strong>不改变形状</strong>，而分布最后反正要归一化到积分为 1，高度会自动补回来。所以先写成正比号，力气全花在分子上：</p>
+<p>分母 $q(x_t \mid x_0)$ 里<strong>根本没有 $x_{t-1}$</strong>。而我们求的是”关于 $x_{t-1}$ 的分布”，关心的是曲线<strong>峰在哪、有多胖</strong>；分母对每一个 $x_{t-1}$ 都乘上同一个数，只改变整体高度、<strong>不改变形状</strong>，而分布最后反正要归一化到积分为 1，高度会自动补回来。所以先写成正比号，力气全花在分子上：</p>
 <p>$$q(x_{t-1} \mid x_t, x_0) ;\propto; \underbrace{q(x_t \mid x_{t-1})}<em>{\mathcal N(\sqrt{\alpha_t},x</em>{t-1},\ \beta_t I)} ;\cdot; \underbrace{q(x_{t-1} \mid x_0)}<em>{\mathcal N(\sqrt{\bar\alpha</em>{t-1}},x_0,\ (1-\bar\alpha_{t-1}) I)}$$</p>
 <p>右边两项<strong>都是前面已经算出来过的高斯</strong>：一个是 4.1 节的单步定义，一个是 4.3 节的闭式解。至此”未知”的东西全部消掉了。</p>
 <p><strong>常见疑问：为什么左边是 $q$ 而不是 $p_\theta$？</strong><br>因为这一步描述的是”训练数据是怎么被破坏的”（前向），完全由我们设定的 $\beta_t$ 决定，<strong>没有任何可学习参数</strong>，所以是 $q$。真正的网络 $p_\theta(x_{t-1} \mid x_t)$ 要到第 6 节才登场，登场方式就是”去拟合这个 $q$”。</p>
@@ -526,12 +528,12 @@
 <h3 id="6-1-我们真正想要的是什么"><a href="#6-1-我们真正想要的是什么" class="headerlink" title="6.1 我们真正想要的是什么"></a>6.1 我们真正想要的是什么</h3><p>训练生成模型，最正统的目标是<strong>最大似然</strong>：让模型给真实图片打高分，也就是最大化 $\log p_\theta(x_0)$。</p>
 <p>$$\text{想算：}\quad p_\theta(x_0) &#x3D; \int p_\theta(x_0, x_{1:T}),dx_{1:T}$$</p>
 <p>问题来了：这个积分要对 $x_1, \dots, x_T$ 全都积掉。在 DDPM 里是 $1000$ 步 × 每步几千维——<strong>天文数字，根本算不动</strong>。</p>
-<h3 id="6-2-算不出来怎么办-→-ELBO"><a href="#6-2-算不出来怎么办-→-ELBO" class="headerlink" title="6.2 算不出来怎么办 → ELBO"></a>6.2 算不出来怎么办 → ELBO</h3><p>算不出精确值，就退而求其次：**算一个”保底值”**。这就是 ELBO。</p>
+<h3 id="6-2-算不出来怎么办-→-ELBO"><a href="#6-2-算不出来怎么办-→-ELBO" class="headerlink" title="6.2 算不出来怎么办 → ELBO"></a>6.2 算不出来怎么办 → ELBO</h3><p>算不出精确值，就退而求其次：<strong>算一个”保底值”</strong>。这就是 ELBO。</p>
 <blockquote>
 <p><strong>ELBO &#x3D; Evidence Lower BOund &#x3D; 证据下界</strong>（论文里也叫 VLB，变分下界）。<br>“证据”指的是边际似然 $p_\theta(x_0)$；”下界”是说 ELBO 永远 $\le \log p_\theta(x_0)$，够不着，只能从下面往上顶。</p>
 </blockquote>
 <p>它们之间只差一个非负的间隙：</p>
-<p>$$\log p_\theta(x_0) &#x3D; \text{ELBO} + \underbrace{D_{\text{KL}}\big(q ,\Vert, p_\theta\big)}_{\text{间隙，恒} \ge 0} \quad\Longrightarrow\quad \text{ELBO} \le \log p_\theta(x_0)$$</p>
+<p>$$\log p_\theta(x_0) &#x3D; \text{ELBO} + \underbrace{D_{\text{KL}}\big(q ,\Vert, p_\theta\big)}<em>{\text{间隙，恒} \ge 0} \quad\Longrightarrow\quad \text{ELBO} \le \log p</em>\theta(x_0)$$</p>
 <blockquote>
 <p><strong>说人话</strong>：真实值 &#x3D; 保底值 + 一个永远为正的误差。所以<strong>把保底值往上推，真实值必然也被往上推</strong>（至少不会更低）。这就是”优化下界”的合法性来源。<br>顺带一提：这个间隙<strong>恰好</strong>是”我们假设的 $q$”和”真实后验”之间的差距。当 $q$ 正好等于真实后验时，间隙为 0，下界贴合。</p>
 </blockquote>
@@ -590,7 +592,7 @@
 <h3 id="6-5-再化简：KL-变成”均值的平方误差”"><a href="#6-5-再化简：KL-变成”均值的平方误差”" class="headerlink" title="6.5 再化简：KL 变成”均值的平方误差”"></a>6.5 再化简：KL 变成”均值的平方误差”</h3><p>两个<strong>方差已知</strong>的高斯之间的 KL 有闭式解。论文把模型的方差<strong>直接固定成常数</strong> $\Sigma_\theta &#x3D; \sigma_t^2 I$（取 $\sigma_t^2 &#x3D; \beta_t$ 或 $\tilde\beta_t$ 都行），于是 KL 里只剩下均值在打架：</p>
 <p>$$L_{t-1} &#x3D; \mathbb E_{q}!\left[\frac{1}{2\sigma_t^2},\big\Vert \tilde\mu_t(x_t, x_0) - \mu_\theta(x_t, t) \big\Vert^2\right] + C$$</p>
 <blockquote>
-<p><strong>说人话</strong>：目标已经很干净了——**让网络预测的均值，去贴近那个算得出来的标准答案 $\tilde\mu_t$**。就是个回归问题。</p>
+<p><strong>说人话</strong>：目标已经很干净了——<strong>让网络预测的均值，去贴近那个算得出来的标准答案 $\tilde\mu_t$</strong>。就是个回归问题。</p>
 </blockquote>
 <h3 id="6-6-最后一步转折：别预测均值了，改预测噪声"><a href="#6-6-最后一步转折：别预测均值了，改预测噪声" class="headerlink" title="6.6 最后一步转折：别预测均值了，改预测噪声"></a>6.6 最后一步转折：别预测均值了，改预测噪声</h3><p>直接让网络输出 $\mu_\theta$ 效果一般。论文的巧妙做法是：把 $x_0$ 从标准答案里<strong>消掉</strong>。</p>
 <p>由闭式解反解出 $x_0$：</p>
@@ -605,7 +607,7 @@
 <h3 id="6-7-最终用的：把权重丢掉"><a href="#6-7-最终用的：把权重丢掉" class="headerlink" title="6.7 最终用的：把权重丢掉"></a>6.7 最终用的：把权重丢掉</h3><p>论文发现，把这个权重系数<strong>直接扔了</strong>效果反而更好：</p>
 <p>$$\boxed{L_{\text{simple}} &#x3D; \mathbb E_{t,, x_0,, \epsilon}\left[\big\Vert \epsilon - \epsilon_\theta(\underbrace{\sqrt{\bar\alpha_t},x_0 + \sqrt{1 - \bar\alpha_t},\epsilon}_{&#x3D;\ x_t},\ t) \big\Vert^2\right]}$$</p>
 <p>其中 $t \sim \text{Uniform}{1,\dots,T}$，$x_0$ 来自数据集，$\epsilon \sim \mathcal N(0, I)$。</p>
-<p>为什么要扔？那个权重会让<strong>高噪声的步（$t$ 大）</strong>被压得很小，模型就不太重视”从纯噪声开始”这个最难也最关键的阶段。扔掉后所有噪声水平一视同仁，生成的图质量（FID）更好。</p>
+<p>为什么要扔？那个权重会让**高噪声的步（$t$ 大）**被压得很小，模型就不太重视”从纯噪声开始”这个最难也最关键的阶段。扔掉后所有噪声水平一视同仁，生成的图质量（FID）更好。</p>
 <blockquote>
 <p><strong>说人话</strong>：DDPM 的训练目标，说到底就一句——<br><strong>给网络一张掺了噪声的图，让它猜”掺进去的噪声是什么”，猜错了就按平方误差罚它。</strong><br>一个生成模型，训练竟然只是一个去噪回归问题。这是它最反直觉、也最优雅的地方。</p>
 </blockquote>
@@ -749,7 +751,7 @@
 <p><strong>Q2：网络为什么还要把 $t$ 喂进去？</strong><br>因为第 10 步和第 900 步要猜的噪声强度完全不一样。不给 $t$，网络就不知道该猜多大。</p>
 <p><strong>Q3：采样时为什么要加那个随机项 $\sigma_t z$？不加行不行？</strong><br>不加也可以，那就是 DDIM（确定性采样），反而更快、步数更少。加了的话每一步保留随机性，样本多样性通常更好。DDPM 原版是加的。</p>
 <p><strong>Q4：训练用的噪声和闭式解里的噪声是同一个吗？</strong><br>训练时你<strong>亲自采</strong>一个 $\epsilon$，再用闭式解算出 $x_t$，然后把 $\epsilon$ 当标签监督网络——两者必须严格配对。闭式解里的 $\epsilon$ 只是”所有中间步噪声合并后的等效噪声”，它不等于任何单独一步的 $\epsilon_{t-1}$。</p>
-<p><strong>Q5：为什么不直接用闭式解反着算出 $x_0$ 就完事？</strong><br>因为反解 $x_0$ 需要知道 $\epsilon$，而 $\epsilon$ 恰恰是未知的（生成时没人告诉你掺了什么噪声）。网络的作用就是**猜这个 $\epsilon$**。</p>
+<p><strong>Q5：为什么不直接用闭式解反着算出 $x_0$ 就完事？</strong><br>因为反解 $x_0$ 需要知道 $\epsilon$，而 $\epsilon$ 恰恰是未知的（生成时没人告诉你掺了什么噪声）。网络的作用就是<strong>猜这个 $\epsilon$</strong>。</p>
 <p><strong>Q6：生成的图是不是把训练集的图背下来了？</strong><br>不是。网络学到的是”如何从噪声里还原出一张合理图”的能力，起点是全新的随机噪声，所以每次生成都不一样。当然，如果训练集很小或重复很多次，确实会出现记忆现象，但那是过拟合，不是原理。</p>
 <p><strong>Q7：为什么 $T$ 要 1000 这么大？</strong><br>为了让每一步的改动足够小，这样”逆过程也是高斯”的近似才成立、训练也更容易。代价是采样慢——后来的加速采样器就是来解决这个的。</p>
 <p><strong>Q8：ELBO 是真实似然的近似值吗？</strong><br>不是近似，是<strong>严格下界</strong>：真实值 &#x3D; ELBO + 一个恒为正的 KL 间隙。ELBO 永远只低不高。</p>
@@ -784,100 +786,675 @@
 <li>Song &amp; Ermon. <em>Generative Modeling by Estimating Gradients of the Data Distribution</em>. NeurIPS 2019.（score-based 视角，与 DDPM 等价）</li>
 <li>Song et al. <em>Denoising Diffusion Implicit Models</em>. ICLR 2021.（DDIM，确定性采样、大幅提速）</li>
 </ul>
-</div><div class="article-licensing box"><div class="licensing-title"><p>DDPM 基本原理讲解</p><p><a href="https://xyz.desirer233.fun/2026/10/06/AI/DDPM基本原理讲解/">https://xyz.desirer233.fun/2026/10/06/AI/DDPM基本原理讲解/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2026-10-06</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-10-25</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/AI%E7%94%9F%E6%88%90/">AI生成</a></div><!--!--></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2026/10/07/AI/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86%E8%BF%87%E7%A8%8B%E8%AE%B2%E8%A7%A3/"><i class="level-item fas fa-chevron-left"></i><span class="level-item">扩散模型推理过程讲解</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2026/05/31/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%9B%9B%E6%AD%A5%E6%89%93%E5%8D%B0%E4%BA%8C%E5%8F%89%E6%A0%91/"><span class="level-item">四步打印二叉树</span><i class="level-item fas fa-chevron-right"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-3-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#0-一个比喻：墨水滴进清水"><span class="level-left"><span class="level-item">1</span><span class="level-item">0. 一个比喻：墨水滴进清水</span></span></a></li><li><a class="level is-mobile" href="#1-读前只需知道四件事"><span class="level-left"><span class="level-item">2</span><span class="level-item">1. 读前只需知道四件事</span></span></a></li><li><a class="level is-mobile" href="#2-一句话版本"><span class="level-left"><span class="level-item">3</span><span class="level-item">2. 一句话版本</span></span></a></li><li><a class="level is-mobile" href="#3-符号表"><span class="level-left"><span class="level-item">4</span><span class="level-item">3. 符号表</span></span></a></li><li><a class="level is-mobile" href="#4-前向过程：怎么把一张图毁掉"><span class="level-left"><span class="level-item">5</span><span class="level-item">4. 前向过程：怎么把一张图毁掉</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#4-1-每一步具体做了什么"><span class="level-left"><span class="level-item">5.1</span><span class="level-item">4.1 每一步具体做了什么</span></span></a></li><li><a class="level is-mobile" href="#4-2-那个根号-sqrt-1-beta-t-是干嘛的？"><span class="level-left"><span class="level-item">5.2</span><span class="level-item">4.2 那个根号 $\sqrt{1-\beta_t}$ 是干嘛的？</span></span></a></li><li><a class="level is-mobile" href="#4-3-走后门：不用真的走-t-步"><span class="level-left"><span class="level-item">5.3</span><span class="level-item">4.3 走后门：不用真的走 $t$ 步</span></span></a></li><li><a class="level is-mobile" href="#4-4-bar-alpha-t-到底意味着什么"><span class="level-left"><span class="level-item">5.4</span><span class="level-item">4.4 $\bar\alpha_t$ 到底意味着什么</span></span></a></li><li><a class="level is-mobile" href="#4-5-噪声的节奏：-beta-t-的具体公式"><span class="level-left"><span class="level-item">5.5</span><span class="level-item">4.5 噪声的节奏：$\beta_t$ 的具体公式</span></span></a></li></ul></li><li><a class="level is-mobile" href="#5-反向过程：怎么把图救回来"><span class="level-left"><span class="level-item">6</span><span class="level-item">5. 反向过程：怎么把图救回来</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#5-1-想要什么，能算什么"><span class="level-left"><span class="level-item">6.1</span><span class="level-item">5.1 想要什么，能算什么</span></span></a></li><li><a class="level is-mobile" href="#5-2-为什么敢用高斯去拟合？"><span class="level-left"><span class="level-item">6.2</span><span class="level-item">5.2 为什么敢用高斯去拟合？</span></span></a></li><li><a class="level is-mobile" href="#5-3-训练时的”标准答案”：后验"><span class="level-left"><span class="level-item">6.3</span><span class="level-item">5.3 训练时的”标准答案”：后验</span></span></a></li><li><a class="level is-mobile" href="#5-3-1-这两条公式是怎么算出来的"><span class="level-left"><span class="level-item">6.4</span><span class="level-item">5.3.1 这两条公式是怎么算出来的</span></span></a></li></ul></li><li><a class="level is-mobile" href="#6-训练目标：为什么最后只是”猜噪声”"><span class="level-left"><span class="level-item">7</span><span class="level-item">6. 训练目标：为什么最后只是”猜噪声”</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#6-1-我们真正想要的是什么"><span class="level-left"><span class="level-item">7.1</span><span class="level-item">6.1 我们真正想要的是什么</span></span></a></li><li><a class="level is-mobile" href="#6-2-算不出来怎么办-→-ELBO"><span class="level-left"><span class="level-item">7.2</span><span class="level-item">6.2 算不出来怎么办 → ELBO</span></span></a></li><li><a class="level is-mobile" href="#6-3-ELBO-是怎么来的"><span class="level-left"><span class="level-item">7.3</span><span class="level-item">6.3 ELBO 是怎么来的</span></span></a></li><li><a class="level is-mobile" href="#6-4-摊开：ELBO-变成一堆-KL"><span class="level-left"><span class="level-item">7.4</span><span class="level-item">6.4 摊开：ELBO 变成一堆 KL</span></span></a></li><li><a class="level is-mobile" href="#6-5-再化简：KL-变成”均值的平方误差”"><span class="level-left"><span class="level-item">7.5</span><span class="level-item">6.5 再化简：KL 变成”均值的平方误差”</span></span></a></li><li><a class="level is-mobile" href="#6-6-最后一步转折：别预测均值了，改预测噪声"><span class="level-left"><span class="level-item">7.6</span><span class="level-item">6.6 最后一步转折：别预测均值了，改预测噪声</span></span></a></li><li><a class="level is-mobile" href="#6-7-最终用的：把权重丢掉"><span class="level-left"><span class="level-item">7.7</span><span class="level-item">6.7 最终用的：把权重丢掉</span></span></a></li></ul></li><li><a class="level is-mobile" href="#7-完整流程（就这两张清单）"><span class="level-left"><span class="level-item">8</span><span class="level-item">7. 完整流程（就这两张清单）</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#训练（重复到收敛）"><span class="level-left"><span class="level-item">8.1</span><span class="level-item">训练（重复到收敛）</span></span></a></li><li><a class="level is-mobile" href="#生成（采样）"><span class="level-left"><span class="level-item">8.2</span><span class="level-item">生成（采样）</span></span></a></li></ul></li><li><a class="level is-mobile" href="#8-三种等价说法（换个马甲你也要认得）"><span class="level-left"><span class="level-item">9</span><span class="level-item">8. 三种等价说法（换个马甲你也要认得）</span></span></a></li><li><a class="level is-mobile" href="#9-论文里的几个关键设计"><span class="level-left"><span class="level-item">10</span><span class="level-item">9. 论文里的几个关键设计</span></span></a></li><li><a class="level is-mobile" href="#10-为什么”学会去噪”就等于”学会生成”？"><span class="level-left"><span class="level-item">11</span><span class="level-item">10. 为什么”学会去噪”就等于”学会生成”？</span></span></a></li><li><a class="level is-mobile" href="#11-常见问题-FAQ"><span class="level-left"><span class="level-item">12</span><span class="level-item">11. 常见问题 FAQ</span></span></a></li><li><a class="level is-mobile" href="#12-公式速查表"><span class="level-left"><span class="level-item">13</span><span class="level-item">12. 公式速查表</span></span></a></li><li><a class="level is-mobile" href="#13-记不住的时候，只留这三句"><span class="level-left"><span class="level-item">14</span><span class="level-item">13. 记不住的时候，只留这三句</span></span></a></li><li><a class="level is-mobile" href="#参考"><span class="level-left"><span class="level-item">15</span><span class="level-item">参考</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/AI/"><span class="level-start"><span class="level-item">AI</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">15</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a> modified by <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Desirer</a><br><a target="_blank" rel="noopener" href="https://beian.miit.gov.cn">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/"><i class="fab fa-creative-commons"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/"><i class="fab fa-creative-commons-by"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus"><i class="fab fa-github"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/moment@2.22.2/min/moment-with-locales.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.4/dist/clipboard.min.js" defer></script><script>moment.locale("zh-cn");</script><script>var IcarusThemeSettings = {
-            article: {
-                highlight: {
-                    clipboard: true,
-                    fold: 'unfolded'
-                }
-            }
-        };</script><script src="/js/column.js"></script><script src="/js/animation.js"></script><a id="back-to-top" title="回到顶端" href="javascript:;"><i class="fas fa-chevron-up"></i></a><script src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@1.10.0/dist/js/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js" defer></script><script>window.addEventListener("load", () => {
-            if (typeof $.fn.lightGallery === 'function') {
-                $('.article').lightGallery({ selector: '.gallery-item' });
-            }
-            if (typeof $.fn.justifiedGallery === 'function') {
-                if ($('.justified-gallery > p > .gallery-item').length) {
-                    $('.justified-gallery > p > .gallery-item').unwrap();
-                }
-                $('.justified-gallery').justifiedGallery();
-            }
-        });</script><script type="text/x-mathjax-config">MathJax.Hub.Config({
-            'HTML-CSS': {
-                matchFontHeight: false
-            },
-            SVG: {
-                matchFontHeight: false
-            },
-            CommonHTML: {
-                matchFontHeight: false
-            },
-            tex2jax: {
-                inlineMath: [
-                    ['$','$'],
-                    ['\\(','\\)']
-                ]
-            }
-        });</script><script src="https://cdn.jsdelivr.net/npm/mathjax@2.7.9/unpacked/MathJax.js?config=TeX-MML-AM_CHTML" defer></script><!--!--><script src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script src="/js/insight.js" defer></script><script>document.addEventListener('DOMContentLoaded', function () {
-            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
-        });</script><!-- hexo injector body_end start --><script>(function () {
-  var KEY = 'hexo-theme-mode';
-
-  function current() {
-    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-  }
-
-  function syncHighlight(dark) {
-    var hl = document.querySelector('link[href*="highlight.js"][href*="atom-one-"]');
-    if (!hl) return;
-    hl.href = dark
-      ? hl.href.replace('atom-one-light.css', 'atom-one-dark.css')
-      : hl.href.replace('atom-one-dark.css', 'atom-one-light.css');
-  }
-
-  function apply(t) {
-    var dark = t === 'dark';
-    document.documentElement.setAttribute('data-theme', t);
-    document.documentElement.style.colorScheme = t;
-    var link = document.getElementById('dark-mode-css');
-    if (link) link.media = dark ? 'all' : 'not all';
-    syncHighlight(dark);
-    var btn = document.getElementById('dark-mode-toggle');
-    if (btn) {
-      btn.innerHTML = '<i class="fas fa-moon"></i>';
-      btn.title = dark ? '切换到浅色模式' : '切换到深色模式';
-      btn.setAttribute('aria-label', btn.title);
+</div><div class="article-licensing box"><div class="licensing-title"><p>DDPM 基本原理讲解</p><p><a href="https://xyz.desirer233.fun/2026/10/06/AI/DDPM基本原理讲解/">https://xyz.desirer233.fun/2026/10/06/AI/DDPM基本原理讲解/</a></p></div><div class="licensing-meta level is-mobile"><div class="level-left"><div class="level-item is-narrow"><div><h6>作者</h6><p>Desirer</p></div></div><div class="level-item is-narrow"><div><h6>发布于</h6><p>2026-10-06</p></div></div><div class="level-item is-narrow"><div><h6>更新于</h6><p>2026-10-25</p></div></div><div class="level-item is-narrow"><div><h6>许可协议</h6><p><a class="icons" rel="noopener" target="_blank" title="Creative Commons" href="https://creativecommons.org/"><i class="icon fab fa-creative-commons"></i></a></p></div></div></div></div></div><div class="article-tags is-size-7 mb-4"><span class="mr-2">#</span><a class="link-muted mr-2" rel="tag" href="/tags/AI%E7%94%9F%E6%88%90/">AI生成</a></div><div class="hexo-component-share" data-share-provider="web_share" data-url="https://xyz.desirer233.fun/2026/10/06/AI/DDPM%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3/" data-title="DDPM 基本原理讲解"><div class="buttons is-centered"><a class="button" style="background-color:#000000;border-color:#000000;color:#ffffff" data-share-network="x" href="https://twitter.com/intent/tweet?url=https%3A%2F%2Fxyz.desirer233.fun%2F2026%2F10%2F06%2FAI%2FDDPM%25E5%259F%25BA%25E6%259C%25AC%25E5%258E%259F%25E7%2590%2586%25E8%25AE%25B2%25E8%25A7%25A3%2F&amp;text=DDPM%20%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3" target="_blank" rel="noopener noreferrer" aria-label="Share on X"><span class="icon" aria-hidden="true"><svg width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3L12 14.6 5.5 22H2.4l7.9-9L.8 2h6.5l4.5 6.7L18.9 2Zm-1.1 18h1.7L6.4 3.9H4.6L17.8 20Z"></path></svg></span><span>X</span></a><a class="button" style="background-color:#0866ff;border-color:#0866ff;color:#ffffff" data-share-network="facebook" href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fxyz.desirer233.fun%2F2026%2F10%2F06%2FAI%2FDDPM%25E5%259F%25BA%25E6%259C%25AC%25E5%258E%259F%25E7%2590%2586%25E8%25AE%25B2%25E8%25A7%25A3%2F" target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook"><span class="icon" aria-hidden="true"><i class="fab fa-facebook-f"></i></span><span>Facebook</span></a><a class="button" style="background-color:#e6162d;border-color:#e6162d;color:#ffffff" data-share-network="weibo" href="https://service.weibo.com/share/share.php?url=https%3A%2F%2Fxyz.desirer233.fun%2F2026%2F10%2F06%2FAI%2FDDPM%25E5%259F%25BA%25E6%259C%25AC%25E5%258E%259F%25E7%2590%2586%25E8%25AE%25B2%25E8%25A7%25A3%2F&amp;title=DDPM%20%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3" target="_blank" rel="noopener noreferrer" aria-label="Share on Weibo"><span class="icon" aria-hidden="true"><i class="fab fa-weibo"></i></span><span>Weibo</span></a><a class="button" style="background-color:#26a5e4;border-color:#26a5e4;color:#ffffff" data-share-network="telegram" href="https://t.me/share/url?url=https%3A%2F%2Fxyz.desirer233.fun%2F2026%2F10%2F06%2FAI%2FDDPM%25E5%259F%25BA%25E6%259C%25AC%25E5%258E%259F%25E7%2590%2586%25E8%25AE%25B2%25E8%25A7%25A3%2F&amp;text=DDPM%20%E5%9F%BA%E6%9C%AC%E5%8E%9F%E7%90%86%E8%AE%B2%E8%A7%A3" target="_blank" rel="noopener noreferrer" aria-label="Share on Telegram"><span class="icon" aria-hidden="true"><i class="fab fa-telegram-plane"></i></span><span>Telegram</span></a><a class="button" style="background-color:#0a66c2;border-color:#0a66c2;color:#ffffff" data-share-network="linkedin" href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fxyz.desirer233.fun%2F2026%2F10%2F06%2FAI%2FDDPM%25E5%259F%25BA%25E6%259C%25AC%25E5%258E%259F%25E7%2590%2586%25E8%25AE%25B2%25E8%25A7%25A3%2F" target="_blank" rel="noopener noreferrer" aria-label="Share on LinkedIn"><span class="icon" aria-hidden="true"><i class="fab fa-linkedin-in"></i></span><span>LinkedIn</span></a><span class="has-text-centered" data-share-native="" hidden><button class="button" type="button" hidden><span class="icon" aria-hidden="true"><i class="fas fa-share-alt"></i></span><span>更多</span></button></span></div><p role="status" hidden>System sharing is unavailable in this browser. You can use the platform buttons above.</p></div><script>(function () {
+      function shareUrl(network, url, title) {
+  var link = encodeURIComponent(url);
+  var text = encodeURIComponent(title);
+  return {
+    x: 'https://twitter.com/intent/tweet?url=' + link + '&text=' + text,
+    facebook: 'https://www.facebook.com/sharer/sharer.php?u=' + link,
+    weibo: 'https://service.weibo.com/share/share.php?url=' + link + '&title=' + text,
+    telegram: 'https://t.me/share/url?url=' + link + '&text=' + text,
+    linkedin: 'https://www.linkedin.com/sharing/share-offsite/?url=' + link
+  }[network];
+}
+      document.querySelectorAll('.hexo-component-share').forEach(function (container) {
+        var button = container.querySelector('button');
+        var status = container.querySelector('[role="status"]');
+        var native = container.querySelector('[data-share-native]');
+        var data = { title: container.dataset.title || document.title, url: container.dataset.url || window.location.href };
+        container.querySelectorAll('[data-share-network]').forEach(function (link) {
+          link.href = shareUrl(link.dataset.shareNetwork, data.url, data.title);
+        });
+        button.hidden = false;
+        native.hidden = false;
+        button.disabled = typeof navigator.share !== 'function';
+        status.hidden = !button.disabled;
+        button.onclick = async function () {
+          status.hidden = true;
+          try {
+            await navigator.share({ title: container.dataset.title || document.title, url: container.dataset.url || window.location.href });
+          } catch (error) {
+            if (error && error.name === 'AbortError') return;
+            status.hidden = false;
+          }
+        };
+      });
+    })();</script></article></div><!--!--><nav class="post-navigation mt-4 level is-mobile"><div class="level-start"><a class="article-nav-prev level level-item link-muted" href="/2026/10/07/AI/%E6%89%A9%E6%95%A3%E6%A8%A1%E5%9E%8B%E6%8E%A8%E7%90%86%E8%BF%87%E7%A8%8B%E8%AE%B2%E8%A7%A3/"><i class="level-item fas fa-chevron-left" aria-hidden="true"></i><span class="level-item">扩散模型推理过程讲解</span></a></div><div class="level-end"><a class="article-nav-next level level-item link-muted" href="/2026/05/31/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%9B%9B%E6%AD%A5%E6%89%93%E5%8D%B0%E4%BA%8C%E5%8F%89%E6%A0%91/"><span class="level-item">四步打印二叉树</span><i class="level-item fas fa-chevron-right" aria-hidden="true"></i></a></div></nav><!--!--></div><div class="column column-left is-4-tablet is-4-desktop is-4-widescreen  order-1 is-sticky"><div class="card widget" id="toc" data-type="toc"><div class="card-content"><div class="menu"><h3 class="menu-label">目录</h3><ul class="menu-list"><li><a class="level is-mobile" href="#0-一个比喻：墨水滴进清水"><span class="level-left"><span class="level-item">1</span><span class="level-item">0. 一个比喻：墨水滴进清水</span></span></a></li><li><a class="level is-mobile" href="#1-读前只需知道四件事"><span class="level-left"><span class="level-item">2</span><span class="level-item">1. 读前只需知道四件事</span></span></a></li><li><a class="level is-mobile" href="#2-一句话版本"><span class="level-left"><span class="level-item">3</span><span class="level-item">2. 一句话版本</span></span></a></li><li><a class="level is-mobile" href="#3-符号表"><span class="level-left"><span class="level-item">4</span><span class="level-item">3. 符号表</span></span></a></li><li><a class="level is-mobile" href="#4-前向过程：怎么把一张图毁掉"><span class="level-left"><span class="level-item">5</span><span class="level-item">4. 前向过程：怎么把一张图毁掉</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#4-1-每一步具体做了什么"><span class="level-left"><span class="level-item">5.1</span><span class="level-item">4.1 每一步具体做了什么</span></span></a></li><li><a class="level is-mobile" href="#4-2-那个根号-sqrt-1-beta-t-是干嘛的？"><span class="level-left"><span class="level-item">5.2</span><span class="level-item">4.2 那个根号 $\sqrt{1-\beta_t}$ 是干嘛的？</span></span></a></li><li><a class="level is-mobile" href="#4-3-走后门：不用真的走-t-步"><span class="level-left"><span class="level-item">5.3</span><span class="level-item">4.3 走后门：不用真的走 $t$ 步</span></span></a></li><li><a class="level is-mobile" href="#4-4-bar-alpha-t-到底意味着什么"><span class="level-left"><span class="level-item">5.4</span><span class="level-item">4.4 $\bar\alpha_t$ 到底意味着什么</span></span></a></li><li><a class="level is-mobile" href="#4-5-噪声的节奏：-beta-t-的具体公式"><span class="level-left"><span class="level-item">5.5</span><span class="level-item">4.5 噪声的节奏：$\beta_t$ 的具体公式</span></span></a></li></ul></li><li><a class="level is-mobile" href="#5-反向过程：怎么把图救回来"><span class="level-left"><span class="level-item">6</span><span class="level-item">5. 反向过程：怎么把图救回来</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#5-1-想要什么，能算什么"><span class="level-left"><span class="level-item">6.1</span><span class="level-item">5.1 想要什么，能算什么</span></span></a></li><li><a class="level is-mobile" href="#5-2-为什么敢用高斯去拟合？"><span class="level-left"><span class="level-item">6.2</span><span class="level-item">5.2 为什么敢用高斯去拟合？</span></span></a></li><li><a class="level is-mobile" href="#5-3-训练时的”标准答案”：后验"><span class="level-left"><span class="level-item">6.3</span><span class="level-item">5.3 训练时的”标准答案”：后验</span></span></a></li><li><a class="level is-mobile" href="#5-3-1-这两条公式是怎么算出来的"><span class="level-left"><span class="level-item">6.4</span><span class="level-item">5.3.1 这两条公式是怎么算出来的</span></span></a></li></ul></li><li><a class="level is-mobile" href="#6-训练目标：为什么最后只是”猜噪声”"><span class="level-left"><span class="level-item">7</span><span class="level-item">6. 训练目标：为什么最后只是”猜噪声”</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#6-1-我们真正想要的是什么"><span class="level-left"><span class="level-item">7.1</span><span class="level-item">6.1 我们真正想要的是什么</span></span></a></li><li><a class="level is-mobile" href="#6-2-算不出来怎么办-→-ELBO"><span class="level-left"><span class="level-item">7.2</span><span class="level-item">6.2 算不出来怎么办 → ELBO</span></span></a></li><li><a class="level is-mobile" href="#6-3-ELBO-是怎么来的"><span class="level-left"><span class="level-item">7.3</span><span class="level-item">6.3 ELBO 是怎么来的</span></span></a></li><li><a class="level is-mobile" href="#6-4-摊开：ELBO-变成一堆-KL"><span class="level-left"><span class="level-item">7.4</span><span class="level-item">6.4 摊开：ELBO 变成一堆 KL</span></span></a></li><li><a class="level is-mobile" href="#6-5-再化简：KL-变成”均值的平方误差”"><span class="level-left"><span class="level-item">7.5</span><span class="level-item">6.5 再化简：KL 变成”均值的平方误差”</span></span></a></li><li><a class="level is-mobile" href="#6-6-最后一步转折：别预测均值了，改预测噪声"><span class="level-left"><span class="level-item">7.6</span><span class="level-item">6.6 最后一步转折：别预测均值了，改预测噪声</span></span></a></li><li><a class="level is-mobile" href="#6-7-最终用的：把权重丢掉"><span class="level-left"><span class="level-item">7.7</span><span class="level-item">6.7 最终用的：把权重丢掉</span></span></a></li></ul></li><li><a class="level is-mobile" href="#7-完整流程（就这两张清单）"><span class="level-left"><span class="level-item">8</span><span class="level-item">7. 完整流程（就这两张清单）</span></span></a><ul class="menu-list"><li><a class="level is-mobile" href="#训练（重复到收敛）"><span class="level-left"><span class="level-item">8.1</span><span class="level-item">训练（重复到收敛）</span></span></a></li><li><a class="level is-mobile" href="#生成（采样）"><span class="level-left"><span class="level-item">8.2</span><span class="level-item">生成（采样）</span></span></a></li></ul></li><li><a class="level is-mobile" href="#8-三种等价说法（换个马甲你也要认得）"><span class="level-left"><span class="level-item">9</span><span class="level-item">8. 三种等价说法（换个马甲你也要认得）</span></span></a></li><li><a class="level is-mobile" href="#9-论文里的几个关键设计"><span class="level-left"><span class="level-item">10</span><span class="level-item">9. 论文里的几个关键设计</span></span></a></li><li><a class="level is-mobile" href="#10-为什么”学会去噪”就等于”学会生成”？"><span class="level-left"><span class="level-item">11</span><span class="level-item">10. 为什么”学会去噪”就等于”学会生成”？</span></span></a></li><li><a class="level is-mobile" href="#11-常见问题-FAQ"><span class="level-left"><span class="level-item">12</span><span class="level-item">11. 常见问题 FAQ</span></span></a></li><li><a class="level is-mobile" href="#12-公式速查表"><span class="level-left"><span class="level-item">13</span><span class="level-item">12. 公式速查表</span></span></a></li><li><a class="level is-mobile" href="#13-记不住的时候，只留这三句"><span class="level-left"><span class="level-item">14</span><span class="level-item">13. 记不住的时候，只留这三句</span></span></a></li><li><a class="level is-mobile" href="#参考"><span class="level-left"><span class="level-item">15</span><span class="level-item">参考</span></span></a></li></ul></div></div><script src="/js/toc.js" defer></script></div><div class="card widget" data-type="categories"><div class="card-content"><div class="menu"><h3 class="menu-label">分类</h3><ul class="menu-list"><li><a class="level is-mobile" href="/categories/AI/"><span class="level-start"><span class="level-item">AI</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/C/"><span class="level-start"><span class="level-item">C++</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-824/"><span class="level-start"><span class="level-item">MIT6.824</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/"><span class="level-start"><span class="level-item">MIT6.S081</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/MIT6-S081/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">10</span></span></a></li><li><a class="level is-mobile" href="/categories/MIT6-S081/xv6book/"><span class="level-start"><span class="level-item">xv6book</span></span><span class="level-end"><span class="level-item tag">8</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/cmu15445/"><span class="level-start"><span class="level-item">cmu15445</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/cmu15445/lab/"><span class="level-start"><span class="level-item">lab</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/"><span class="level-start"><span class="level-item">后端开发</span></span><span class="level-end"><span class="level-item tag">10</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/Redis/"><span class="level-start"><span class="level-item">Redis</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/buttonRPC/"><span class="level-start"><span class="level-item">buttonRPC</span></span><span class="level-end"><span class="level-item tag">1</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/muduo%E7%BD%91%E7%BB%9C%E5%BA%93/"><span class="level-start"><span class="level-item">muduo网络库</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%90%8E%E7%AB%AF%E5%BC%80%E5%8F%91/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/"><span class="level-start"><span class="level-item">设计模式</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/"><span class="level-start"><span class="level-item">工具学习</span></span><span class="level-end"><span class="level-item tag">18</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/GDB/"><span class="level-start"><span class="level-item">GDB</span></span><span class="level-end"><span class="level-item tag">3</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Git/"><span class="level-start"><span class="level-item">Git</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/IDE/"><span class="level-start"><span class="level-item">IDE</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/Vim/"><span class="level-start"><span class="level-item">Vim</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E5%B7%A5%E5%85%B7%E5%AD%A6%E4%B9%A0/%E5%91%BD%E4%BB%A4%E8%A1%8C/"><span class="level-start"><span class="level-item">命令行</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"><span class="level-start"><span class="level-item">操作系统</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/"><span class="level-start"><span class="level-item">数据库</span></span><span class="level-end"><span class="level-item tag">13</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/PostgreSQL/"><span class="level-start"><span class="level-item">PostgreSQL</span></span><span class="level-end"><span class="level-item tag">9</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/openGauss/"><span class="level-start"><span class="level-item">openGauss</span></span><span class="level-end"><span class="level-item tag">4</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/"><span class="level-start"><span class="level-item">数据结构与算法</span></span><span class="level-end"><span class="level-item tag">15</span></span></a><ul><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/"><span class="level-start"><span class="level-item">动态规划</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E5%8D%95%E9%A2%98%E9%A2%98%E8%A7%A3/"><span class="level-start"><span class="level-item">单题题解</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E6%95%B0%E7%BB%84%E4%B8%8E%E5%AD%97%E7%AC%A6%E4%B8%B2/"><span class="level-start"><span class="level-item">数组与字符串</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></li><li><a class="level is-mobile" href="/categories/%E7%94%9F%E6%B4%BB%E5%93%B2%E5%AD%A6/"><span class="level-start"><span class="level-item">生活哲学</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E7%BD%91%E7%AB%99%E6%90%AD%E5%BB%BA/"><span class="level-start"><span class="level-item">网站搭建</span></span><span class="level-end"><span class="level-item tag">2</span></span></a></li><li><a class="level is-mobile" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%B7%A5%E7%A8%8B/"><span class="level-start"><span class="level-item">计算机工程</span></span><span class="level-end"><span class="level-item tag">5</span></span></a></li></ul></div></div></div></div><!--!--></div></div></section><footer class="footer"><div class="container"><div class="level"><div class="level-start"><a class="footer-logo is-block mb-2" href="/"><img src="/images/icon2.png" alt="Desirer&#039;s blog" height="28"></a><p class="is-size-7"><span>&copy; 2026 Desirer</span>  Powered by <a href="https://hexo.io/" target="_blank" rel="noopener">Hexo</a> &amp; <a href="https://github.com/ppoffice/hexo-theme-icarus" target="_blank" rel="noopener">Icarus</a></p><p class="is-size-7"><a href="https://beian.miit.gov.cn" target="_blank" rel="noopener">京ICP备2023035608</a></p></div><div class="level-end"><div class="field has-addons"><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Creative Commons" href="https://creativecommons.org/" aria-label="Creative Commons"><i class="fab fa-creative-commons" aria-hidden="true"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Attribution 4.0 International" href="https://creativecommons.org/licenses/by/4.0/" aria-label="Attribution 4.0 International"><i class="fab fa-creative-commons-by" aria-hidden="true"></i></a></p><p class="control"><a class="button is-transparent is-large" target="_blank" rel="noopener" title="Download on GitHub" href="https://github.com/ppoffice/hexo-theme-icarus" aria-label="Download on GitHub"><i class="fab fa-github" aria-hidden="true"></i></a></p></div></div></div></div></footer><script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js" defer></script><script>(function installGallery(window) {
+  if (window.HexoGallery) return;
+  const document = window.document;
+  const requests = new Map();
+  const layouts = new Map();
+  const lightboxes = new Map();
+  function destroyLightbox(container) {
+    const state = lightboxes.get(container);
+    if (!state) return;
+    container.removeEventListener('click', state.click);
+    // The SDK removes its container through parentNode, even after a host replaced the body.
+    const dialog = state.instance.$container && state.instance.$container.get();
+    if (dialog && !dialog.parentNode) {
+      dialog.style.display = 'none';
+      document.body.appendChild(dialog);
     }
+    if (state.instance.lgOpened) {
+      state.instance.settings.startAnimationDuration = 0;
+      state.instance.settings.backdropDuration = 0;
+    }
+    state.instance.destroy();
+    lightboxes.delete(container);
   }
-
-  function init() {
-    var end = document.querySelector('.navbar-main .navbar-end');
-    if (!end) return;
-    var a = document.createElement('a');
-    a.className = 'navbar-item';
-    a.id = 'dark-mode-toggle';
-    a.href = 'javascript:;';
-    a.title = '切换到深色模式';
-    a.addEventListener('click', function (e) {
-      e.preventDefault();
-      var t = current() === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem(KEY, t); } catch (err) {}
-      apply(t);
-    });
-    end.appendChild(a);
-    apply(current());
-
-    if (window.matchMedia) {
-      var mq = window.matchMedia('(prefers-color-scheme: dark)');
-      var onChange = function (e) {
-        var saved = null;
-        try { saved = localStorage.getItem(KEY); } catch (err) {}
-        if (!saved) apply(e.matches ? 'dark' : 'light');
+  function lightbox(container, enabled) {
+    if (!enabled) {
+      destroyLightbox(container);
+      return;
+    }
+    if (typeof window.lightGallery !== 'function') return;
+    const plugins = (window.HexoGallery.lightGalleryPlugins || []).map(name => window[name]);
+    if (plugins.some(plugin => typeof plugin !== 'function')) return;
+    const items = Array.from(container.querySelectorAll('a.gallery-item[href]'));
+    if (!items.length) {
+      destroyLightbox(container);
+      return;
+    }
+    const elements = items.map(link => {
+      const image = link.querySelector('img');
+      const caption = document.createElement('span');
+      caption.textContent = image ? image.alt : '';
+      return {
+        src: link.href,
+        thumb: image ? image.currentSrc || image.src : link.href,
+        subHtml: caption.innerHTML,
+        alt: caption.innerHTML.replace(/"/g, '&quot;')
       };
-      if (mq.addEventListener) mq.addEventListener('change', onChange);
-      else if (mq.addListener) mq.addListener(onChange);
+    });
+    const signature = JSON.stringify(elements);
+    let state = lightboxes.get(container);
+    if (state) {
+      if (!sameItems(state.items, items) || state.signature !== signature) {
+        if (state.instance.lgOpened) {
+          state.instance.updateSlides(elements, Math.min(state.instance.index, elements.length - 1));
+        } else {
+          state.instance.refresh(elements);
+        }
+        state.items = items;
+        state.signature = signature;
+      }
+      return;
+    }
+    const instance = window.lightGallery(container, {
+      dynamic: true,
+      dynamicEl: elements,
+      plugins
+    });
+    state = {
+      instance,
+      items,
+      signature,
+      click: null
+    };
+    state.click = event => {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const link = event.target.closest('a.gallery-item');
+      const index = state.items.indexOf(link);
+      if (index < 0) return;
+      event.preventDefault();
+      instance.openGallery(index, link);
+    };
+    container.addEventListener('click', state.click);
+    lightboxes.set(container, state);
+  }
+  function sameItems(items, current) {
+    return items.length === current.length && Array.from(items).every((item, i) => item === current[i]);
+  }
+  function enhance(container) {
+    container.querySelectorAll('img:not(.not-gallery-item)').forEach(image => {
+      // Third-party SDK icons are controls, not article images. Script-load retries also
+      // scan icons inserted after the article's initial enhancement.
+      if (image.closest('a, .sharethis-inline-share-buttons, .a2a_kit, [data-share-provider]')) return;
+      const link = document.createElement('a');
+      link.className = 'gallery-item';
+      const src = image.getAttribute('src');
+      if (src !== null) link.setAttribute('href', src);
+      image.parentNode.insertBefore(link, image);
+      link.appendChild(image);
+      if (image.alt) {
+        const caption = document.createElement('p');
+        caption.className = 'has-text-centered is-size-6 caption';
+        caption.textContent = image.alt;
+        link.appendChild(caption);
+      }
+    });
+  }
+  function apply(root, options) {
+    const containers = root === document ? root.querySelectorAll('.article') : [root];
+    containers.forEach(enhance);
+    // Do not capture an incomplete article while HTML is still being parsed.
+    if (document.readyState === 'loading') return;
+    containers.forEach(container => lightbox(container, options.lightGallery));
+    if (options.justifiedGallery && typeof window.JustifiedGallery === 'function') {
+      const galleries = Array.from(root.querySelectorAll('.justified-gallery'));
+      if (root !== document && root.matches('.justified-gallery')) galleries.unshift(root);
+      galleries.forEach(gallery => {
+        const paragraphs = new Set(Array.from(gallery.querySelectorAll(':scope > p > .gallery-item'), link => link.parentNode));
+        paragraphs.forEach(paragraph => {
+          paragraph.replaceWith(...paragraph.childNodes);
+        });
+        gallery.querySelectorAll(':scope > .gallery-item > .caption').forEach(caption => {
+          caption.classList.add('jg-caption');
+        });
+        let state = layouts.get(gallery);
+        const items = () => Array.from(gallery.children).filter(item => !item.classList.contains('jg-spinner') && (item.matches(state.instance.settings.selector) || item.matches('div')));
+        if (state) {
+          if (sameItems(state.items, items())) return;
+          // init refreshes entries but starts another width watcher; stop and rewind first.
+          state.instance.widthWatcher.stop();
+          state.instance.stopImgAnalyzerStarter();
+          state.instance.rewind();
+        } else {
+          // The SDK reuses .jg-caption and safely creates captions for pre-existing links.
+          state = {
+            instance: new window.JustifiedGallery(gallery)
+          };
+          layouts.set(gallery, state);
+        }
+        state.instance.init();
+        state.items = items();
+      });
     }
   }
+  function prune() {
+    layouts.forEach((state, gallery) => {
+      if (!gallery.isConnected) destroyLayout(gallery);
+    });
+    lightboxes.forEach((state, container) => {
+      if (!container.isConnected) destroyLightbox(container);
+    });
+    requests.forEach((options, root) => {
+      if (root !== document && !root.isConnected) requests.delete(root);
+    });
+  }
+  function destroyLayout(gallery) {
+    const {
+      instance
+    } = layouts.get(gallery);
+    // The SDK's destroy does not stop an active loading spinner.
+    instance.stopLoadingSpinnerAnimation();
+    instance.destroy();
+    layouts.delete(gallery);
+  }
+  function retry() {
+    prune();
+    requests.forEach((options, root) => apply(root, options));
+  }
+  window.HexoGallery = {
+    /**
+     * Enhance images in a content container, optionally initializing the two Gallery SDKs.
+     * Repeated calls reuse existing wrappers, captions and plugin instances. Missing SDKs can be
+     * retried by calling init again; DOM ready, window load and subsequent script loads also retry
+     * connected containers with their latest options. SDK initialization waits for DOM readiness.
+     * Changed item collections refresh their existing SDK instance. Disabling the lightbox destroys
+     * it; the independently managed layout plugin is unchanged.
+     * @param {Document|Element} [root=document] Content container; document targets .article images
+     *     and lightboxes, and all .justified-gallery elements.
+     * @param {Object} [options={}] SDK opt-ins; omitted flags disable plugin initialization.
+     * @param {boolean} [options.lightGallery=false] Initialize lightGallery when available.
+     * @param {boolean} [options.justifiedGallery=false] Initialize justifiedGallery when available.
+     */
+    init: function (root, options) {
+      root = root || document;
+      options = options || {};
+      const enabled = {
+        lightGallery: options.lightGallery === true,
+        justifiedGallery: options.justifiedGallery === true
+      };
+      prune();
+      requests.set(root, enabled);
+      apply(root, enabled);
+    },
+    /** Destroy lightboxes, layouts and pending retries before content is replaced (e.g. PJAX). */
+    destroy: function (root) {
+      root = root || document;
+      lightboxes.forEach((state, container) => {
+        if (root === document || root === container || root.contains(container)) destroyLightbox(container);
+      });
+      layouts.forEach((state, gallery) => {
+        if (root === document || root === gallery || root.contains(gallery)) destroyLayout(gallery);
+      });
+      requests.forEach((options, target) => {
+        if (root === document || root === target || root.contains(target)) requests.delete(target);
+      });
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', retry, {
+      once: true
+    });
+  }
+  if (document.readyState !== 'complete') window.addEventListener('load', retry, {
+    once: true
+  });
+  document.addEventListener('hexo:gallery:ready', retry);
+  // Deferred scripts may arrive after init, including on the first enabled page reached by PJAX.
+  // Retry the latest requests, rather than capturing a previous page's enabled configuration.
+  document.addEventListener('load', event => {
+    if (event.target.tagName === 'SCRIPT') retry();
+  }, true);
+})(window);</script><script data-pjax>var IcarusThemeSettings = {"gallery":true,"article":{"highlight":{"clipboard":true,"fold":"folded","fold_preview":20}},"i18n":{"copy":"复制","copied":"已复制！"}};
+if (document.readyState !== 'loading') {
+    window.HexoGallery.init(document, {
+        lightGallery: IcarusThemeSettings.gallery,
+        justifiedGallery: IcarusThemeSettings.gallery
+    });
+}</script><script data-pjax src="/js/column.js"></script><script src="/js/navbar.js" defer></script><script src="/js/github-calendar.js" defer></script><script src="/js/pjax-page.js"></script><script src="/js/pjax-prefetch.js"></script><script src="/js/animation.js" onerror="document.documentElement.classList.remove(&#039;is-animating&#039;)"></script><button type="button" id="back-to-top" title="回到顶端" aria-label="回到顶端"><i class="fas fa-chevron-up" aria-hidden="true"></i></button><script data-pjax src="/js/back_to_top.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/lightgallery.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/plugins/zoom/lg-zoom.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/plugins/thumbnail/lg-thumbnail.min.js" defer></script><script src="https://cdn.jsdelivr.net/npm/lightgallery@3.0.0/plugins/fullscreen/lg-fullscreen.min.js" defer></script><script>(function installGallery(window) {
+  if (window.HexoGallery) return;
+  const document = window.document;
+  const requests = new Map();
+  const layouts = new Map();
+  const lightboxes = new Map();
+  function destroyLightbox(container) {
+    const state = lightboxes.get(container);
+    if (!state) return;
+    container.removeEventListener('click', state.click);
+    // The SDK removes its container through parentNode, even after a host replaced the body.
+    const dialog = state.instance.$container && state.instance.$container.get();
+    if (dialog && !dialog.parentNode) {
+      dialog.style.display = 'none';
+      document.body.appendChild(dialog);
+    }
+    if (state.instance.lgOpened) {
+      state.instance.settings.startAnimationDuration = 0;
+      state.instance.settings.backdropDuration = 0;
+    }
+    state.instance.destroy();
+    lightboxes.delete(container);
+  }
+  function lightbox(container, enabled) {
+    if (!enabled) {
+      destroyLightbox(container);
+      return;
+    }
+    if (typeof window.lightGallery !== 'function') return;
+    const plugins = (window.HexoGallery.lightGalleryPlugins || []).map(name => window[name]);
+    if (plugins.some(plugin => typeof plugin !== 'function')) return;
+    const items = Array.from(container.querySelectorAll('a.gallery-item[href]'));
+    if (!items.length) {
+      destroyLightbox(container);
+      return;
+    }
+    const elements = items.map(link => {
+      const image = link.querySelector('img');
+      const caption = document.createElement('span');
+      caption.textContent = image ? image.alt : '';
+      return {
+        src: link.href,
+        thumb: image ? image.currentSrc || image.src : link.href,
+        subHtml: caption.innerHTML,
+        alt: caption.innerHTML.replace(/"/g, '&quot;')
+      };
+    });
+    const signature = JSON.stringify(elements);
+    let state = lightboxes.get(container);
+    if (state) {
+      if (!sameItems(state.items, items) || state.signature !== signature) {
+        if (state.instance.lgOpened) {
+          state.instance.updateSlides(elements, Math.min(state.instance.index, elements.length - 1));
+        } else {
+          state.instance.refresh(elements);
+        }
+        state.items = items;
+        state.signature = signature;
+      }
+      return;
+    }
+    const instance = window.lightGallery(container, {
+      dynamic: true,
+      dynamicEl: elements,
+      plugins
+    });
+    state = {
+      instance,
+      items,
+      signature,
+      click: null
+    };
+    state.click = event => {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const link = event.target.closest('a.gallery-item');
+      const index = state.items.indexOf(link);
+      if (index < 0) return;
+      event.preventDefault();
+      instance.openGallery(index, link);
+    };
+    container.addEventListener('click', state.click);
+    lightboxes.set(container, state);
+  }
+  function sameItems(items, current) {
+    return items.length === current.length && Array.from(items).every((item, i) => item === current[i]);
+  }
+  function enhance(container) {
+    container.querySelectorAll('img:not(.not-gallery-item)').forEach(image => {
+      // Third-party SDK icons are controls, not article images. Script-load retries also
+      // scan icons inserted after the article's initial enhancement.
+      if (image.closest('a, .sharethis-inline-share-buttons, .a2a_kit, [data-share-provider]')) return;
+      const link = document.createElement('a');
+      link.className = 'gallery-item';
+      const src = image.getAttribute('src');
+      if (src !== null) link.setAttribute('href', src);
+      image.parentNode.insertBefore(link, image);
+      link.appendChild(image);
+      if (image.alt) {
+        const caption = document.createElement('p');
+        caption.className = 'has-text-centered is-size-6 caption';
+        caption.textContent = image.alt;
+        link.appendChild(caption);
+      }
+    });
+  }
+  function apply(root, options) {
+    const containers = root === document ? root.querySelectorAll('.article') : [root];
+    containers.forEach(enhance);
+    // Do not capture an incomplete article while HTML is still being parsed.
+    if (document.readyState === 'loading') return;
+    containers.forEach(container => lightbox(container, options.lightGallery));
+    if (options.justifiedGallery && typeof window.JustifiedGallery === 'function') {
+      const galleries = Array.from(root.querySelectorAll('.justified-gallery'));
+      if (root !== document && root.matches('.justified-gallery')) galleries.unshift(root);
+      galleries.forEach(gallery => {
+        const paragraphs = new Set(Array.from(gallery.querySelectorAll(':scope > p > .gallery-item'), link => link.parentNode));
+        paragraphs.forEach(paragraph => {
+          paragraph.replaceWith(...paragraph.childNodes);
+        });
+        gallery.querySelectorAll(':scope > .gallery-item > .caption').forEach(caption => {
+          caption.classList.add('jg-caption');
+        });
+        let state = layouts.get(gallery);
+        const items = () => Array.from(gallery.children).filter(item => !item.classList.contains('jg-spinner') && (item.matches(state.instance.settings.selector) || item.matches('div')));
+        if (state) {
+          if (sameItems(state.items, items())) return;
+          // init refreshes entries but starts another width watcher; stop and rewind first.
+          state.instance.widthWatcher.stop();
+          state.instance.stopImgAnalyzerStarter();
+          state.instance.rewind();
+        } else {
+          // The SDK reuses .jg-caption and safely creates captions for pre-existing links.
+          state = {
+            instance: new window.JustifiedGallery(gallery)
+          };
+          layouts.set(gallery, state);
+        }
+        state.instance.init();
+        state.items = items();
+      });
+    }
+  }
+  function prune() {
+    layouts.forEach((state, gallery) => {
+      if (!gallery.isConnected) destroyLayout(gallery);
+    });
+    lightboxes.forEach((state, container) => {
+      if (!container.isConnected) destroyLightbox(container);
+    });
+    requests.forEach((options, root) => {
+      if (root !== document && !root.isConnected) requests.delete(root);
+    });
+  }
+  function destroyLayout(gallery) {
+    const {
+      instance
+    } = layouts.get(gallery);
+    // The SDK's destroy does not stop an active loading spinner.
+    instance.stopLoadingSpinnerAnimation();
+    instance.destroy();
+    layouts.delete(gallery);
+  }
+  function retry() {
+    prune();
+    requests.forEach((options, root) => apply(root, options));
+  }
+  window.HexoGallery = {
+    /**
+     * Enhance images in a content container, optionally initializing the two Gallery SDKs.
+     * Repeated calls reuse existing wrappers, captions and plugin instances. Missing SDKs can be
+     * retried by calling init again; DOM ready, window load and subsequent script loads also retry
+     * connected containers with their latest options. SDK initialization waits for DOM readiness.
+     * Changed item collections refresh their existing SDK instance. Disabling the lightbox destroys
+     * it; the independently managed layout plugin is unchanged.
+     * @param {Document|Element} [root=document] Content container; document targets .article images
+     *     and lightboxes, and all .justified-gallery elements.
+     * @param {Object} [options={}] SDK opt-ins; omitted flags disable plugin initialization.
+     * @param {boolean} [options.lightGallery=false] Initialize lightGallery when available.
+     * @param {boolean} [options.justifiedGallery=false] Initialize justifiedGallery when available.
+     */
+    init: function (root, options) {
+      root = root || document;
+      options = options || {};
+      const enabled = {
+        lightGallery: options.lightGallery === true,
+        justifiedGallery: options.justifiedGallery === true
+      };
+      prune();
+      requests.set(root, enabled);
+      apply(root, enabled);
+    },
+    /** Destroy lightboxes, layouts and pending retries before content is replaced (e.g. PJAX). */
+    destroy: function (root) {
+      root = root || document;
+      lightboxes.forEach((state, container) => {
+        if (root === document || root === container || root.contains(container)) destroyLightbox(container);
+      });
+      layouts.forEach((state, gallery) => {
+        if (root === document || root === gallery || root.contains(gallery)) destroyLayout(gallery);
+      });
+      requests.forEach((options, target) => {
+        if (root === document || root === target || root.contains(target)) requests.delete(target);
+      });
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', retry, {
+      once: true
+    });
+  }
+  if (document.readyState !== 'complete') window.addEventListener('load', retry, {
+    once: true
+  });
+  document.addEventListener('hexo:gallery:ready', retry);
+  // Deferred scripts may arrive after init, including on the first enabled page reached by PJAX.
+  // Retry the latest requests, rather than capturing a previous page's enabled configuration.
+  document.addEventListener('load', event => {
+    if (event.target.tagName === 'SCRIPT') retry();
+  }, true);
+})(window);
+window.HexoGallery.lightGalleryPlugins = ["lgZoom","lgThumbnail","lgFullscreen"];
+window.HexoGallery.init(document, {
+        lightGallery: true,
+        justifiedGallery: true
+    });</script><script type="module">import { JustifiedGallery } from "https://cdn.jsdelivr.net/npm/justified-gallery@4.0.2/dist/justified-gallery.js";
+window.JustifiedGallery = JustifiedGallery;
+document.dispatchEvent(new Event('hexo:gallery:ready'));</script><script type="text/javascript">window.MathJax = window.MathJax || {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      output: {
+        font: 'mathjax-newcm',
+        fontPath: "https://cdn.jsdelivr.net/npm/@mathjax/mathjax-newcm-font@4.1.3"
+      }
+    };</script><script id="MathJax-script" defer src="https://cdn.jsdelivr.net/npm/mathjax@4.1.3/tex-mml-chtml.js"></script><!--!--><script src="/js/pjax-core.js"></script><script src="/js/pjax.js"></script><script src="/js/prefetch.js" data-delay="65" defer></script><script data-pjax src="/js/main.js" defer></script><div class="searchbox"><div class="searchbox-container"><div class="searchbox-header"><div class="searchbox-input-container"><input class="searchbox-input" type="text" placeholder="想要查找什么..."></div><a class="searchbox-close" href="javascript:;">×</a></div><div class="searchbox-body"></div></div></div><script data-pjax>(function installSearchbox(window) {
+  if (window.loadSearchbox) return;
+  const document = window.document;
+  let current;
+  window.loadSearchbox = function ($main, options) {
+    const $ = window.jQuery;
+    options = options || {};
+    // Preserve focus state only when replacing the controller for the same open DOM element.
+    let opener = current ? current.destroy($main[0]) : null;
+    let touch = false;
+    const $document = $(document);
+    const namespace = '.hexoSearchbox';
+    const controller = {
+      isCurrent: function () {
+        return current === controller && document.contains($main[0]);
+      },
+      destroy: function (nextMain) {
+        if (current !== controller) return null;
+        const nextOpener = nextMain === $main[0] && $main.hasClass('show') ? opener : null;
+        $document.off(namespace);
+        opener = null;
+        current = null;
+        if (options.onDestroy) options.onDestroy();
+        return nextOpener;
+      }
+    };
+    current = controller;
+    function open() {
+      if (!controller.isCurrent()) return;
+      if (!$main.hasClass('show')) {
+        opener = document.activeElement;
+        $main.addClass('show');
+      }
+      $main.find('.searchbox-input').focus();
+    }
+    function close(restoreFocus) {
+      $main.removeClass('show');
+      if (restoreFocus !== false && opener && document.contains(opener)) opener.focus();
+      opener = null;
+    }
+    function isSearchShortcut(e) {
+      if (e.altKey) return false;
+      if (e.ctrlKey || e.metaKey) {
+        return !e.shiftKey && typeof e.key === 'string' && e.key.toLowerCase() === 'k';
+      }
+      // e.key already accounts for the keyboard layout (including Shift).
+      const target = e.target;
+      const typing = target.isContentEditable || /^(input|textarea|select)$/i.test(target.tagName);
+      return e.key === '/' && !typing;
+    }
+    $document.on('click' + namespace, '.navbar-main .search', open).on('click' + namespace + (options.touch ? ' touchend' + namespace : ''), '.searchbox-close, .searchbox .searchbox-mask', e => {
+      if (!controller.isCurrent()) return;
+      if (e.type !== 'click' && !touch) return;
+      if (options.touch) {
+        $('.navbar-main').css('pointer-events', 'none');
+        setTimeout(() => {
+          $('.navbar-main').css('pointer-events', 'auto');
+        }, 400);
+      }
+      close();
+      touch = false;
+    }).on('focusin' + namespace, e => {
+      if (controller.isCurrent() && $main.hasClass('show') && !$main[0].contains(e.target)) {
+        close(false);
+      }
+    }).on('keydown' + namespace, e => {
+      if (!controller.isCurrent()) return;
+      if (isSearchShortcut(e)) {
+        e.preventDefault();
+        open();
+        return;
+      }
+      if (!$main.hasClass('show')) return;
+      if (e.keyCode === 27) close();else if (options.onKeyDown) options.onKeyDown(e);
+    }).on('touchstart' + namespace, () => {
+      touch = true;
+    }).on('touchmove' + namespace, () => {
+      touch = false;
+    });
+    return controller;
+  };
+})(window);
+window.searchInsight = (function createInsightSearch() {
+  const content = {
+    fields: ['title', 'text'],
+    weights: [3, 1]
+  };
+  const taxonomy = {
+    fields: ['name', 'slug'],
+    weights: [1, 1]
+  };
+  const sections = {
+    posts: content,
+    pages: content,
+    categories: taxonomy,
+    tags: taxonomy
+  };
+  function parseKeywords(query) {
+    return query.split(' ').filter(keyword => {
+      return !!keyword;
+    }).map(keyword => {
+      return keyword.toLowerCase();
+    });
+  }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-  else init();
-})();</script><!-- hexo injector body_end end --></body></html>
+  // Every keyword must occur in at least one own field; keywords may span different fields.
+  function filter(keywords, obj, fields) {
+    const containKeywords = keywords.filter(keyword => {
+      const containFields = fields.filter(field => {
+        if (!Object.prototype.hasOwnProperty.call(obj, field)) {
+          return false;
+        }
+        if (obj[field].toLowerCase().indexOf(keyword) > -1) {
+          return true;
+        }
+        return false;
+      });
+      if (containFields.length > 0) {
+        return true;
+      }
+      return false;
+    });
+    return containKeywords.length === keywords.length;
+  }
+
+  // Count non-overlapping occurrences of a literal lowercase keyword, not a regular expression.
+  function countMatches(text, keyword) {
+    let count = 0;
+    for (let i = text.indexOf(keyword); i !== -1; i = text.indexOf(keyword, i + keyword.length)) {
+      count++;
+    }
+    return count;
+  }
+  function weight(keywords, obj, fields, weights) {
+    let value = 0;
+    keywords.forEach(keyword => {
+      fields.forEach((field, index) => {
+        if (Object.prototype.hasOwnProperty.call(obj, field)) {
+          value += countMatches(obj[field].toLowerCase(), keyword) * weights[index];
+        }
+      });
+    });
+    return value;
+  }
+
+  // Weigh each matching item once. Equal weights retain the input order, including an empty query.
+  function topItems(items, keywords, config) {
+    return items.filter(item => {
+      return filter(keywords, item, config.fields);
+    }).map(item => {
+      return {
+        item,
+        weight: weight(keywords, item, config.fields, config.weights)
+      };
+    }).sort((a, b) => {
+      return b.weight - a.weight;
+    }).slice(0, 5).map(result => {
+      return result.item;
+    });
+  }
+  return function search(json, query) {
+    const keywords = parseKeywords(query);
+    const results = {};
+    Object.keys(sections).forEach(section => {
+      results[section] = topItems(json[section], keywords, sections[section]);
+    });
+    return {
+      keywords,
+      results
+    };
+  };
+})();</script><script data-pjax src="/js/insight.js" defer></script><script data-pjax>function initInsight() {
+            loadInsight({"contentUrl":"/content.json"}, {"hint":"想要查找什么...","untitled":"(无标题)","posts":"文章","pages":"页面","categories":"分类","tags":"标签"});
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initInsight, { once: true });
+        } else {
+            initInsight();
+        }</script></body></html>
